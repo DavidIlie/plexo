@@ -1,5 +1,4 @@
 import type { LucideIcon } from "lucide-react";
-import { Card, CardContent } from "~/components/ui/card";
 
 interface StatCardProps {
    icon: LucideIcon;
@@ -13,16 +12,12 @@ export const StatCard: React.FC<StatCardProps> = ({
    value,
 }) => {
    return (
-      <Card>
-         <CardContent className="flex items-center gap-4 p-6">
-            <div className="rounded-lg bg-primary/10 p-3">
-               <Icon className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-               <p className="text-2xl font-bold">{value}</p>
-               <p className="text-sm text-muted-foreground">{label}</p>
-            </div>
-         </CardContent>
-      </Card>
+      <div className="rounded-lg border border-border/50 bg-card p-4">
+         <div className="flex items-center gap-2 text-muted-foreground">
+            <Icon className="h-3.5 w-3.5" />
+            <span className="text-xs">{label}</span>
+         </div>
+         <p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p>
+      </div>
    );
 };

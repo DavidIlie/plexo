@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Film } from "lucide-react";
 
 import { useTRPC } from "~/trpc/react";
 import { useDebounce } from "~/hooks/use-debounce";
@@ -71,12 +70,9 @@ const MoviesPage = () => {
    return (
       <div className="space-y-6">
          <div>
-            <h1 className="flex items-center gap-2 text-2xl font-bold">
-               <Film className="h-7 w-7 text-primary" />
-               My Movies
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-               {filteredMovies.length} of {movies.length} movies
+            <h1 className="text-lg font-semibold">Movies</h1>
+            <p className="text-sm text-muted-foreground">
+               {filteredMovies.length} of {movies.length}
             </p>
          </div>
 
@@ -96,9 +92,9 @@ const MoviesPage = () => {
          />
 
          {isLoading ? (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                {Array.from({ length: 18 }).map((_, i) => (
-                  <Skeleton key={i} className="aspect-[2/3] w-full rounded-lg" />
+                  <Skeleton key={i} className="aspect-[2/3] w-full rounded-md" />
                ))}
             </div>
          ) : (

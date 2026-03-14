@@ -8,6 +8,7 @@ import {
    getOnDeck,
    getRecentlyAdded,
    getGenres,
+   getMetadata,
 } from "~/lib/plex";
 
 export const plexRouter = createTRPCRouter({
@@ -101,6 +102,20 @@ export const plexRouter = createTRPCRouter({
             `plex:genres:${input.sectionId}`,
             () => getGenres(input.sectionId),
             CacheTTL.LIBRARY,
+         );
+         return {
+            data: result.data,
+            lastUpdatedAt: result.fetchedAt.toISOString(),
+         };
+      }),
+
+   getMetadata: publicProcedure
+      .input(z.object({ ratingKey: z.string() }))
+      .query(async ({ input }) => {
+         const result = await getCachedOrFetch(
+            `plex:metadata:${input.ratingKey}`,
+            () => getMetadata(input.ratingKey),
+            CacheTTL.METADATA,
          );
          return {
             data: result.data,

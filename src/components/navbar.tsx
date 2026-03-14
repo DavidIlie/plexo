@@ -17,15 +17,12 @@ export const Navbar = () => {
    const pathname = usePathname();
 
    return (
-      <nav className="border-b border-border bg-card">
-         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
-            <div className="flex items-center gap-1">
-               <Link
-                  href="/"
-                  className="mr-4 text-lg font-bold text-primary"
-               >
-                  plexo
-               </Link>
+      <nav className="border-b border-border/50 bg-background/80 backdrop-blur-sm">
+         <div className="mx-auto flex h-12 max-w-7xl items-center px-4">
+            <Link href="/" className="mr-6 text-base font-semibold tracking-tight">
+               plexo
+            </Link>
+            <div className="flex items-center gap-0.5">
                {navItems.map((item) => {
                   const isActive =
                      item.href === "/"
@@ -36,21 +33,18 @@ export const Navbar = () => {
                         key={item.href}
                         href={item.href}
                         className={cn(
-                           "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                           "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm transition-colors",
                            isActive
-                              ? "bg-primary/10 text-primary"
-                              : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                              ? "bg-foreground/5 text-foreground"
+                              : "text-muted-foreground hover:text-foreground",
                         )}
                      >
-                        <item.icon className="h-4 w-4" />
+                        <item.icon className="h-3.5 w-3.5" />
                         <span className="hidden sm:inline">{item.label}</span>
                      </Link>
                   );
                })}
             </div>
-            <span className="text-xs text-muted-foreground/50 hidden sm:inline">
-               <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-xs">Mod+L</kbd> refresh
-            </span>
          </div>
       </nav>
    );

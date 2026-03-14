@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 
 export const viewport: Viewport = {
    colorScheme: "dark light",
-   themeColor: "#e5a539",
+   themeColor: "#171717",
    width: "device-width",
    initialScale: 1,
 };
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
       default: "Plexo - Personal Media Dashboard",
    },
    description: "Personal media dashboard for Plex",
-   icons: [{ rel: "icon", url: "/favicon.ico" }],
+   icons: [{ rel: "icon", url: "/icon.svg", type: "image/svg+xml" }],
 };
 
 const RootLayout = ({

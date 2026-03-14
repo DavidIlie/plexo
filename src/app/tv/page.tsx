@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Tv } from "lucide-react";
 
 import { useTRPC } from "~/trpc/react";
 import { useDebounce } from "~/hooks/use-debounce";
@@ -82,12 +81,9 @@ const TVPage = () => {
    return (
       <div className="space-y-6">
          <div>
-            <h1 className="flex items-center gap-2 text-2xl font-bold">
-               <Tv className="h-7 w-7 text-primary" />
-               My TV Shows
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-               {filteredShows.length} of {shows.length} shows
+            <h1 className="text-lg font-semibold">TV Shows</h1>
+            <p className="text-sm text-muted-foreground">
+               {filteredShows.length} of {shows.length}
             </p>
          </div>
 
@@ -108,9 +104,9 @@ const TVPage = () => {
          />
 
          {isLoading ? (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                {Array.from({ length: 18 }).map((_, i) => (
-                  <Skeleton key={i} className="aspect-[2/3] w-full rounded-lg" />
+                  <Skeleton key={i} className="aspect-[2/3] w-full rounded-md" />
                ))}
             </div>
          ) : (

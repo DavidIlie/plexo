@@ -1,7 +1,6 @@
 "use client";
 
-import { Check } from "lucide-react";
-import { Badge } from "~/components/ui/badge";
+import { Check, Eye } from "lucide-react";
 import { PlexImage } from "~/components/plex-image";
 import { WatchProgress } from "./watch-progress";
 import { cn } from "~/lib/utils";
@@ -10,11 +9,13 @@ import type { PlexMediaItem } from "~/types/plex";
 interface MediaCardProps {
    item: PlexMediaItem;
    showProgress?: boolean;
+   onClick?: () => void;
 }
 
 export const MediaCard: React.FC<MediaCardProps> = ({
    item,
    showProgress = false,
+   onClick,
 }) => {
    const isWatched =
       item.type === "movie"
@@ -23,59 +24,74 @@ export const MediaCard: React.FC<MediaCardProps> = ({
            item.viewedLeafCount !== undefined &&
            item.viewedLeafCount >= item.leafCount;
 
-   const genres = item.Genre?.slice(0, 2) ?? [];
+   const isPartial =
+      item.type === "show" &&
+      (item.viewedLeafCount ?? 0) > 0 &&
+      !isWatched;
+
    const durationMinutes = item.duration
       ? Math.round(item.duration / 60000)
       : null;
 
    return (
-      <div className="group relative overflow-hidden rounded-lg border border-border bg-card transition-colors hover:border-primary/30">
-         <div className="relative aspect-[2/3] overflow-hidden">
+      <div className="group cursor-pointer" onClick={onClick}>
+         <div className="relative aspect-[2/3] overflow-hidden rounded-md">
             <PlexImage
                path={item.thumb}
                alt={item.title}
                width={300}
                height={450}
-               className="h-full w-full object-cover transition-transform group-hover:scale-105"
+               className={cn(
+                  "h-full w-full object-cover",
+                  isWatched && "opacity-50",
+               )}
             />
             {isWatched && (
-               <div className="absolute right-2 top-2 rounded-full bg-green-500 p-1">
-                  <Check className="h-3 w-3 text-white" />
+               <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="rounded-full bg-background/80 p-2">
+                     <Eye className="h-4 w-4 text-foreground" />
+                  </div>
+               </div>
+            )}
+            {isPartial && (
+               <div className="absolute bottom-0 left-0 right-0 h-1 bg-muted">
+                  <div
+                     className="h-full bg-chart-1"
+                     style={{
+                        width: `${Math.round(((item.viewedLeafCount ?? 0) / (item.leafCount ?? 1)) * 100)}%`,
+                     }}
+                  />
+               </div>
+            )}
+            {!isWatched && !isPartial && (
+               <div className="absolute left-1.5 top-1.5">
+                  <div className="h-1.5 w-1.5 rounded-full bg-chart-1" />
                </div>
             )}
          </div>
-         <div className="space-y-2 p-3">
-            <h3 className="truncate text-sm font-medium">{item.title}</h3>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-               {item.year && <span>{item.year}</span>}
-               {durationMinutes && item.type === "movie" && (
-                  <span>{durationMinutes}m</span>
-               )}
-               {item.childCount !== undefined && item.type === "show" && (
-                  <span>
-                     {item.childCount} season{item.childCount !== 1 ? "s" : ""}
-                  </span>
-               )}
-            </div>
-            {genres.length > 0 && (
-               <div className="flex flex-wrap gap-1">
-                  {genres.map((genre) => (
-                     <Badge
-                        key={genre.tag}
-                        variant="secondary"
-                        className={cn("text-xs")}
-                     >
-                        {genre.tag}
-                     </Badge>
-                  ))}
-               </div>
-            )}
+         <div className="mt-1.5">
+            <p className={cn("truncate text-sm", isWatched && "text-muted-foreground")}>
+               {item.title}
+            </p>
+            <p className="text-xs text-muted-foreground">
+               {[
+                  item.year,
+                  durationMinutes && item.type === "movie" ? `${durationMinutes}m` : null,
+                  item.childCount !== undefined && item.type === "show"
+                     ? `${item.childCount}S`
+                     : null,
+                  item.Genre?.[0]?.tag,
+               ]
+                  .filter(Boolean)
+                  .join(" · ")}
+            </p>
             {showProgress &&
                item.leafCount !== undefined &&
                item.viewedLeafCount !== undefined && (
                   <WatchProgress
                      viewed={item.viewedLeafCount}
                      total={item.leafCount}
+                     className="mt-1"
                   />
                )}
          </div>

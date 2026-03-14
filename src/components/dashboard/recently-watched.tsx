@@ -1,69 +1,44 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
-import { Clock } from "lucide-react";
 
 import { useTRPC } from "~/trpc/react";
-import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { PlexImage } from "~/components/plex-image";
-import { Skeleton } from "~/components/ui/skeleton";
 
 export const RecentlyWatched = () => {
    const trpc = useTRPC();
-   const { data, isLoading } = useQuery(
+   const { data } = useSuspenseQuery(
       trpc.tautulli.getHistory.queryOptions({ length: 10 }),
    );
 
-   if (isLoading) {
-      return (
-         <Card>
-            <CardHeader>
-               <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5" />
-                  Recently Watched
-               </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-               {Array.from({ length: 5 }).map((_, i) => (
-                  <Skeleton key={i} className="h-16 w-full" />
-               ))}
-            </CardContent>
-         </Card>
-      );
-   }
-
    const items = data?.data.data ?? [];
 
+   if (items.length === 0) return null;
+
    return (
-      <Card>
-         <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-               <Clock className="h-5 w-5" />
-               Recently Watched
-            </CardTitle>
-         </CardHeader>
-         <CardContent className="space-y-3">
+      <section>
+         <h2 className="mb-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Recently Watched
+         </h2>
+         <div className="space-y-1">
             {items.map((item) => (
                <div
                   key={item.row_id}
-                  className="flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-accent/50"
+                  className="flex items-center gap-3 rounded-md px-2 py-1.5"
                >
                   <PlexImage
                      path={
                         item.grandparent_thumb || item.parent_thumb || item.thumb
                      }
                      alt={item.full_title}
-                     width={40}
-                     height={60}
-                     className="rounded-md object-cover"
+                     width={32}
+                     height={48}
+                     className="rounded object-cover"
                   />
                   <div className="min-w-0 flex-1">
-                     <p className="truncate text-sm font-medium">
-                        {item.full_title}
-                     </p>
+                     <p className="truncate text-sm">{item.full_title}</p>
                      <p className="text-xs text-muted-foreground">
-                        {item.friendly_name} &middot;{" "}
                         {formatDistanceToNow(new Date(item.stopped * 1000), {
                            addSuffix: true,
                         })}
@@ -71,12 +46,7 @@ export const RecentlyWatched = () => {
                   </div>
                </div>
             ))}
-            {items.length === 0 && (
-               <p className="text-center text-sm text-muted-foreground">
-                  No recent watch history
-               </p>
-            )}
-         </CardContent>
-      </Card>
+         </div>
+      </section>
    );
 };

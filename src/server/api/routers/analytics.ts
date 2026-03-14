@@ -7,6 +7,7 @@ import {
    getPlaysByDayOfWeek,
    getPlaysByHourOfDay,
 } from "~/lib/tautulli";
+import { env } from "~/env";
 
 export const analyticsRouter = createTRPCRouter({
    getDashboardStats: publicProcedure.query(async () => {
@@ -52,6 +53,7 @@ export const analyticsRouter = createTRPCRouter({
             );
 
             return {
+               displayName: env.DISPLAY_NAME,
                totalMovies,
                totalShows,
                watchedItems: watchedMovies + watchedShows,
@@ -235,6 +237,94 @@ export const analyticsRouter = createTRPCRouter({
                { name: "Movies", value: moviePlays },
                { name: "TV Shows", value: tvPlays },
             ];
+         },
+         CacheTTL.ANALYTICS,
+      );
+
+      return {
+         data: result.data,
+         lastUpdatedAt: result.fetchedAt.toISOString(),
+      };
+   }),
+
+   getHighlights: publicProcedure.query(async () => {
+      const result = await getCachedOrFetch(
+         "analytics:highlights",
+         async () => {
+            const history = await getHistory(5000);
+            const sections = await getLibrarySections();
+            const movieSection = sections.find((s) => s.type === "movie");
+            const showSection = sections.find((s) => s.type === "show");
+
+            const playCounts = new Map<string, { title: string; plays: number; type: string; thumb: string }>();
+            for (const item of history.data) {
+               const key = String(item.grandparent_rating_key || item.rating_key);
+               const title = item.grandparent_title || item.title;
+               const existing = playCounts.get(key);
+               if (existing) {
+                  existing.plays++;
+               } else {
+                  playCounts.set(key, {
+                     title,
+                     plays: 1,
+                     type: item.media_type,
+                     thumb: item.grandparent_thumb || item.thumb,
+                  });
+               }
+            }
+
+            const sorted = Array.from(playCounts.values()).sort(
+               (a, b) => b.plays - a.plays,
+            );
+
+            const mostWatched = sorted[0] ?? null;
+
+            const rewatched = sorted.filter((i) => i.plays > 1);
+            const mostRewatched = rewatched.length > 0 ? rewatched[0] : null;
+
+            let longestMovie: { title: string; duration: number; thumb: string } | null = null;
+            if (movieSection) {
+               const movies = await getMovies(movieSection.key);
+               for (const movie of movies.items) {
+                  if (movie.duration && (!longestMovie || movie.duration > longestMovie.duration)) {
+                     longestMovie = {
+                        title: movie.title,
+                        duration: Math.round(movie.duration / 60000),
+                        thumb: movie.thumb ?? "",
+                     };
+                  }
+               }
+            }
+
+            let totalEpisodes = 0;
+            if (showSection) {
+               const shows = await getShows(showSection.key);
+               for (const show of shows.items) {
+                  totalEpisodes += show.leafCount ?? 0;
+               }
+            }
+
+            const totalPlays = history.data.length;
+
+            const daysWatched = new Set(
+               history.data.map((i) => {
+                  const d = new Date(i.stopped * 1000);
+                  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+               }),
+            ).size;
+
+            return {
+               mostWatched,
+               mostRewatched,
+               longestMovie,
+               totalEpisodes,
+               totalPlays,
+               daysWithActivity: daysWatched,
+               avgPlaysPerDay:
+                  daysWatched > 0
+                     ? Math.round((totalPlays / daysWatched) * 10) / 10
+                     : 0,
+            };
          },
          CacheTTL.ANALYTICS,
       );

@@ -77,6 +77,13 @@ export const getRecentlyAdded = async (
    return data.MediaContainer.Metadata ?? [];
 };
 
+export const getMetadata = async (ratingKey: string): Promise<PlexMediaItem | null> => {
+   const data = await plexFetch<PlexMediaContainer<PlexMediaItem>>(
+      `/library/metadata/${ratingKey}`,
+   );
+   return data.MediaContainer.Metadata?.[0] ?? null;
+};
+
 export const getGenres = async (sectionId: string): Promise<PlexGenre[]> => {
    const data = await plexFetch<PlexMediaContainer<PlexGenre>>(
       `/library/sections/${sectionId}/genre`,
