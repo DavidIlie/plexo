@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { useTRPC } from "~/trpc/react";
+import { RefreshButton } from "~/components/refresh-button";
 import { useDebounce } from "~/hooks/use-debounce";
 import { MediaGrid } from "~/components/media/media-grid";
 import { MediaFilters } from "~/components/media/media-filters";
@@ -69,13 +70,16 @@ const MoviesPage = () => {
 
    return (
       <div className="space-y-6">
-         <div>
-            <h1 className="text-lg font-semibold">Movies</h1>
-            {filteredMovies.length !== movies.length && (
-               <p className="text-sm text-muted-foreground">
-                  {filteredMovies.length} of {movies.length}
-               </p>
-            )}
+         <div className="flex items-center justify-between">
+            <div>
+               <h1 className="text-lg font-semibold">Movies</h1>
+               {filteredMovies.length !== movies.length && (
+                  <p className="text-sm text-muted-foreground">
+                     {filteredMovies.length} of {movies.length}
+                  </p>
+               )}
+            </div>
+            <RefreshButton />
          </div>
 
          <MediaFilters

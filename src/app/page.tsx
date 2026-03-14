@@ -11,6 +11,7 @@ import { Highlights } from "~/components/dashboard/highlights";
 import { GenreDistributionChart } from "~/components/analytics/genre-distribution-chart";
 import { WatchTimeByHourChart } from "~/components/analytics/watch-time-by-hour-chart";
 import { Skeleton } from "~/components/ui/skeleton";
+import { RefreshButton } from "~/components/refresh-button";
 
 export const generateMetadata = async (): Promise<Metadata> => {
    const { data } = await caller.analytics.getDashboardStats();
@@ -37,9 +38,12 @@ const DashboardStats = async () => {
 
    return (
       <div>
-         <h1 className="mb-4 text-lg font-semibold">
-            {data.displayName}&apos;s Library
-         </h1>
+         <div className="mb-4 flex items-center justify-between">
+            <h1 className="text-lg font-semibold">
+               {data.displayName}&apos;s Library
+            </h1>
+            <RefreshButton />
+         </div>
          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <StatCard icon="Film" label="Movies" value={data.totalMovies} index={0} />
             <StatCard icon="Tv" label="Shows" value={data.totalShows} index={1} />
