@@ -126,6 +126,7 @@ docker pull ghcr.io/davidilie/plexo:latest
 | `TURNSTILE_SITE_KEY` | No | Cloudflare Turnstile site key (enables captcha on form) |
 | `TURNSTILE_SECRET_KEY` | No | Cloudflare Turnstile secret key (enables server-side verification + rate limit bypass) |
 | `RESEND_API_KEY` | No | Resend API key for email notifications |
+| `RESEND_FROM` | No | Resend sender address (e.g. `Plexo <noreply@yourdomain.com>`) |
 | `RECOMMEND_EMAIL_TO` | No | Email address to receive recommendations (used by Resend and SMTP) |
 | `SMTP_HOST` | No | SMTP server hostname |
 | `SMTP_PORT` | No | SMTP server port (default: 587) |
@@ -150,7 +151,7 @@ You need at least one channel configured to receive recommendations. All configu
 
 **Discord (easiest):** Create a webhook in your Discord server (Server Settings → Integrations → Webhooks) and set `DISCORD_WEBHOOK_URL`.
 
-**Resend:** Sign up at [resend.com](https://resend.com), get an API key, and set `RESEND_API_KEY` + `RECOMMEND_EMAIL_TO`.
+**Resend:** Sign up at [resend.com](https://resend.com), get an API key, and set `RESEND_API_KEY`, `RESEND_FROM`, and `RECOMMEND_EMAIL_TO`.
 
 **SMTP:** Set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, and `RECOMMEND_EMAIL_TO`.
 

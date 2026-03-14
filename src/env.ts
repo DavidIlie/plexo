@@ -34,6 +34,7 @@ export const env = createEnv({
       TURNSTILE_SITE_KEY: z.string().optional(),
       TURNSTILE_SECRET_KEY: z.string().optional(),
       RESEND_API_KEY: z.string().optional(),
+      RESEND_FROM: z.string().optional(),
       RECOMMEND_EMAIL_TO: z.string().optional(),
       SMTP_HOST: z.string().optional(),
       SMTP_PORT: z.coerce.number().optional(),

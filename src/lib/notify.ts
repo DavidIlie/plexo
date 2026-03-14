@@ -33,13 +33,14 @@ const buildEmailHtml = (payload: RecommendationPayload): string => {
 };
 
 const sendViaResend = async (payload: RecommendationPayload) => {
-   if (!env.RESEND_API_KEY || !env.RECOMMEND_EMAIL_TO) return;
+   if (!env.RESEND_API_KEY || !env.RESEND_FROM || !env.RECOMMEND_EMAIL_TO)
+      return;
 
    const { Resend } = await import("resend");
    const resend = new Resend(env.RESEND_API_KEY);
 
    await resend.emails.send({
-      from: "Plexo <onboarding@resend.dev>",
+      from: env.RESEND_FROM,
       to: env.RECOMMEND_EMAIL_TO,
       subject: `${payload.senderName} recommends: ${payload.title}`,
       html: buildEmailHtml(payload),
