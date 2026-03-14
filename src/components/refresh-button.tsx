@@ -13,8 +13,9 @@ export const RefreshButton = () => {
 
    const handleRefresh = async () => {
       setSpinning(true);
-      await queryClient.resetQueries();
-      setTimeout(() => setSpinning(false), 800);
+      await queryClient.invalidateQueries();
+      await queryClient.refetchQueries();
+      setSpinning(false);
    };
 
    return (
@@ -27,7 +28,7 @@ export const RefreshButton = () => {
       >
          <RefreshCw
             className={cn(
-               "h-3 w-3 transition-transform",
+               "h-3 w-3",
                spinning && "animate-spin",
             )}
          />

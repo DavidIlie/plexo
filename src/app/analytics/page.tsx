@@ -11,6 +11,7 @@ import { MediaRatioChart } from "~/components/analytics/media-ratio-chart";
 import { DeviceChart } from "~/components/analytics/device-chart";
 import { LocationChart } from "~/components/analytics/location-chart";
 import { PeriodSelector, usePeriodDays } from "~/components/analytics/period-selector";
+import { RefreshButton } from "~/components/refresh-button";
 import { Skeleton } from "~/components/ui/skeleton";
 
 const AnalyticsCharts = () => {
@@ -48,7 +49,10 @@ const AnalyticsContent = () => {
                   Watch patterns and library insights
                </p>
             </div>
-            <PeriodSelector />
+            <div className="flex items-center gap-2">
+               <PeriodSelector />
+               <RefreshButton />
+            </div>
          </div>
          <AnalyticsCharts />
       </>
