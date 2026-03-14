@@ -33,6 +33,33 @@ export const tautulliRouter = createTRPCRouter({
          };
       }),
 
+   browseHistory: publicProcedure
+      .input(
+         z.object({
+            cursor: z.number().nullish(),
+            limit: z.number().default(30),
+            mediaType: z.string().optional(),
+         }),
+      )
+      .query(async ({ input }) => {
+         const start = input.cursor ?? 0;
+         const mediaTypeKey = input.mediaType ?? "all";
+         const result = await getCachedOrFetch(
+            `tautulli:history:${input.limit}:${start}:${mediaTypeKey}`,
+            () => getHistory(input.limit, start, input.mediaType),
+            CacheTTL.ACTIVITY,
+         );
+         const total = result.data.recordsFiltered;
+         const nextCursor = start + input.limit < total
+            ? start + input.limit
+            : undefined;
+         return {
+            items: result.data.data,
+            total,
+            nextCursor,
+         };
+      }),
+
    getHomeStats: publicProcedure.query(async () => {
       const result = await getCachedOrFetch(
          "tautulli:homeStats",
