@@ -32,7 +32,13 @@ export const SearchDialog = () => {
 
    useEffect(() => {
       const handler = (e: KeyboardEvent) => {
-         if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+         if (
+            e.key === "k" &&
+            !e.metaKey &&
+            !e.ctrlKey &&
+            !(e.target instanceof HTMLInputElement) &&
+            !(e.target instanceof HTMLTextAreaElement)
+         ) {
             e.preventDefault();
             setOpen(true);
          }
