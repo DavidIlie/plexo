@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { formatDistanceToNow, format } from "date-fns";
 import { Film, Tv, Music, ArrowLeft } from "lucide-react";
@@ -41,6 +42,7 @@ const mediaTypeLabel = (type: string) => {
 
 const ActivityPage = () => {
    const trpc = useTRPC();
+   const router = useRouter();
    const [mediaType, setMediaType] = useState("all");
    const [selectedItem, setSelectedItem] = useState<PlexMediaItem | null>(null);
 
@@ -118,7 +120,11 @@ const ActivityPage = () => {
                            key={item.row_id}
                            className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-2.5 transition-colors hover:bg-muted/50"
                            onClick={() => {
-                              if (isTrack) return;
+                              if (isTrack) {
+                                 const artistKey = String(item.grandparent_rating_key || item.rating_key);
+                                 router.push(`/music/${artistKey}`);
+                                 return;
+                              }
                               setSelectedItem({
                                  ratingKey: String(
                                     item.grandparent_rating_key || item.rating_key,

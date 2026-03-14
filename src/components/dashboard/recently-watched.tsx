@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { ArrowRight, Film, Tv, Music } from "lucide-react";
@@ -26,6 +27,7 @@ const mediaTypeIcon = (type: string) => {
 
 export const RecentlyWatched = () => {
    const trpc = useTRPC();
+   const router = useRouter();
    const { musicEnabled } = useAppConfig();
    const { data } = useSuspenseQuery(
       trpc.tautulli.getHistory.queryOptions({ length: 10 }),
@@ -58,7 +60,11 @@ export const RecentlyWatched = () => {
                      key={item.row_id}
                      className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-muted/50"
                      onClick={() => {
-                        if (isTrack) return;
+                        if (isTrack) {
+                           const artistKey = String(item.grandparent_rating_key || item.rating_key);
+                           router.push(`/music/${artistKey}`);
+                           return;
+                        }
                         setSelectedItem({
                            ratingKey: String(
                               item.grandparent_rating_key || item.rating_key,
