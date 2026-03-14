@@ -1,7 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { env } from "~/env";
 
-const imageCache = new Map<string, { buffer: ArrayBuffer; contentType: string; cachedAt: number }>();
+const globalForImageCache = globalThis as unknown as {
+   __plexoImageCache?: Map<string, { buffer: ArrayBuffer; contentType: string; cachedAt: number }>;
+};
+const imageCache = (globalForImageCache.__plexoImageCache ??= new Map());
 const IMAGE_CACHE_TTL = 24 * 60 * 60 * 1000;
 
 export const GET = async (req: NextRequest) => {

@@ -49,9 +49,13 @@ export const analyticsRouter = createTRPCRouter({
             }
 
             const history = await getHistory(1000);
-            const totalHoursWatched = Math.round(
-               parseInt(history.total_duration) / 3600,
-            );
+            let totalSeconds = parseInt(history.total_duration) || 0;
+            if (totalSeconds === 0) {
+               for (const item of history.data) {
+                  totalSeconds += item.play_duration || 0;
+               }
+            }
+            const totalHoursWatched = Math.round(totalSeconds / 3600);
 
             return {
                displayName: env.DISPLAY_NAME,

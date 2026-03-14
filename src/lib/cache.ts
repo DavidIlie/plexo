@@ -4,7 +4,14 @@ interface CacheEntry<T> {
    expiresAt: Date;
 }
 
-const cache = new Map<string, CacheEntry<unknown>>();
+const globalForCache = globalThis as unknown as {
+   __plexoCache?: Map<string, CacheEntry<unknown>>;
+};
+
+const cache = (globalForCache.__plexoCache ??= new Map<
+   string,
+   CacheEntry<unknown>
+>());
 
 export const CacheTTL = {
    LIBRARY: 60 * 60 * 1000,

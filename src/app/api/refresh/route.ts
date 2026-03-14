@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { env } from "~/env";
 import { invalidateAll, getCacheStats } from "~/lib/cache";
+import { getRateLimitStats } from "~/lib/rate-limit";
 
 export const POST = async (req: NextRequest) => {
    const authHeader = req.headers.get("authorization");
@@ -22,7 +23,10 @@ export const GET = async (req: NextRequest) => {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
    }
 
-   return NextResponse.json(getCacheStats());
+   return NextResponse.json({
+      ...getCacheStats(),
+      rateLimits: getRateLimitStats(),
+   });
 };
 
 export const dynamic = "force-dynamic";

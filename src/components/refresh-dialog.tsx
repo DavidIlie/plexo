@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { RefreshCw, Database, Clock, Trash2, Shield } from "lucide-react";
+import { RefreshCw, Database, Clock, Trash2, Shield, Gauge } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 import {
@@ -21,10 +21,18 @@ interface CacheEntry {
    expired: boolean;
 }
 
+interface RateLimitEntry {
+   key: string;
+   count: number;
+   remaining: number;
+   resetsIn: number;
+}
+
 interface CacheStats {
    totalEntries: number;
    activeEntries: number;
    entries: CacheEntry[];
+   rateLimits: RateLimitEntry[];
 }
 
 export const RefreshDialog = () => {
@@ -105,7 +113,7 @@ export const RefreshDialog = () => {
          });
          if (res.ok) {
             setStatus("success");
-            setCacheStats({ totalEntries: 0, activeEntries: 0, entries: [] });
+            setCacheStats({ totalEntries: 0, activeEntries: 0, entries: [], rateLimits: [] });
             setTimeout(() => window.location.reload(), 800);
          }
       } catch {
@@ -221,6 +229,38 @@ export const RefreshDialog = () => {
                         Cache is empty
                      </p>
                   )}
+
+                  {cacheStats &&
+                     cacheStats.rateLimits &&
+                     cacheStats.rateLimits.length > 0 && (
+                        <>
+                           <Separator />
+                           <div className="space-y-1.5">
+                              <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                                 <Gauge className="h-3 w-3" />
+                                 Active rate limits
+                              </p>
+                              {cacheStats.rateLimits.map((rl) => (
+                                 <div
+                                    key={rl.key}
+                                    className="flex items-center justify-between rounded-md bg-muted/30 px-2.5 py-1.5"
+                                 >
+                                    <span className="font-mono text-xs">
+                                       {rl.key}
+                                    </span>
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                       <span className="tabular-nums">
+                                          {rl.count}/120
+                                       </span>
+                                       <span className="tabular-nums">
+                                          {rl.resetsIn}s
+                                       </span>
+                                    </div>
+                                 </div>
+                              ))}
+                           </div>
+                        </>
+                     )}
                </div>
             )}
          </DialogContent>
