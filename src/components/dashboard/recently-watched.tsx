@@ -29,9 +29,10 @@ export const RecentlyWatched = () => {
    const trpc = useTRPC();
    const router = useRouter();
    const { musicEnabled } = useAppConfig();
-   const { data } = useSuspenseQuery(
-      trpc.tautulli.getHistory.queryOptions({ length: 10 }),
-   );
+   const { data } = useSuspenseQuery({
+      ...trpc.tautulli.getHistory.queryOptions({ length: 10 }),
+      refetchInterval: 5 * 60 * 1000,
+   });
    const [selectedItem, setSelectedItem] = useState<PlexMediaItem | null>(null);
 
    const items = data?.data.data ?? [];

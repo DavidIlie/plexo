@@ -19,9 +19,10 @@ interface Props {
 
 export const WatchTimeByHourChart: React.FC<Props> = ({ timeRange = 30 }) => {
    const trpc = useTRPC();
-   const { data, isLoading } = useQuery(
-      trpc.tautulli.getPlaysByHourOfDay.queryOptions({ timeRange }),
-   );
+   const { data, isLoading } = useQuery({
+      ...trpc.tautulli.getPlaysByHourOfDay.queryOptions({ timeRange }),
+      refetchInterval: 15 * 60 * 1000,
+   });
 
    const rawData = data?.data;
    const chartData =

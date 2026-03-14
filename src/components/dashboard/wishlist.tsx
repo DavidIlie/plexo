@@ -20,9 +20,10 @@ const statusConfig = {
 
 export const Wishlist = () => {
    const trpc = useTRPC();
-   const { data } = useSuspenseQuery(
-      trpc.recommend.getWishlist.queryOptions(),
-   );
+   const { data } = useSuspenseQuery({
+      ...trpc.recommend.getWishlist.queryOptions(),
+      refetchInterval: 5 * 60 * 1000,
+   });
 
    if (data.data.length === 0) return null;
 

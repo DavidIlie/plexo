@@ -19,9 +19,10 @@ const COLORS = [
 
 export const MusicGenreChart = () => {
    const trpc = useTRPC();
-   const { data, isLoading } = useQuery(
-      trpc.analytics.getMusicGenreDistribution.queryOptions(),
-   );
+   const { data, isLoading } = useQuery({
+      ...trpc.analytics.getMusicGenreDistribution.queryOptions(),
+      refetchInterval: 30 * 60 * 1000,
+   });
 
    if (data?.data === null) return null;
 

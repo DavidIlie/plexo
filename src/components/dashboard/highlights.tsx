@@ -59,9 +59,10 @@ const Highlight: React.FC<HighlightProps & { index?: number }> = ({
 
 export const Highlights = () => {
    const trpc = useTRPC();
-   const { data } = useSuspenseQuery(
-      trpc.analytics.getHighlights.queryOptions(),
-   );
+   const { data } = useSuspenseQuery({
+      ...trpc.analytics.getHighlights.queryOptions(),
+      refetchInterval: 15 * 60 * 1000,
+   });
    const [selectedItem, setSelectedItem] = useState<PlexMediaItem | null>(
       null,
    );

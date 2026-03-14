@@ -21,7 +21,10 @@ const formatDuration = (ms: number) => {
 
 export const OnDeck = () => {
    const trpc = useTRPC();
-   const { data } = useSuspenseQuery(trpc.plex.getOnDeck.queryOptions());
+   const { data } = useSuspenseQuery({
+      ...trpc.plex.getOnDeck.queryOptions(),
+      refetchInterval: 5 * 60 * 1000,
+   });
    const [selected, setSelected] = useState<PlexOnDeckItem | null>(null);
 
    const items = data?.data ?? [];

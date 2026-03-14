@@ -19,9 +19,10 @@ const COLORS = [
 
 export const GenreDistributionChart = () => {
    const trpc = useTRPC();
-   const { data, isLoading } = useQuery(
-      trpc.analytics.getGenreDistribution.queryOptions(),
-   );
+   const { data, isLoading } = useQuery({
+      ...trpc.analytics.getGenreDistribution.queryOptions(),
+      refetchInterval: 30 * 60 * 1000,
+   });
 
    const chartData = (data?.data ?? []).slice(0, 8);
 
