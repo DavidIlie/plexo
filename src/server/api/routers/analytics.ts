@@ -256,7 +256,7 @@ export const analyticsRouter = createTRPCRouter({
             const movieSection = sections.find((s) => s.type === "movie");
             const showSection = sections.find((s) => s.type === "show");
 
-            const playCounts = new Map<string, { title: string; plays: number; type: string; thumb: string }>();
+            const playCounts = new Map<string, { ratingKey: string; title: string; plays: number; type: string; thumb: string }>();
             for (const item of history.data) {
                const key = String(item.grandparent_rating_key || item.rating_key);
                const title = item.grandparent_title || item.title;
@@ -265,6 +265,7 @@ export const analyticsRouter = createTRPCRouter({
                   existing.plays++;
                } else {
                   playCounts.set(key, {
+                     ratingKey: key,
                      title,
                      plays: 1,
                      type: item.media_type,
@@ -282,12 +283,13 @@ export const analyticsRouter = createTRPCRouter({
             const rewatched = sorted.filter((i) => i.plays > 1);
             const mostRewatched = rewatched.length > 0 ? rewatched[0] : null;
 
-            let longestMovie: { title: string; duration: number; thumb: string } | null = null;
+            let longestMovie: { ratingKey: string; title: string; duration: number; thumb: string } | null = null;
             if (movieSection) {
                const movies = await getMovies(movieSection.key);
                for (const movie of movies.items) {
                   if (movie.duration && (!longestMovie || movie.duration > longestMovie.duration)) {
                      longestMovie = {
+                        ratingKey: movie.ratingKey,
                         title: movie.title,
                         duration: Math.round(movie.duration / 60000),
                         thumb: movie.thumb ?? "",

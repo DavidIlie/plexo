@@ -4,7 +4,15 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
-import { LayoutDashboard, Film, Tv, BarChart3, Sun, Moon } from "lucide-react";
+import {
+   LayoutDashboard,
+   Film,
+   Tv,
+   BarChart3,
+   Sun,
+   Moon,
+   Search,
+} from "lucide-react";
 
 import { cn } from "~/lib/utils";
 import { Button } from "~/components/ui/button";
@@ -20,16 +28,22 @@ export const Navbar = () => {
    const pathname = usePathname();
    const { theme, setTheme } = useTheme();
 
+   const openSearch = () => {
+      window.dispatchEvent(
+         new KeyboardEvent("keydown", { key: "k", metaKey: true }),
+      );
+   };
+
    return (
       <nav className="border-b border-border/50 bg-background/80 backdrop-blur-sm">
-         <div className="mx-auto flex h-12 max-w-7xl items-center justify-between px-4">
+         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
             <div className="flex items-center">
                <Link href="/" className="mr-6 flex items-center gap-2">
                   <Image
                      src="/icon.svg"
                      alt="Plexo"
-                     width={20}
-                     height={20}
+                     width={22}
+                     height={22}
                      className="rounded"
                   />
                   <span className="text-base font-semibold tracking-tight">
@@ -47,29 +61,47 @@ export const Navbar = () => {
                            key={item.href}
                            href={item.href}
                            className={cn(
-                              "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm transition-colors",
+                              "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors",
                               isActive
                                  ? "bg-foreground/5 text-foreground"
                                  : "text-muted-foreground hover:text-foreground",
                            )}
                         >
-                           <item.icon className="h-3.5 w-3.5" />
-                           <span className="hidden sm:inline">{item.label}</span>
+                           <item.icon className="h-4 w-4" />
+                           <span className="hidden sm:inline">
+                              {item.label}
+                           </span>
                         </Link>
                      );
                   })}
                </div>
             </div>
-            <Button
-               variant="ghost"
-               size="icon"
-               className="h-8 w-8 text-muted-foreground"
-               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            >
-               <Sun className="h-3.5 w-3.5 rotate-0 scale-100 transition-transform dark:-rotate-90 dark:scale-0" />
-               <Moon className="absolute h-3.5 w-3.5 rotate-90 scale-0 transition-transform dark:rotate-0 dark:scale-100" />
-               <span className="sr-only">Toggle theme</span>
-            </Button>
+            <div className="flex items-center gap-1">
+               <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 gap-2 text-muted-foreground"
+                  onClick={openSearch}
+               >
+                  <Search className="h-3.5 w-3.5" />
+                  <span className="hidden text-xs sm:inline">Search</span>
+                  <kbd className="hidden rounded border border-border bg-muted px-1 py-0.5 font-mono text-[10px] sm:inline">
+                     K
+                  </kbd>
+               </Button>
+               <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground"
+                  onClick={() =>
+                     setTheme(theme === "dark" ? "light" : "dark")
+                  }
+               >
+                  <Sun className="h-3.5 w-3.5 rotate-0 scale-100 transition-transform dark:-rotate-90 dark:scale-0" />
+                  <Moon className="absolute h-3.5 w-3.5 rotate-90 scale-0 transition-transform dark:rotate-0 dark:scale-100" />
+                  <span className="sr-only">Toggle theme</span>
+               </Button>
+            </div>
          </div>
       </nav>
    );
