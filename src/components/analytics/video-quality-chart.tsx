@@ -19,7 +19,7 @@ export const VideoQualityChart = () => {
    return (
       <ChartWrapper
          title="Video Quality"
-         description="Resolution distribution across plays"
+         description="Resolution distribution across your movie library"
          isLoading={isLoading}
       >
          <BarChart data={chartData} layout="vertical">
@@ -33,7 +33,7 @@ export const VideoQualityChart = () => {
             />
             <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
             <Bar
-               dataKey="plays"
+               dataKey="count"
                fill="var(--chart-3)"
                radius={[0, 4, 4, 0]}
             />

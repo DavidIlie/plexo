@@ -1,6 +1,6 @@
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import { getCachedOrFetch, CacheTTL } from "~/lib/cache";
-import { getLibrarySections, getMovies, getShows, getArtists, getAlbumCount, getTrackCount } from "~/lib/plex";
+import { getLibrarySections, getMovies, getShows, getArtists, getAlbumCount, getTrackCount, getSectionTotalSize } from "~/lib/plex";
 import {
    getHistory,
    getPlaysByDate,
@@ -481,25 +481,33 @@ export const analyticsRouter = createTRPCRouter({
       const result = await getCachedOrFetch(
          "analytics:videoQualityStats",
          async () => {
-            const history = await getHistory(2000);
+            const sections = await getLibrarySections();
+            const movieSection = sections.find((s) => s.type === "movie");
+            if (!movieSection) return [];
+
+            const info = await getLibraryMediaInfo(movieSection.key, 1000);
             const resolutions = new Map<string, number>();
 
-            for (const item of history.data) {
-               if (
-                  item.media_type === "track" ||
-                  !item.video_full_resolution
-               )
-                  continue;
-               const res = item.video_full_resolution || "Unknown";
-               resolutions.set(res, (resolutions.get(res) ?? 0) + 1);
+            const resolutionLabels: Record<string, string> = {
+               "4k": "4K",
+               "1080": "1080p",
+               "720": "720p",
+               sd: "SD",
+            };
+
+            for (const item of info.data) {
+               if (!item.video_resolution) continue;
+               const label =
+                  resolutionLabels[item.video_resolution] ??
+                  item.video_resolution;
+               resolutions.set(label, (resolutions.get(label) ?? 0) + 1);
             }
 
             return Array.from(resolutions.entries())
-               .map(([name, plays]) => ({ name, plays }))
-               .sort((a, b) => b.plays - a.plays)
-               .slice(0, 10);
+               .map(([name, count]) => ({ name, count }))
+               .sort((a, b) => b.count - a.count);
          },
-         CacheTTL.ANALYTICS,
+         CacheTTL.METADATA,
       );
 
       return {
@@ -512,21 +520,86 @@ export const analyticsRouter = createTRPCRouter({
       const result = await getCachedOrFetch(
          "analytics:audioFormatStats",
          async () => {
-            const history = await getHistory(2000);
+            const sections = await getLibrarySections();
+            const movieSection = sections.find((s) => s.type === "movie");
+            if (!movieSection) return [];
+
+            const info = await getLibraryMediaInfo(movieSection.key, 1000);
             const codecs = new Map<string, number>();
 
-            for (const item of history.data) {
-               if (item.media_type === "track" || !item.audio_codec) continue;
-               const codec = item.audio_codec.toUpperCase();
-               codecs.set(codec, (codecs.get(codec) ?? 0) + 1);
+            const codecLabels: Record<string, string> = {
+               "dca-ma": "DTS-HD MA",
+               truehd: "TrueHD",
+               eac3: "EAC3",
+               ac3: "AC3",
+               aac: "AAC",
+               dca: "DTS",
+               flac: "FLAC",
+               mpeg3: "MP3",
+               opus: "Opus",
+            };
+
+            for (const item of info.data) {
+               if (!item.audio_codec) continue;
+               const label =
+                  codecLabels[item.audio_codec] ??
+                  item.audio_codec.toUpperCase();
+               codecs.set(label, (codecs.get(label) ?? 0) + 1);
             }
 
             return Array.from(codecs.entries())
-               .map(([name, plays]) => ({ name, plays }))
-               .sort((a, b) => b.plays - a.plays)
-               .slice(0, 10);
+               .map(([name, count]) => ({ name, count }))
+               .sort((a, b) => b.count - a.count);
          },
-         CacheTTL.ANALYTICS,
+         CacheTTL.METADATA,
+      );
+
+      return {
+         data: result.data,
+         lastUpdatedAt: result.fetchedAt.toISOString(),
+      };
+   }),
+
+   getMusicAudioFormatStats: publicProcedure.query(async () => {
+      if (!env.SHOW_MUSIC) {
+         return { data: null, lastUpdatedAt: new Date().toISOString() };
+      }
+
+      const result = await getCachedOrFetch(
+         "analytics:musicAudioFormatStats",
+         async () => {
+            const sections = await getLibrarySections();
+            const musicSection = sections.find((s) => s.type === "artist");
+            if (!musicSection) return [];
+
+            const info = await getLibraryMediaInfo(musicSection.key, 5000);
+            const codecs = new Map<string, number>();
+
+            const codecLabels: Record<string, string> = {
+               flac: "FLAC",
+               alac: "ALAC",
+               aac: "AAC",
+               mp3: "MP3",
+               mpeg3: "MP3",
+               opus: "Opus",
+               vorbis: "Vorbis",
+               wav: "WAV",
+               dca: "DTS",
+            };
+
+            for (const item of info.data) {
+               if (!item.audio_codec) continue;
+               const label =
+                  codecLabels[item.audio_codec] ??
+                  item.audio_codec.toUpperCase();
+               codecs.set(label, (codecs.get(label) ?? 0) + 1);
+            }
+
+            return Array.from(codecs.entries())
+               .map(([name, count]) => ({ name, count }))
+               .sort((a, b) => b.count - a.count);
+         },
+         CacheTTL.METADATA,
       );
 
       return {
@@ -547,20 +620,27 @@ export const analyticsRouter = createTRPCRouter({
                items: number;
             }> = [];
 
+            // Plex type IDs: 1=movie, 4=episode, 10=track
+            const typeMap: Record<string, number> = {
+               movie: 1,
+               show: 4,
+               artist: 10,
+            };
+
             for (const section of sections) {
-               if (
-                  section.type !== "movie" &&
-                  section.type !== "show" &&
-                  section.type !== "artist"
-               )
-                  continue;
+               const plexType = typeMap[section.type];
+               if (!plexType) continue;
                if (section.type === "artist" && !env.SHOW_MUSIC) continue;
 
+               const bytes = await getSectionTotalSize(
+                  section.key,
+                  plexType,
+               );
                const info = await getLibraryMediaInfo(section.key);
                sizes.push({
                   name: section.title,
                   type: section.type,
-                  bytes: info.total_file_size,
+                  bytes,
                   items: info.recordsTotal,
                });
             }

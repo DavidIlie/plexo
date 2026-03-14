@@ -133,6 +133,28 @@ export const getWatchlist = async (): Promise<PlexMediaItem[]> => {
    }
 };
 
+export const getSectionTotalSize = async (
+   sectionId: string,
+   type: number,
+): Promise<number> => {
+   let totalSize = 0;
+   let start = 0;
+   const batchSize = 500;
+   while (true) {
+      const data = await plexFetch<PlexMediaContainer<PlexMediaItem>>(
+         `/library/sections/${sectionId}/all?type=${type}&X-Plex-Container-Start=${start}&X-Plex-Container-Size=${batchSize}`,
+      );
+      const items = data.MediaContainer.Metadata ?? [];
+      for (const item of items) {
+         const part = item.Media?.[0]?.Part?.[0];
+         if (part?.size) totalSize += part.size;
+      }
+      if (items.length < batchSize) break;
+      start += batchSize;
+   }
+   return totalSize;
+};
+
 export const getGenres = async (sectionId: string): Promise<PlexGenre[]> => {
    const data = await plexFetch<PlexMediaContainer<PlexGenre>>(
       `/library/sections/${sectionId}/genre`,

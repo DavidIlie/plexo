@@ -102,20 +102,32 @@ export interface TautulliGeoData {
    accuracy: number;
 }
 
+export interface TautulliLibraryMediaItem {
+   video_resolution: string;
+   video_codec: string;
+   audio_codec: string;
+   audio_channels: string;
+   file_size: string;
+   bitrate: string;
+   container: string;
+   title: string;
+}
+
 export interface TautulliLibraryMediaInfo {
    recordsTotal: number;
    recordsFiltered: number;
    total_file_size: number;
    filtered_file_size: number;
-   data: unknown[];
+   data: TautulliLibraryMediaItem[];
 }
 
 export const getLibraryMediaInfo = async (
    sectionId: string,
+   length = 0,
 ): Promise<TautulliLibraryMediaInfo> => {
    return tautulliFetch<TautulliLibraryMediaInfo>("get_library_media_info", {
       section_id: sectionId,
-      length: 0,
+      length,
    });
 };
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 
@@ -13,6 +14,9 @@ const formatBytes = (bytes: number) => {
    return `${(bytes / (1024 * 1024 * 1024 * 1024)).toFixed(2)} TB`;
 };
 
+const TB = 1024 * 1024 * 1024 * 1024;
+const GB = 1024 * 1024 * 1024;
+
 export const LibrarySizeChart = () => {
    const trpc = useTRPC();
    const { data, isLoading } = useQuery(
@@ -21,14 +25,23 @@ export const LibrarySizeChart = () => {
 
    const rawData = data?.data ?? [];
 
+   const useTB = useMemo(
+      () => rawData.some((d) => d.bytes >= TB),
+      [rawData],
+   );
+
    if (!isLoading && rawData.length === 0) return null;
 
    const chartData = rawData.map((d) => ({
       name: d.name,
-      sizeGB: Math.round((d.bytes / (1024 * 1024 * 1024)) * 10) / 10,
+      size: useTB
+         ? Math.round((d.bytes / TB) * 100) / 100
+         : Math.round((d.bytes / GB) * 10) / 10,
       displaySize: formatBytes(d.bytes),
       items: d.items,
    }));
+
+   const unit = useTB ? "TB" : "GB";
 
    return (
       <ChartWrapper
@@ -40,7 +53,7 @@ export const LibrarySizeChart = () => {
             <XAxis dataKey="name" stroke="var(--muted-foreground)" />
             <YAxis
                stroke="var(--muted-foreground)"
-               tickFormatter={(v: number) => `${v} GB`}
+               tickFormatter={(v: number) => `${v} ${unit}`}
             />
             <Tooltip
                contentStyle={CHART_TOOLTIP_STYLE}
@@ -58,7 +71,7 @@ export const LibrarySizeChart = () => {
                }}
             />
             <Bar
-               dataKey="sizeGB"
+               dataKey="size"
                fill="var(--chart-2)"
                radius={[4, 4, 0, 0]}
             />

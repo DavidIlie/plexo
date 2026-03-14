@@ -39,13 +39,7 @@ export interface TautulliHistoryItem {
    group_ids: string;
    media_index: number;
    parent_media_index: number;
-   video_full_resolution: string;
-   audio_codec: string;
-   video_codec: string;
-   quality_profile: string;
    transcode_decision: string;
-   video_decision: string;
-   audio_decision: string;
 }
 
 export interface TautulliHistoryData {

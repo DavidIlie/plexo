@@ -6,11 +6,13 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 import { useTRPC } from "~/trpc/react";
 import { ChartWrapper, CHART_TOOLTIP_STYLE } from "~/components/analytics/chart-wrapper";
 
-export const AudioFormatChart = () => {
+export const MusicAudioFormatChart = () => {
    const trpc = useTRPC();
    const { data, isLoading } = useQuery(
-      trpc.analytics.getAudioFormatStats.queryOptions(),
+      trpc.analytics.getMusicAudioFormatStats.queryOptions(),
    );
+
+   if (data?.data === null) return null;
 
    const chartData = data?.data ?? [];
 
@@ -18,8 +20,8 @@ export const AudioFormatChart = () => {
 
    return (
       <ChartWrapper
-         title="Audio Format"
-         description="Audio codec distribution across your movie library"
+         title="Music Audio Format"
+         description="Audio codec distribution across your music library"
          isLoading={isLoading}
       >
          <BarChart data={chartData} layout="vertical">
@@ -27,14 +29,14 @@ export const AudioFormatChart = () => {
             <YAxis
                type="category"
                dataKey="name"
-               width={85}
+               width={70}
                stroke="var(--muted-foreground)"
                tick={{ fontSize: 11 }}
             />
             <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
             <Bar
                dataKey="count"
-               fill="var(--chart-5)"
+               fill="var(--chart-1)"
                radius={[0, 4, 4, 0]}
             />
          </BarChart>
