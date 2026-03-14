@@ -2,7 +2,7 @@ name: plexo:nextjs
 on:
     push:
         branches:
-            - main
+            - master
 
 jobs:
     execute:
