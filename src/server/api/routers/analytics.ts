@@ -584,6 +584,11 @@ export const analyticsRouter = createTRPCRouter({
                opus: "Opus",
                vorbis: "Vorbis",
                wav: "WAV",
+               pcm: "PCM",
+               dsd_lsbf_planar: "DSD",
+               dca: "DTS",
+               wavpack: "WavPack",
+               ape: "APE",
             };
 
             for (const track of tracks) {
