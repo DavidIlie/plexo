@@ -28,9 +28,10 @@ const TVPage = () => {
    const [completionFilter, setCompletionFilter] = useState("all");
    const debouncedSearch = useDebounce(search, 300);
 
-   const { data: sections } = useQuery(
-      trpc.plex.getLibrarySections.queryOptions(),
-   );
+   const { data: sections } = useQuery({
+      ...trpc.plex.getLibrarySections.queryOptions(),
+      refetchInterval: 60 * 60 * 1000,
+   });
    const showSectionId = sections?.data.find(
       (s) => s.type === "show",
    )?.key;
@@ -41,15 +42,16 @@ const TVPage = () => {
       fetchNextPage,
       hasNextPage,
       isFetchingNextPage,
-   } = useInfiniteQuery(
-      trpc.plex.browseShows.infiniteQueryOptions(
+   } = useInfiniteQuery({
+      ...trpc.plex.browseShows.infiniteQueryOptions(
          { sectionId: showSectionId ?? "2" },
          {
             initialCursor: 0,
             getNextPageParam: (lastPage) => lastPage.nextCursor,
          },
       ),
-   );
+      refetchInterval: 30 * 60 * 1000,
+   });
 
    const shows = useMemo(
       () => showsData?.pages.flatMap((p) => p.items) ?? [],

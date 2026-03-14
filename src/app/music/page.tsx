@@ -19,9 +19,10 @@ const MusicPage = () => {
    const [genre, setGenre] = useState("all");
    const debouncedSearch = useDebounce(search, 300);
 
-   const { data: sections } = useQuery(
-      trpc.plex.getLibrarySections.queryOptions(),
-   );
+   const { data: sections } = useQuery({
+      ...trpc.plex.getLibrarySections.queryOptions(),
+      refetchInterval: 60 * 60 * 1000,
+   });
    const musicSectionId = sections?.data.find(
       (s) => s.type === "artist",
    )?.key;
@@ -32,15 +33,16 @@ const MusicPage = () => {
       fetchNextPage,
       hasNextPage,
       isFetchingNextPage,
-   } = useInfiniteQuery(
-      trpc.plex.browseArtists.infiniteQueryOptions(
+   } = useInfiniteQuery({
+      ...trpc.plex.browseArtists.infiniteQueryOptions(
          { sectionId: musicSectionId ?? "1" },
          {
             initialCursor: 0,
             getNextPageParam: (lastPage) => lastPage.nextCursor,
          },
       ),
-   );
+      refetchInterval: 30 * 60 * 1000,
+   });
 
    const artists = useMemo(
       () => (artistsData?.pages.flatMap((p) => p.items) ?? []).filter(

@@ -56,15 +56,16 @@ const ActivityPage = () => {
       fetchNextPage,
       hasNextPage,
       isFetchingNextPage,
-   } = useInfiniteQuery(
-      trpc.tautulli.browseHistory.infiniteQueryOptions(
+   } = useInfiniteQuery({
+      ...trpc.tautulli.browseHistory.infiniteQueryOptions(
          { ...(mediaType !== "all" ? { mediaType } : {}) },
          {
             initialCursor: 0,
             getNextPageParam: (lastPage) => lastPage.nextCursor,
          },
       ),
-   );
+      refetchInterval: 5 * 60 * 1000,
+   });
 
    const allItems = useMemo(
       () => data?.pages.flatMap((p) => p.items) ?? [],
