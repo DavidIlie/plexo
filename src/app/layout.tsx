@@ -4,6 +4,7 @@ import "./globals.css";
 import { TRPCReactProvider } from "~/trpc/react";
 import { ThemeProvider } from "~/components/theme-provider";
 import { Navbar } from "~/components/navbar";
+import { RefreshDialog } from "~/components/refresh-dialog";
 
 const geistSans = Geist({
    variable: "--font-geist-sans",
@@ -48,6 +49,7 @@ const RootLayout = ({
                   <main className="mx-auto max-w-7xl px-4 py-6">
                      {children}
                   </main>
+                  <RefreshDialog />
                </TRPCReactProvider>
             </ThemeProvider>
          </body>

@@ -77,6 +77,7 @@ PLEX_TOKEN=your-plex-token
 TAUTULLI_URL=https://tautulli.yourdomain.com
 TAUTULLI_API_KEY=your-tautulli-api-key
 TAUTULLI_USER_ID=           # optional, leave empty for all users
+REFRESH_SECRET=some-secret  # protects the cache refresh endpoint
 ```
 
 ### 3. Run locally
@@ -97,6 +98,7 @@ docker run -p 3000:3000 \
   -e PLEX_TOKEN=your-plex-token \
   -e TAUTULLI_URL=https://tautulli.yourdomain.com \
   -e TAUTULLI_API_KEY=your-tautulli-api-key \
+  -e REFRESH_SECRET=some-secret \
   plexo
 ```
 
@@ -117,7 +119,14 @@ Plexo uses an in-memory cache with tiered TTLs to minimize API calls:
 | Analytics | 15 min | Genre distribution, watch patterns, trends |
 | Activity | 5 min | On-deck, watch history, home stats |
 
-Hit the **Refresh** button in the navbar to clear all caches and pull fresh data.
+Press <kbd>Mod+L</kbd> in the UI to open the refresh dialog — enter your `REFRESH_SECRET` to clear all caches.
+
+You can also call it directly:
+
+```bash
+curl -X POST https://plexo.yourdomain.com/api/refresh \
+  -H "Authorization: Bearer your-refresh-secret"
+```
 
 ## Tech Stack
 

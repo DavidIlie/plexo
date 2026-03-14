@@ -2,11 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Film, Tv, BarChart3, RefreshCw } from "lucide-react";
-import { useState } from "react";
+import { LayoutDashboard, Film, Tv, BarChart3 } from "lucide-react";
 
 import { cn } from "~/lib/utils";
-import { Button } from "~/components/ui/button";
 
 const navItems = [
    { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -17,17 +15,6 @@ const navItems = [
 
 export const Navbar = () => {
    const pathname = usePathname();
-   const [refreshing, setRefreshing] = useState(false);
-
-   const handleRefresh = async () => {
-      setRefreshing(true);
-      try {
-         await fetch("/api/refresh", { method: "POST" });
-         window.location.reload();
-      } finally {
-         setRefreshing(false);
-      }
-   };
 
    return (
       <nav className="border-b border-border bg-card">
@@ -61,18 +48,9 @@ export const Navbar = () => {
                   );
                })}
             </div>
-            <Button
-               variant="ghost"
-               size="sm"
-               onClick={handleRefresh}
-               disabled={refreshing}
-               className="text-muted-foreground"
-            >
-               <RefreshCw
-                  className={cn("h-4 w-4", refreshing && "animate-spin")}
-               />
-               <span className="ml-1 hidden sm:inline">Refresh</span>
-            </Button>
+            <span className="text-xs text-muted-foreground/50 hidden sm:inline">
+               <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-xs">Mod+L</kbd> refresh
+            </span>
          </div>
       </nav>
    );

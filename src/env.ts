@@ -8,6 +8,7 @@ export const env = createEnv({
       TAUTULLI_URL: z.string().url(),
       TAUTULLI_API_KEY: z.string(),
       TAUTULLI_USER_ID: z.string().optional(),
+      REFRESH_SECRET: z.string(),
       NODE_ENV: z
          .enum(["development", "test", "production"])
          .default("development"),
