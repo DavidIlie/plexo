@@ -26,12 +26,37 @@ export const env = createEnv({
          .enum(["true", "false"])
          .default("false")
          .transform((v) => v === "true"),
+      RECOMMEND_ENABLED: z
+         .enum(["true", "false"])
+         .default("false")
+         .transform((v) => v === "true"),
+      TMDB_API_KEY: z.string().optional(),
+      TURNSTILE_SECRET_KEY: z.string().optional(),
+      RESEND_API_KEY: z.string().optional(),
+      RECOMMEND_EMAIL_TO: z.string().optional(),
+      SMTP_HOST: z.string().optional(),
+      SMTP_PORT: z.coerce.number().optional(),
+      SMTP_USER: z.string().optional(),
+      SMTP_PASS: z.string().optional(),
+      SMTP_FROM: z.string().optional(),
+      DISCORD_WEBHOOK_URL: z.string().url().optional(),
       NODE_ENV: z
          .enum(["development", "test", "production"])
          .default("development"),
    },
-   client: {},
+   client: {
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: z.string().optional(),
+      NEXT_PUBLIC_RECOMMEND_ENABLED: z
+         .enum(["true", "false"])
+         .default("false")
+         .transform((v) => v === "true"),
+   },
    skipValidation: !!process.env.SKIP_ENV_VALIDATION,
    emptyStringAsUndefined: true,
-   experimental__runtimeEnv: {},
+   experimental__runtimeEnv: {
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY:
+         process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
+      NEXT_PUBLIC_RECOMMEND_ENABLED:
+         process.env.NEXT_PUBLIC_RECOMMEND_ENABLED,
+   },
 });

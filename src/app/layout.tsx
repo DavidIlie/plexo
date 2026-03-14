@@ -10,6 +10,7 @@ import { Navbar } from "~/components/navbar";
 import { Footer } from "~/components/footer";
 import { RefreshDialog } from "~/components/refresh-dialog";
 import { SearchDialog } from "~/components/search-dialog";
+import { RecommendDialog } from "~/components/recommend-dialog";
 
 const geistSans = Geist({
    variable: "--font-geist-sans",
@@ -73,6 +74,7 @@ const RootLayout = ({
                      <Footer />
                      <SearchDialog />
                      <RefreshDialog />
+                     <RecommendDialog />
                   </TRPCReactProvider>
                </NuqsAdapter>
             </ThemeProvider>

@@ -7,26 +7,34 @@ const hits = (globalForRateLimit.__plexoRateLimit ??= new Map<
    { count: number; resetAt: number }
 >());
 
-const WINDOW_MS = 60 * 1000;
-const MAX_REQUESTS = 120;
+const DEFAULT_WINDOW_MS = 60 * 1000;
+const DEFAULT_MAX_REQUESTS = 120;
 
-export const checkRateLimit = (key: string): { allowed: boolean; remaining: number } => {
+export const checkRateLimit = (
+   key: string,
+   windowMs = DEFAULT_WINDOW_MS,
+   maxRequests = DEFAULT_MAX_REQUESTS,
+): { allowed: boolean; remaining: number } => {
    const now = Date.now();
    const entry = hits.get(key);
 
    if (!entry || now > entry.resetAt) {
-      hits.set(key, { count: 1, resetAt: now + WINDOW_MS });
-      return { allowed: true, remaining: MAX_REQUESTS - 1 };
+      hits.set(key, { count: 1, resetAt: now + windowMs });
+      return { allowed: true, remaining: maxRequests - 1 };
    }
 
    entry.count++;
-   const remaining = Math.max(0, MAX_REQUESTS - entry.count);
+   const remaining = Math.max(0, maxRequests - entry.count);
 
-   if (entry.count > MAX_REQUESTS) {
+   if (entry.count > maxRequests) {
       return { allowed: false, remaining: 0 };
    }
 
    return { allowed: true, remaining };
+};
+
+export const resetRateLimitKey = (key: string) => {
+   hits.delete(key);
 };
 
 export const getRateLimitStats = () => {
@@ -38,7 +46,7 @@ export const getRateLimitStats = () => {
          active.push({
             key: key.replace("trpc:", ""),
             count: entry.count,
-            remaining: Math.max(0, MAX_REQUESTS - entry.count),
+            remaining: Math.max(0, DEFAULT_MAX_REQUESTS - entry.count),
             resetsIn: Math.round((entry.resetAt - now) / 1000),
          });
       }

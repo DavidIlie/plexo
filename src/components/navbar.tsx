@@ -12,9 +12,11 @@ import {
    Sun,
    Moon,
    Search,
+   Heart,
 } from "lucide-react";
 
 import { cn } from "~/lib/utils";
+import { env } from "~/env";
 import { Button } from "~/components/ui/button";
 
 const navItems = [
@@ -32,6 +34,10 @@ export const Navbar = () => {
       window.dispatchEvent(
          new KeyboardEvent("keydown", { key: "k", metaKey: true }),
       );
+   };
+
+   const openRecommend = () => {
+      window.dispatchEvent(new CustomEvent("open-recommend-dialog"));
    };
 
    return (
@@ -77,6 +83,17 @@ export const Navbar = () => {
                </div>
             </div>
             <div className="flex items-center gap-1">
+               {env.NEXT_PUBLIC_RECOMMEND_ENABLED && (
+                  <Button
+                     variant="ghost"
+                     size="sm"
+                     className="h-8 gap-2 text-muted-foreground"
+                     onClick={openRecommend}
+                  >
+                     <Heart className="h-3.5 w-3.5" />
+                     <span className="hidden text-xs sm:inline">Recommend</span>
+                  </Button>
+               )}
                <Button
                   variant="ghost"
                   size="sm"

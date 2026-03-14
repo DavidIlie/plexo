@@ -24,6 +24,10 @@ const nextConfig: NextConfig = {
             protocol: "https",
             hostname: "plex.davidhome.ro",
          },
+         {
+            protocol: "https",
+            hostname: "image.tmdb.org",
+         },
       ],
    },
    serverExternalPackages: ["@takumi-rs/image-response"],
