@@ -5,6 +5,7 @@ import nodemailer from "nodemailer";
 import { env } from "~/env";
 
 interface RecommendationPayload {
+   tmdbId: number;
    title: string;
    mediaType: "movie" | "tv";
    year: string;
@@ -12,6 +13,9 @@ interface RecommendationPayload {
    senderName: string;
    message?: string;
 }
+
+const tmdbUrl = (payload: RecommendationPayload) =>
+   `https://www.themoviedb.org/${payload.mediaType}/${payload.tmdbId}`;
 
 const buildEmailHtml = (payload: RecommendationPayload): string => {
    const posterUrl = payload.posterPath
@@ -26,8 +30,8 @@ const buildEmailHtml = (payload: RecommendationPayload): string => {
   <div style="display: flex; gap: 16px; background: #262626; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
     ${posterUrl ? `<img src="${posterUrl}" alt="${payload.title}" style="width: 80px; height: 120px; object-fit: cover; border-radius: 6px;" />` : ""}
     <div>
-      <p style="margin: 0 0 4px; font-size: 16px; font-weight: 600; color: #f5f5f5;">${payload.title}</p>
-      <p style="margin: 0; font-size: 13px; color: #a3a3a3;">${typeLabel} · ${payload.year}</p>
+      <p style="margin: 0 0 4px; font-size: 16px; font-weight: 600; color: #f5f5f5;"><a href="${tmdbUrl(payload)}" style="color: #f5f5f5; text-decoration: none;">${payload.title}</a></p>
+      <p style="margin: 0; font-size: 13px; color: #a3a3a3;"><a href="${tmdbUrl(payload)}" style="color: #a3a3a3;">${typeLabel} · ${payload.year}</a></p>
     </div>
   </div>
   ${payload.message ? `<div style="background: #262626; padding: 12px 16px; border-radius: 8px; border-left: 3px solid #f59e0b;"><p style="margin: 0; font-size: 14px; color: #d4d4d4;">"${payload.message}"</p></div>` : ""}
@@ -83,6 +87,7 @@ const sendViaDiscord = async (payload: RecommendationPayload) => {
          embeds: [
             {
                title: `${payload.title} (${payload.year})`,
+               url: tmdbUrl(payload),
                description: payload.message
                   ? `**${payload.senderName}** says: "${payload.message}"`
                   : `**${payload.senderName}** recommends this ${typeLabel.toLowerCase()}`,
@@ -99,6 +104,7 @@ export const sendTestNotification = async (
    channel: "discord" | "email",
 ): Promise<void> => {
    const testPayload: RecommendationPayload = {
+      tmdbId: 550,
       title: "Test Movie",
       mediaType: "movie",
       year: "2024",

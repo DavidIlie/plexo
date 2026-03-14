@@ -125,6 +125,7 @@ export const recommendRouter = createTRPCRouter({
          }
 
          await sendRecommendation({
+            tmdbId: input.tmdbId,
             title: input.title,
             mediaType: input.mediaType,
             year: input.year,

@@ -256,7 +256,7 @@ export const RecommendDialog = () => {
             )}
 
             {phase === "form" && selected && (
-               <div className="space-y-4 p-4 pt-2">
+               <div className="max-h-[70vh] space-y-4 overflow-y-auto p-4 pt-2">
                   <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
                      {selected.poster_path ? (
                         <Image
