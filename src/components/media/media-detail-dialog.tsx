@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import { useTRPC } from "~/trpc/react";
+import { formatDuration } from "date-fns";
 import {
    Dialog,
    DialogContent,
@@ -251,6 +252,71 @@ const SeasonBreakdown: React.FC<{ ratingKey: string }> = ({ ratingKey }) => {
    );
 };
 
+const WatchHistorySection: React.FC<{ ratingKey: string }> = ({
+   ratingKey,
+}) => {
+   const trpc = useTRPC();
+   const { data } = useQuery({
+      ...trpc.tautulli.getItemHistory.queryOptions({ ratingKey }),
+   });
+
+   const plays = data?.data ?? [];
+
+   if (plays.length === 0) return null;
+
+   const fmtDur = (secs: number) => {
+      const mins = Math.round(secs / 60);
+      if (mins < 60) return `${mins}m`;
+      return `${Math.floor(mins / 60)}h ${mins % 60}m`;
+   };
+
+   return (
+      <>
+         <Separator />
+         <div>
+            <p className="mb-2 text-xs font-medium text-muted-foreground">
+               Watch History
+            </p>
+            <div className="space-y-1">
+               {plays.slice(0, 10).map((play) => (
+                  <div
+                     key={play.row_id}
+                     className="flex items-center justify-between rounded-md bg-muted/20 px-2.5 py-1.5 text-xs"
+                  >
+                     <div className="min-w-0 flex-1">
+                        <p className="truncate">
+                           {play.full_title}
+                        </p>
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                           <span>
+                              {formatDistanceToNow(
+                                 new Date(play.stopped * 1000),
+                                 { addSuffix: true },
+                              )}
+                           </span>
+                           {play.play_duration > 0 && (
+                              <>
+                                 <span className="text-border">·</span>
+                                 <span>{fmtDur(play.play_duration)}</span>
+                              </>
+                           )}
+                        </div>
+                     </div>
+                     <div className="flex shrink-0 items-center gap-2 pl-2 text-muted-foreground">
+                        {play.platform && <span>{play.platform}</span>}
+                        {play.player &&
+                           play.player !== play.platform && (
+                              <span>{play.player}</span>
+                           )}
+                     </div>
+                  </div>
+               ))}
+            </div>
+         </div>
+      </>
+   );
+};
+
 export const MediaDetailDialog: React.FC<MediaDetailDialogProps> = ({
    item,
    open,
@@ -469,6 +535,8 @@ export const MediaDetailDialog: React.FC<MediaDetailDialogProps> = ({
                      </div>
                   </>
                )}
+
+               <WatchHistorySection ratingKey={detail.ratingKey} />
 
                {detail.type === "show" && (
                   <>

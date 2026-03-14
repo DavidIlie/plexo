@@ -425,30 +425,46 @@ export const analyticsRouter = createTRPCRouter({
          "analytics:locationStats",
          async () => {
             const history = await getHistory(500);
-            const uniqueIps = new Set<string>();
+            const ipCounts = new Map<string, number>();
 
             for (const item of history.data) {
                if (item.ip_address && item.ip_address !== "127.0.0.1") {
-                  uniqueIps.add(item.ip_address);
+                  ipCounts.set(
+                     item.ip_address,
+                     (ipCounts.get(item.ip_address) ?? 0) + 1,
+                  );
                }
             }
 
-            const locations = new Map<string, number>();
+            const topIps = Array.from(ipCounts.entries())
+               .sort((a, b) => b[1] - a[1])
+               .slice(0, 10);
 
-            for (const ip of uniqueIps) {
-               try {
+            const results = await Promise.allSettled(
+               topIps.map(async ([ip, count]) => {
                   const geo = await getGeoipLookup(ip);
-                  if (geo.city && geo.country) {
-                     const key = `${geo.city}, ${geo.country}`;
-                     locations.set(key, (locations.get(key) ?? 0) + 1);
-                  }
-               } catch {
-                  // skip failed lookups
+                  return {
+                     location:
+                        geo.city && geo.country
+                           ? `${geo.city}, ${geo.country}`
+                           : geo.country || "Unknown",
+                     plays: count,
+                  };
+               }),
+            );
+
+            const locationMap = new Map<string, number>();
+            for (const r of results) {
+               if (r.status === "fulfilled") {
+                  locationMap.set(
+                     r.value.location,
+                     (locationMap.get(r.value.location) ?? 0) + r.value.plays,
+                  );
                }
             }
 
-            return Array.from(locations.entries())
-               .map(([location, count]) => ({ location, count }))
+            return Array.from(locationMap.entries())
+               .map(([location, plays]) => ({ location, count: plays }))
                .sort((a, b) => b.count - a.count);
          },
          CacheTTL.ANALYTICS,

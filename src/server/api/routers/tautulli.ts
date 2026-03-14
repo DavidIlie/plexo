@@ -128,4 +128,25 @@ export const tautulliRouter = createTRPCRouter({
             lastUpdatedAt: result.fetchedAt.toISOString(),
          };
       }),
+
+   getItemHistory: publicProcedure
+      .input(z.object({ ratingKey: z.string() }))
+      .query(async ({ input }) => {
+         const result = await getCachedOrFetch(
+            `tautulli:itemHistory:${input.ratingKey}`,
+            async () => {
+               const history = await getHistory(200);
+               return history.data.filter(
+                  (item) =>
+                     String(item.rating_key) === input.ratingKey ||
+                     String(item.grandparent_rating_key) === input.ratingKey,
+               );
+            },
+            CacheTTL.ACTIVITY,
+         );
+         return {
+            data: result.data,
+            lastUpdatedAt: result.fetchedAt.toISOString(),
+         };
+      }),
 });
