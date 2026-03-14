@@ -83,6 +83,11 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                   item.childCount !== undefined && item.type === "artist"
                      ? `${item.childCount} albums`
                      : null,
+                  item.Media?.[0]?.videoResolution
+                     ? item.Media[0].videoResolution === "4k"
+                        ? "4K"
+                        : `${item.Media[0].videoResolution}p`
+                     : null,
                   item.Genre?.[0]?.tag,
                ]
                   .filter(Boolean)

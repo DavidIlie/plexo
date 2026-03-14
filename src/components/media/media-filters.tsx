@@ -19,6 +19,9 @@ interface MediaFiltersProps {
    statusFilter?: string;
    onStatusFilterChange?: (value: string) => void;
    statusOptions?: Array<{ value: string; label: string }>;
+   qualityFilter?: string;
+   onQualityFilterChange?: (value: string) => void;
+   qualityOptions?: Array<{ value: string; label: string }>;
 }
 
 export const MediaFilters: React.FC<MediaFiltersProps> = ({
@@ -30,6 +33,9 @@ export const MediaFilters: React.FC<MediaFiltersProps> = ({
    statusFilter,
    onStatusFilterChange,
    statusOptions,
+   qualityFilter,
+   onQualityFilterChange,
+   qualityOptions,
 }) => {
    return (
       <div className="flex flex-col gap-3 sm:flex-row">
@@ -65,6 +71,23 @@ export const MediaFilters: React.FC<MediaFiltersProps> = ({
                </SelectTrigger>
                <SelectContent>
                   {statusOptions.map((opt) => (
+                     <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                     </SelectItem>
+                  ))}
+               </SelectContent>
+            </Select>
+         )}
+         {qualityOptions && onQualityFilterChange && (
+            <Select
+               value={qualityFilter ?? "all"}
+               onValueChange={onQualityFilterChange}
+            >
+               <SelectTrigger className="w-full sm:w-[140px]">
+                  <SelectValue />
+               </SelectTrigger>
+               <SelectContent>
+                  {qualityOptions.map((opt) => (
                      <SelectItem key={opt.value} value={opt.value}>
                         {opt.label}
                      </SelectItem>

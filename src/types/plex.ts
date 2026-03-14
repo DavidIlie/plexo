@@ -35,6 +35,10 @@ export interface PlexMedia {
    id: number;
    duration?: number;
    bitrate?: number;
+   width?: number;
+   height?: number;
+   videoResolution?: string;
+   videoCodec?: string;
    audioChannels?: number;
    audioCodec?: string;
    container?: string;

@@ -125,6 +125,11 @@ const EpisodeGrid: React.FC<{ seasonKey: string; seasonTitle: string }> = ({
                   );
                }
 
+               const media = ep?.Media?.[0];
+               const videoRes = media?.videoResolution;
+               const videoCodec = media?.videoCodec;
+               const audioCodec = media?.audioCodec;
+
                return (
                   <div
                      key={epNum}
@@ -147,6 +152,17 @@ const EpisodeGrid: React.FC<{ seasonKey: string; seasonTitle: string }> = ({
                         {ep?.title ?? `Episode ${epNum}`}
                      </span>
                      <div className="flex shrink-0 items-center gap-2 text-muted-foreground">
+                        {videoRes && (
+                           <Badge variant="secondary" className="px-1 py-0 text-[9px]">
+                              {videoRes === "4k" ? "4K" : `${videoRes}p`}
+                           </Badge>
+                        )}
+                        {videoCodec && (
+                           <span className="text-[10px]">{videoCodec.toUpperCase()}</span>
+                        )}
+                        {audioCodec && (
+                           <span className="text-[10px]">{audioCodec.toUpperCase()}</span>
+                        )}
                         {duration && (
                            <span className="tabular-nums">{duration}m</span>
                         )}

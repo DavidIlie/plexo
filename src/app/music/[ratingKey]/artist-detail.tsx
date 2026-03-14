@@ -322,6 +322,42 @@ const AlbumTracks = ({ albumKey }: { albumKey: string }) => {
    );
 };
 
+const AlbumFormatPreview = ({ albumKey }: { albumKey: string }) => {
+   const trpc = useTRPC();
+   const { data } = useQuery(
+      trpc.plex.getChildren.queryOptions({ ratingKey: albumKey }),
+   );
+   const tracks = data?.data ?? [];
+   if (tracks.length === 0) return null;
+
+   const codecs = new Set<string>();
+   let totalSize = 0;
+   for (const track of tracks) {
+      const media = track.Media?.[0];
+      const stream = media?.Part?.[0]?.Stream?.find((s) => s.streamType === 2);
+      const codec = (media?.audioCodec ?? stream?.codec)?.toUpperCase();
+      if (codec) codecs.add(codec);
+      if (media?.Part?.[0]?.size) totalSize += media.Part[0].size;
+   }
+   if (codecs.size === 0) return null;
+
+   return (
+      <div className="flex items-center gap-1">
+         {Array.from(codecs).map((c) => (
+            <span key={c} className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+               {c}
+            </span>
+         ))}
+         {totalSize > 0 && (
+            <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+               <HardDrive className="h-2.5 w-2.5" />
+               {formatFileSize(totalSize)}
+            </span>
+         )}
+      </div>
+   );
+};
+
 const AlbumCard = ({ album }: { album: PlexMediaItem }) => {
    const [expanded, setExpanded] = useState(false);
 
@@ -345,6 +381,7 @@ const AlbumCard = ({ album }: { album: PlexMediaItem }) => {
                      .filter(Boolean)
                      .join(" · ")}
                </p>
+               <AlbumFormatPreview albumKey={album.ratingKey} />
             </div>
             {(album.viewCount ?? 0) > 0 && (
                <span className="flex items-center gap-1 text-xs text-muted-foreground">
