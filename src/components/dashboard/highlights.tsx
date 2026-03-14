@@ -6,7 +6,6 @@ import { motion } from "framer-motion";
 import {
    Trophy,
    Repeat,
-   Clapperboard,
    Calendar,
    Play,
    TrendingUp,
@@ -110,21 +109,6 @@ export const Highlights = () => {
                         h.mostRewatched!.ratingKey,
                         h.mostRewatched!.title,
                         h.mostRewatched!.type,
-                     )
-                  }
-               />
-            )}
-            {h.longestMovie && (
-               <Highlight
-                  icon={Clapperboard}
-                  label="Longest Movie"
-                  value={h.longestMovie.title}
-                  detail={`${Math.floor(h.longestMovie.duration / 60)}h ${h.longestMovie.duration % 60}m`}
-                  onClick={() =>
-                     openItem(
-                        h.longestMovie!.ratingKey,
-                        h.longestMovie!.title,
-                        "movie",
                      )
                   }
                />
