@@ -1,37 +1,16 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import {
-   BarChart,
-   Bar,
-   XAxis,
-   YAxis,
-   ResponsiveContainer,
-   Tooltip,
-} from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 
 import { useTRPC } from "~/trpc/react";
-import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
-import { Skeleton } from "~/components/ui/skeleton";
+import { ChartWrapper, CHART_TOOLTIP_STYLE } from "~/components/analytics/chart-wrapper";
 
 export const WatchTimeByHourChart = () => {
    const trpc = useTRPC();
    const { data, isLoading } = useQuery(
       trpc.analytics.getWatchTimeByHour.queryOptions(),
    );
-
-   if (isLoading) {
-      return (
-         <Card>
-            <CardHeader>
-               <CardTitle>Favorite Viewing Times</CardTitle>
-            </CardHeader>
-            <CardContent>
-               <Skeleton className="h-[300px] w-full" />
-            </CardContent>
-         </Card>
-      );
-   }
 
    const rawData = data?.data;
    const chartData =
@@ -44,35 +23,21 @@ export const WatchTimeByHourChart = () => {
       })) ?? [];
 
    return (
-      <Card>
-         <CardHeader>
-            <CardTitle>Favorite Viewing Times</CardTitle>
-         </CardHeader>
-         <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-               <BarChart data={chartData}>
-                  <XAxis
-                     dataKey="hour"
-                     stroke="var(--muted-foreground)"
-                     tick={{ fontSize: 10 }}
-                  />
-                  <YAxis stroke="var(--muted-foreground)" />
-                  <Tooltip
-                     contentStyle={{
-                        backgroundColor: "var(--card)",
-                        border: "1px solid var(--border)",
-                        borderRadius: "var(--radius)",
-                        color: "var(--foreground)",
-                     }}
-                  />
-                  <Bar
-                     dataKey="plays"
-                     fill="var(--chart-3)"
-                     radius={[4, 4, 0, 0]}
-                  />
-               </BarChart>
-            </ResponsiveContainer>
-         </CardContent>
-      </Card>
+      <ChartWrapper title="Favorite Viewing Times" isLoading={isLoading}>
+         <BarChart data={chartData}>
+            <XAxis
+               dataKey="hour"
+               stroke="var(--muted-foreground)"
+               tick={{ fontSize: 10 }}
+            />
+            <YAxis stroke="var(--muted-foreground)" />
+            <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
+            <Bar
+               dataKey="plays"
+               fill="var(--chart-3)"
+               radius={[4, 4, 0, 0]}
+            />
+         </BarChart>
+      </ChartWrapper>
    );
 };

@@ -1,8 +1,21 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
-import { Eye, Star, Clock, Calendar, Tv, Check, X } from "lucide-react";
+import {
+   Eye,
+   Star,
+   Clock,
+   Calendar,
+   Tv,
+   Check,
+   X,
+   ChevronDown,
+   ChevronUp,
+   HardDrive,
+   AlertTriangle,
+} from "lucide-react";
 
 import { useTRPC } from "~/trpc/react";
 import {
@@ -23,6 +36,90 @@ interface MediaDetailDialogProps {
    onOpenChange: (open: boolean) => void;
 }
 
+const EpisodeGrid: React.FC<{ seasonKey: string; seasonTitle: string }> = ({
+   seasonKey,
+   seasonTitle,
+}) => {
+   const trpc = useTRPC();
+   const [expanded, setExpanded] = useState(false);
+   const { data: episodesData } = useQuery({
+      ...trpc.plex.getChildren.queryOptions({ ratingKey: seasonKey }),
+      enabled: expanded,
+   });
+
+   const episodes = episodesData?.data ?? [];
+
+   if (!expanded) {
+      return (
+         <button
+            onClick={() => setExpanded(true)}
+            className="flex w-full items-center justify-between rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted/30 hover:text-foreground"
+         >
+            <span>Show episodes</span>
+            <ChevronDown className="h-3 w-3" />
+         </button>
+      );
+   }
+
+   if (episodes.length === 0) return null;
+
+   const episodeNumbers = episodes.map((e) => e.index ?? 0);
+   const maxEp = Math.max(...episodeNumbers);
+   const haveSet = new Set(episodeNumbers);
+   const missing: number[] = [];
+   for (let i = 1; i <= maxEp; i++) {
+      if (!haveSet.has(i)) missing.push(i);
+   }
+
+   return (
+      <div className="space-y-2">
+         <button
+            onClick={() => setExpanded(false)}
+            className="flex w-full items-center justify-between rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted/30 hover:text-foreground"
+         >
+            <span>Hide episodes</span>
+            <ChevronUp className="h-3 w-3" />
+         </button>
+
+         {missing.length > 0 && (
+            <div className="flex items-start gap-1.5 rounded-md bg-yellow-500/10 px-2.5 py-1.5 text-xs text-yellow-500">
+               <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+               <span>
+                  Missing episode{missing.length > 1 ? "s" : ""}: {missing.join(", ")}
+               </span>
+            </div>
+         )}
+
+         <div className="flex flex-wrap gap-1">
+            {Array.from({ length: maxEp }, (_, i) => i + 1).map((epNum) => {
+               const have = haveSet.has(epNum);
+               const ep = episodes.find((e) => e.index === epNum);
+               const watched = have && (ep?.viewCount ?? 0) > 0;
+
+               return (
+                  <div
+                     key={epNum}
+                     title={
+                        have
+                           ? `E${epNum}: ${ep?.title ?? ""}${watched ? " (watched)" : ""}`
+                           : `E${epNum}: Missing`
+                     }
+                     className={cn(
+                        "flex h-7 w-7 items-center justify-center rounded text-xs tabular-nums",
+                        !have && "border border-dashed border-muted-foreground/30 text-muted-foreground/40",
+                        have && !watched && "bg-muted text-foreground",
+                        have && watched && "bg-chart-1/20 text-chart-1",
+                     )}
+                  >
+                     {epNum}
+                  </div>
+               );
+            })}
+         </div>
+      </div>
+   );
+};
+
 const SeasonBreakdown: React.FC<{ ratingKey: string }> = ({ ratingKey }) => {
    const trpc = useTRPC();
    const { data: seasonsData } = useQuery({
@@ -33,46 +130,79 @@ const SeasonBreakdown: React.FC<{ ratingKey: string }> = ({ ratingKey }) => {
 
    if (seasons.length === 0) return null;
 
-   return (
-      <div className="space-y-2">
-         <p className="text-xs font-medium text-muted-foreground">Seasons</p>
-         <div className="space-y-1.5">
-            {seasons
-               .filter((s) => s.index !== undefined && s.index > 0)
-               .map((season) => {
-                  const watched = season.viewedLeafCount ?? 0;
-                  const total = season.leafCount ?? 0;
-                  const pct = total > 0 ? Math.round((watched / total) * 100) : 0;
+   const realSeasons = seasons.filter(
+      (s) => s.index !== undefined && s.index > 0,
+   );
 
-                  return (
-                     <div key={season.ratingKey} className="rounded-md bg-muted/30 px-3 py-2">
-                        <div className="flex items-center justify-between">
-                           <span className="text-sm">{season.title}</span>
-                           <div className="flex items-center gap-1.5">
-                              {pct === 100 ? (
-                                 <Check className="h-3 w-3 text-green-500" />
-                              ) : pct === 0 ? (
-                                 <X className="h-3 w-3 text-muted-foreground" />
-                              ) : null}
-                              <span className="tabular-nums text-xs text-muted-foreground">
-                                 {watched}/{total}
-                              </span>
-                           </div>
+   return (
+      <div className="space-y-3">
+         <div className="flex items-center justify-between">
+            <p className="text-xs font-medium text-muted-foreground">Seasons</p>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+               <HardDrive className="h-3 w-3" />
+               <span>
+                  {realSeasons.reduce((sum, s) => sum + (s.leafCount ?? 0), 0)} episodes on disk
+               </span>
+            </div>
+         </div>
+         <div className="space-y-2">
+            {realSeasons.map((season) => {
+               const watched = season.viewedLeafCount ?? 0;
+               const total = season.leafCount ?? 0;
+               const watchPct =
+                  total > 0 ? Math.round((watched / total) * 100) : 0;
+
+               return (
+                  <div
+                     key={season.ratingKey}
+                     className="rounded-lg border border-border/50 bg-muted/20 p-3"
+                  >
+                     <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                           <span className="text-sm font-medium">
+                              {season.title}
+                           </span>
+                           {watchPct === 100 && (
+                              <Check className="h-3.5 w-3.5 text-green-500" />
+                           )}
                         </div>
-                        {total > 0 && (
-                           <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-muted">
-                              <div
-                                 className={cn(
-                                    "h-full rounded-full transition-all",
-                                    pct === 100 ? "bg-green-500" : "bg-chart-1",
-                                 )}
-                                 style={{ width: `${pct}%` }}
-                              />
-                           </div>
-                        )}
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                           <span className="flex items-center gap-1">
+                              <HardDrive className="h-3 w-3" />
+                              {total} ep
+                           </span>
+                           <span className="flex items-center gap-1">
+                              <Eye className="h-3 w-3" />
+                              {watched}/{total}
+                           </span>
+                        </div>
                      </div>
-                  );
-               })}
+
+                     {total > 0 && (
+                        <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-muted">
+                           <div
+                              className={cn(
+                                 "h-full rounded-full transition-all",
+                                 watchPct === 100
+                                    ? "bg-green-500"
+                                    : watchPct > 0
+                                      ? "bg-chart-1"
+                                      : "bg-transparent",
+                              )}
+                              style={{ width: `${watchPct}%` }}
+                           />
+                        </div>
+                     )}
+
+                     <div className="mt-2">
+                        <EpisodeGrid
+                           seasonKey={season.ratingKey}
+                           seasonTitle={season.title}
+                        />
+                     </div>
+                  </div>
+               );
+            })}
          </div>
       </div>
    );
@@ -107,11 +237,15 @@ export const MediaDetailDialog: React.FC<MediaDetailDialogProps> = ({
       : null;
 
    const lastViewed = detail.lastViewedAt
-      ? formatDistanceToNow(new Date(detail.lastViewedAt * 1000), { addSuffix: true })
+      ? formatDistanceToNow(new Date(detail.lastViewedAt * 1000), {
+           addSuffix: true,
+        })
       : null;
 
    const addedAt = detail.addedAt
-      ? formatDistanceToNow(new Date(detail.addedAt * 1000), { addSuffix: true })
+      ? formatDistanceToNow(new Date(detail.addedAt * 1000), {
+           addSuffix: true,
+        })
       : null;
 
    return (
@@ -135,10 +269,14 @@ export const MediaDetailDialog: React.FC<MediaDetailDialogProps> = ({
                   <DialogTitle className="text-lg">{detail.title}</DialogTitle>
                   <div className="flex flex-wrap items-center gap-1.5 pt-1">
                      {detail.year && (
-                        <Badge variant="secondary" className="text-xs">{detail.year}</Badge>
+                        <Badge variant="secondary" className="text-xs">
+                           {detail.year}
+                        </Badge>
                      )}
                      {detail.contentRating && (
-                        <Badge variant="secondary" className="text-xs">{detail.contentRating}</Badge>
+                        <Badge variant="secondary" className="text-xs">
+                           {detail.contentRating}
+                        </Badge>
                      )}
                      {isWatched && (
                         <Badge variant="secondary" className="text-xs">
@@ -160,7 +298,11 @@ export const MediaDetailDialog: React.FC<MediaDetailDialogProps> = ({
                {detail.Genre && detail.Genre.length > 0 && (
                   <div className="flex flex-wrap gap-1">
                      {detail.Genre.map((g) => (
-                        <Badge key={g.tag} variant="outline" className="text-xs font-normal">
+                        <Badge
+                           key={g.tag}
+                           variant="outline"
+                           className="text-xs font-normal"
+                        >
                            {g.tag}
                         </Badge>
                      ))}
@@ -176,7 +318,9 @@ export const MediaDetailDialog: React.FC<MediaDetailDialogProps> = ({
                <div className="grid grid-cols-2 gap-x-6 gap-y-3">
                   {detail.rating && (
                      <div>
-                        <p className="text-xs text-muted-foreground">Critic Rating</p>
+                        <p className="text-xs text-muted-foreground">
+                           Critic Rating
+                        </p>
                         <p className="flex items-center gap-1 text-sm font-medium">
                            <Star className="h-3.5 w-3.5 text-yellow-500" />
                            {detail.rating}
@@ -185,7 +329,9 @@ export const MediaDetailDialog: React.FC<MediaDetailDialogProps> = ({
                   )}
                   {detail.audienceRating && (
                      <div>
-                        <p className="text-xs text-muted-foreground">Audience</p>
+                        <p className="text-xs text-muted-foreground">
+                           Audience
+                        </p>
                         <p className="flex items-center gap-1 text-sm font-medium">
                            <Star className="h-3.5 w-3.5 text-yellow-500" />
                            {detail.audienceRating}
@@ -195,18 +341,24 @@ export const MediaDetailDialog: React.FC<MediaDetailDialogProps> = ({
                   {(detail.viewCount ?? 0) > 0 && (
                      <div>
                         <p className="text-xs text-muted-foreground">Plays</p>
-                        <p className="text-sm font-medium">{detail.viewCount}</p>
+                        <p className="text-sm font-medium">
+                           {detail.viewCount}
+                        </p>
                      </div>
                   )}
                   {lastViewed && (
                      <div>
-                        <p className="text-xs text-muted-foreground">Last Watched</p>
+                        <p className="text-xs text-muted-foreground">
+                           Last Watched
+                        </p>
                         <p className="text-sm font-medium">{lastViewed}</p>
                      </div>
                   )}
                   {addedAt && (
                      <div>
-                        <p className="text-xs text-muted-foreground">Added to Library</p>
+                        <p className="text-xs text-muted-foreground">
+                           Added to Library
+                        </p>
                         <p className="flex items-center gap-1 text-sm font-medium">
                            <Calendar className="h-3.5 w-3.5" />
                            {addedAt}
@@ -219,27 +371,38 @@ export const MediaDetailDialog: React.FC<MediaDetailDialogProps> = ({
                         <p className="text-sm font-medium">{detail.studio}</p>
                      </div>
                   )}
-                  {detail.type === "show" && detail.childCount !== undefined && (
-                     <div>
-                        <p className="text-xs text-muted-foreground">Seasons</p>
-                        <p className="flex items-center gap-1 text-sm font-medium">
-                           <Tv className="h-3.5 w-3.5" />
-                           {detail.childCount}
-                        </p>
-                     </div>
-                  )}
-                  {detail.type === "show" && detail.leafCount !== undefined && (
-                     <div>
-                        <p className="text-xs text-muted-foreground">Total Episodes</p>
-                        <p className="text-sm font-medium">{detail.leafCount}</p>
-                     </div>
-                  )}
+                  {detail.type === "show" &&
+                     detail.childCount !== undefined && (
+                        <div>
+                           <p className="text-xs text-muted-foreground">
+                              Seasons
+                           </p>
+                           <p className="flex items-center gap-1 text-sm font-medium">
+                              <Tv className="h-3.5 w-3.5" />
+                              {detail.childCount}
+                           </p>
+                        </div>
+                     )}
+                  {detail.type === "show" &&
+                     detail.leafCount !== undefined && (
+                        <div>
+                           <p className="text-xs text-muted-foreground">
+                              Episodes on Disk
+                           </p>
+                           <p className="flex items-center gap-1 text-sm font-medium">
+                              <HardDrive className="h-3.5 w-3.5" />
+                              {detail.leafCount}
+                           </p>
+                        </div>
+                     )}
                </div>
 
                {detail.Director && detail.Director.length > 0 && (
                   <div>
                      <p className="text-xs text-muted-foreground">Director</p>
-                     <p className="text-sm">{detail.Director.map((d) => d.tag).join(", ")}</p>
+                     <p className="text-sm">
+                        {detail.Director.map((d) => d.tag).join(", ")}
+                     </p>
                   </div>
                )}
 
@@ -247,7 +410,9 @@ export const MediaDetailDialog: React.FC<MediaDetailDialogProps> = ({
                   <>
                      <Separator />
                      <div>
-                        <p className="mb-2 text-xs font-medium text-muted-foreground">Cast</p>
+                        <p className="mb-2 text-xs font-medium text-muted-foreground">
+                           Cast
+                        </p>
                         <div className="flex flex-wrap gap-2">
                            {detail.Role.slice(0, 8).map((actor) => (
                               <div
