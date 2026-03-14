@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { Film, Tv, Eye, Clock, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import type { Metadata } from "next";
 
@@ -41,13 +41,14 @@ const DashboardStats = async () => {
             {data.displayName}&apos;s Library
          </h1>
          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <StatCard icon={Film} label="Movies" value={data.totalMovies} />
-            <StatCard icon={Tv} label="Shows" value={data.totalShows} />
-            <StatCard icon={Eye} label="Watched" value={data.watchedItems} />
+            <StatCard icon="Film" label="Movies" value={data.totalMovies} index={0} />
+            <StatCard icon="Tv" label="Shows" value={data.totalShows} index={1} />
+            <StatCard icon="Eye" label="Watched" value={data.watchedItems} index={2} />
             <StatCard
-               icon={Clock}
+               icon="Clock"
                label="Hours Watched"
                value={data.hoursWatched.toLocaleString()}
+               index={3}
             />
          </div>
       </div>

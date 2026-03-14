@@ -1,6 +1,7 @@
 "use client";
 
 import type { CSSProperties, ReactNode } from "react";
+import { motion } from "framer-motion";
 import { ResponsiveContainer } from "recharts";
 
 import { Skeleton } from "~/components/ui/skeleton";
@@ -30,7 +31,7 @@ export const ChartWrapper = ({
 }: ChartWrapperProps) => {
    if (isLoading) {
       return (
-         <div className="rounded-lg border border-border/50 p-4">
+         <div className="rounded-lg border border-border/50 bg-card/50 p-4">
             <p className="mb-1 text-sm font-medium">{title}</p>
             {description && (
                <p className="mb-3 text-xs text-muted-foreground">
@@ -43,7 +44,12 @@ export const ChartWrapper = ({
    }
 
    return (
-      <div className="rounded-lg border border-border/50 p-4">
+      <motion.div
+         initial={{ opacity: 0, y: 10 }}
+         animate={{ opacity: 1, y: 0 }}
+         transition={{ duration: 0.35 }}
+         className="rounded-lg border border-border/50 bg-card/50 p-4"
+      >
          <p className="mb-1 text-sm font-medium">{title}</p>
          {description && (
             <p className="mb-3 text-xs text-muted-foreground">{description}</p>
@@ -51,6 +57,6 @@ export const ChartWrapper = ({
          <ResponsiveContainer width="100%" height={height}>
             {children}
          </ResponsiveContainer>
-      </div>
+      </motion.div>
    );
 };

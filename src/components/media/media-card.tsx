@@ -42,7 +42,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                width={300}
                height={450}
                className={cn(
-                  "h-full w-full object-cover",
+                  "h-full w-full object-cover transition-transform duration-300 group-hover:scale-105",
                   isWatched && "opacity-50",
                )}
             />
@@ -56,7 +56,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
             {isPartial && (
                <div className="absolute bottom-0 left-0 right-0 h-1 bg-muted">
                   <div
-                     className="h-full bg-chart-1"
+                     className="h-full bg-primary"
                      style={{
                         width: `${Math.round(((item.viewedLeafCount ?? 0) / (item.leafCount ?? 1)) * 100)}%`,
                      }}
@@ -65,7 +65,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
             )}
             {!isWatched && !isPartial && (
                <div className="absolute left-1.5 top-1.5">
-                  <div className="h-1.5 w-1.5 rounded-full bg-chart-1" />
+                  <div className="h-1.5 w-1.5 rounded-full bg-primary" />
                </div>
             )}
          </div>

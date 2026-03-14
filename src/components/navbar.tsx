@@ -46,7 +46,7 @@ export const Navbar = () => {
                      height={22}
                      className="rounded"
                   />
-                  <span className="text-base font-semibold tracking-tight">
+                  <span className="text-base font-semibold tracking-tight text-primary">
                      plexo
                   </span>
                </Link>

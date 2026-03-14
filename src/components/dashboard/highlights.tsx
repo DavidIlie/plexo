@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { motion } from "framer-motion";
 import {
    Trophy,
    Repeat,
@@ -26,21 +27,25 @@ interface HighlightProps {
    onClick?: () => void;
 }
 
-const Highlight: React.FC<HighlightProps> = ({
+const Highlight: React.FC<HighlightProps & { index?: number }> = ({
    icon: Icon,
    label,
    value,
    detail,
    onClick,
+   index = 0,
 }) => (
-   <div
+   <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, delay: index * 0.04 }}
       className={cn(
          "flex items-start gap-3 rounded-lg border border-border/50 bg-card p-3",
-         onClick && "cursor-pointer transition-colors hover:border-border",
+         onClick && "cursor-pointer transition-colors hover:border-primary/30",
       )}
       onClick={onClick}
    >
-      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary/60" />
       <div className="min-w-0">
          <p className="text-xs text-muted-foreground">{label}</p>
          <p className="truncate text-sm font-medium">{value}</p>
@@ -48,7 +53,7 @@ const Highlight: React.FC<HighlightProps> = ({
             <p className="text-xs text-muted-foreground">{detail}</p>
          )}
       </div>
-   </div>
+   </motion.div>
 );
 
 export const Highlights = () => {

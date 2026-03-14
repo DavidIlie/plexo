@@ -13,7 +13,7 @@ export const Footer = () => {
                   height={16}
                   className="rounded opacity-50"
                />
-               <span>plexo</span>
+               <span className="text-primary/70">plexo</span>
                <span className="text-border">·</span>
                <span>{new Date().getFullYear()}</span>
             </div>
