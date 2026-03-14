@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
-import { getCachedOrFetch } from "~/lib/cache";
+import { getCachedOrFetch, CacheTTL } from "~/lib/cache";
 import {
    getLibrarySections,
    getMovies,
@@ -12,7 +12,11 @@ import {
 
 export const plexRouter = createTRPCRouter({
    getLibrarySections: publicProcedure.query(async () => {
-      const result = await getCachedOrFetch("plex:sections", getLibrarySections);
+      const result = await getCachedOrFetch(
+         "plex:sections",
+         getLibrarySections,
+         CacheTTL.LIBRARY,
+      );
       return {
          data: result.data,
          lastUpdatedAt: result.fetchedAt.toISOString(),
@@ -31,6 +35,7 @@ export const plexRouter = createTRPCRouter({
          const result = await getCachedOrFetch(
             `plex:movies:${input.sectionId}:${input.start}:${input.size}`,
             () => getMovies(input.sectionId, input.start, input.size),
+            CacheTTL.METADATA,
          );
          return {
             data: result.data,
@@ -50,6 +55,7 @@ export const plexRouter = createTRPCRouter({
          const result = await getCachedOrFetch(
             `plex:shows:${input.sectionId}:${input.start}:${input.size}`,
             () => getShows(input.sectionId, input.start, input.size),
+            CacheTTL.METADATA,
          );
          return {
             data: result.data,
@@ -58,7 +64,11 @@ export const plexRouter = createTRPCRouter({
       }),
 
    getOnDeck: publicProcedure.query(async () => {
-      const result = await getCachedOrFetch("plex:onDeck", getOnDeck);
+      const result = await getCachedOrFetch(
+         "plex:onDeck",
+         getOnDeck,
+         CacheTTL.ACTIVITY,
+      );
       return {
          data: result.data,
          lastUpdatedAt: result.fetchedAt.toISOString(),
@@ -76,6 +86,7 @@ export const plexRouter = createTRPCRouter({
          const result = await getCachedOrFetch(
             `plex:recentlyAdded:${input.sectionId}:${input.count}`,
             () => getRecentlyAdded(input.sectionId, input.count),
+            CacheTTL.ACTIVITY,
          );
          return {
             data: result.data,
@@ -89,6 +100,7 @@ export const plexRouter = createTRPCRouter({
          const result = await getCachedOrFetch(
             `plex:genres:${input.sectionId}`,
             () => getGenres(input.sectionId),
+            CacheTTL.LIBRARY,
          );
          return {
             data: result.data,

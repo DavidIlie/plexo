@@ -38,8 +38,14 @@ src/
 ## Key Patterns
 
 - **Path alias**: `~/` maps to `./src/`
-- **Env validation**: `src/env.ts` using `@t3-oss/env-nextjs` — vars: `PLEX_URL`, `PLEX_TOKEN`, `TAUTULLI_URL`, `TAUTULLI_API_KEY`
-- **Cache**: In-memory TTL cache in `src/lib/cache.ts`, 30min default, `POST /api/refresh` clears all
+- **Env validation**: `src/env.ts` using `@t3-oss/env-nextjs` — vars: `PLEX_URL`, `PLEX_TOKEN`, `TAUTULLI_URL`, `TAUTULLI_API_KEY`, optional `TAUTULLI_USER_ID`
+- **User scoping**: `PLEX_TOKEN` determines which user's watch data (the token owner). `TAUTULLI_USER_ID` optionally filters Tautulli stats to one user (injected into every tautulliFetch call).
+- **Cache**: In-memory TTL cache in `src/lib/cache.ts` with tiered TTLs via `CacheTTL`:
+  - `LIBRARY` (1hr) — sections, genres (rarely change)
+  - `METADATA` (30min) — movie/show listings
+  - `ANALYTICS` (15min) — computed aggregations
+  - `ACTIVITY` (5min) — on-deck, history, home stats
+  - `POST /api/refresh` clears all
 - **Image proxy**: `/api/plex-image?path=...&w=300&h=450` — streams from Plex with token server-side
 - **tRPC procedures** all return `{ data: T; lastUpdatedAt: string }` for freshness display
 - **Server prefetch**: Use `caller` for direct RSC calls, `trpc.X.queryOptions()` + `queryClient.prefetchQuery()` for hydration

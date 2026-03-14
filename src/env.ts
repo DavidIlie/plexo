@@ -7,6 +7,7 @@ export const env = createEnv({
       PLEX_TOKEN: z.string(),
       TAUTULLI_URL: z.string().url(),
       TAUTULLI_API_KEY: z.string(),
+      TAUTULLI_USER_ID: z.string().optional(),
       NODE_ENV: z
          .enum(["development", "test", "production"])
          .default("development"),

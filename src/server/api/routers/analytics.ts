@@ -1,5 +1,5 @@
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
-import { getCachedOrFetch } from "~/lib/cache";
+import { getCachedOrFetch, CacheTTL } from "~/lib/cache";
 import { getLibrarySections, getMovies, getShows } from "~/lib/plex";
 import {
    getHistory,
@@ -21,7 +21,6 @@ export const analyticsRouter = createTRPCRouter({
             let totalShows = 0;
             let watchedMovies = 0;
             let watchedShows = 0;
-            let totalDurationMs = 0;
 
             if (movieSection) {
                const movies = await getMovies(movieSection.key);
@@ -29,9 +28,6 @@ export const analyticsRouter = createTRPCRouter({
                for (const movie of movies.items) {
                   if (movie.viewCount && movie.viewCount > 0) {
                      watchedMovies++;
-                  }
-                  if (movie.duration) {
-                     totalDurationMs += movie.duration;
                   }
                }
             }
@@ -62,6 +58,7 @@ export const analyticsRouter = createTRPCRouter({
                hoursWatched: totalHoursWatched,
             };
          },
+         CacheTTL.ANALYTICS,
       );
 
       return {
@@ -101,6 +98,7 @@ export const analyticsRouter = createTRPCRouter({
                .sort((a, b) => b.count - a.count)
                .slice(0, 15);
          },
+         CacheTTL.METADATA,
       );
 
       return {
@@ -165,6 +163,7 @@ export const analyticsRouter = createTRPCRouter({
                .sort((a, b) => b.plays - a.plays)
                .slice(0, 10);
          },
+         CacheTTL.ANALYTICS,
       );
 
       return {
@@ -176,10 +175,8 @@ export const analyticsRouter = createTRPCRouter({
    getWatchTimeByDay: publicProcedure.query(async () => {
       const result = await getCachedOrFetch(
          "analytics:watchTimeByDay",
-         async () => {
-            const data = await getPlaysByDayOfWeek(30);
-            return data;
-         },
+         () => getPlaysByDayOfWeek(30),
+         CacheTTL.ANALYTICS,
       );
 
       return {
@@ -191,10 +188,8 @@ export const analyticsRouter = createTRPCRouter({
    getWatchTimeByHour: publicProcedure.query(async () => {
       const result = await getCachedOrFetch(
          "analytics:watchTimeByHour",
-         async () => {
-            const data = await getPlaysByHourOfDay(30);
-            return data;
-         },
+         () => getPlaysByHourOfDay(30),
+         CacheTTL.ANALYTICS,
       );
 
       return {
@@ -206,10 +201,8 @@ export const analyticsRouter = createTRPCRouter({
    getMonthlyTrends: publicProcedure.query(async () => {
       const result = await getCachedOrFetch(
          "analytics:monthlyTrends",
-         async () => {
-            const data = await getPlaysByDate(365);
-            return data;
-         },
+         () => getPlaysByDate(365),
+         CacheTTL.ANALYTICS,
       );
 
       return {
@@ -243,6 +236,7 @@ export const analyticsRouter = createTRPCRouter({
                { name: "TV Shows", value: tvPlays },
             ];
          },
+         CacheTTL.ANALYTICS,
       );
 
       return {

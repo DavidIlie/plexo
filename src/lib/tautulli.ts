@@ -18,6 +18,10 @@ const tautulliFetch = async <T>(
    url.searchParams.set("apikey", env.TAUTULLI_API_KEY);
    url.searchParams.set("cmd", cmd);
 
+   if (env.TAUTULLI_USER_ID) {
+      url.searchParams.set("user_id", env.TAUTULLI_USER_ID);
+   }
+
    for (const [key, value] of Object.entries(params)) {
       url.searchParams.set(key, String(value));
    }

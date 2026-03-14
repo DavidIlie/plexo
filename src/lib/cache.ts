@@ -6,12 +6,17 @@ interface CacheEntry<T> {
 
 const cache = new Map<string, CacheEntry<unknown>>();
 
-const DEFAULT_TTL_MS = 30 * 60 * 1000;
+export const CacheTTL = {
+   LIBRARY: 60 * 60 * 1000,
+   METADATA: 30 * 60 * 1000,
+   ACTIVITY: 5 * 60 * 1000,
+   ANALYTICS: 15 * 60 * 1000,
+} as const;
 
 export const getCachedOrFetch = async <T>(
    key: string,
    fetcher: () => Promise<T>,
-   ttlMs: number = DEFAULT_TTL_MS,
+   ttlMs: number = CacheTTL.METADATA,
 ): Promise<{ data: T; fetchedAt: Date }> => {
    const existing = cache.get(key) as CacheEntry<T> | undefined;
 

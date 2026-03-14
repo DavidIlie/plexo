@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
-import { getCachedOrFetch } from "~/lib/cache";
+import { getCachedOrFetch, CacheTTL } from "~/lib/cache";
 import {
    getHistory,
    getHomeStats,
@@ -25,6 +25,7 @@ export const tautulliRouter = createTRPCRouter({
          const result = await getCachedOrFetch(
             `tautulli:history:${input.length}:${input.start}:${input.mediaType ?? "all"}`,
             () => getHistory(input.length, input.start, input.mediaType),
+            CacheTTL.ACTIVITY,
          );
          return {
             data: result.data,
@@ -36,6 +37,7 @@ export const tautulliRouter = createTRPCRouter({
       const result = await getCachedOrFetch(
          "tautulli:homeStats",
          getHomeStats,
+         CacheTTL.ACTIVITY,
       );
       return {
          data: result.data,
@@ -56,6 +58,7 @@ export const tautulliRouter = createTRPCRouter({
          const result = await getCachedOrFetch(
             `tautulli:playsByDate:${input.timeRange}:${input.yAxis}`,
             () => getPlaysByDate(input.timeRange, input.yAxis),
+            CacheTTL.ANALYTICS,
          );
          return {
             data: result.data,
@@ -75,6 +78,7 @@ export const tautulliRouter = createTRPCRouter({
          const result = await getCachedOrFetch(
             `tautulli:playsByDayOfWeek:${input.timeRange}`,
             () => getPlaysByDayOfWeek(input.timeRange),
+            CacheTTL.ANALYTICS,
          );
          return {
             data: result.data,
@@ -94,6 +98,7 @@ export const tautulliRouter = createTRPCRouter({
          const result = await getCachedOrFetch(
             `tautulli:playsByHourOfDay:${input.timeRange}`,
             () => getPlaysByHourOfDay(input.timeRange),
+            CacheTTL.ANALYTICS,
          );
          return {
             data: result.data,
@@ -116,6 +121,7 @@ export const tautulliRouter = createTRPCRouter({
             `tautulli:mostWatched:${input.mediaType}:${input.timeRange}:${input.limit}`,
             () =>
                getMostWatched(input.mediaType, input.timeRange, input.limit),
+            CacheTTL.ANALYTICS,
          );
          return {
             data: result.data,
