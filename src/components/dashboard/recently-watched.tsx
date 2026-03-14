@@ -1,16 +1,20 @@
 "use client";
 
+import { useState } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 
 import { useTRPC } from "~/trpc/react";
 import { PlexImage } from "~/components/plex-image";
+import { MediaDetailDialog } from "~/components/media/media-detail-dialog";
+import type { PlexMediaItem } from "~/types/plex";
 
 export const RecentlyWatched = () => {
    const trpc = useTRPC();
    const { data } = useSuspenseQuery(
       trpc.tautulli.getHistory.queryOptions({ length: 10 }),
    );
+   const [selectedItem, setSelectedItem] = useState<PlexMediaItem | null>(null);
 
    const items = data?.data.data ?? [];
 
@@ -25,7 +29,19 @@ export const RecentlyWatched = () => {
             {items.map((item) => (
                <div
                   key={item.row_id}
-                  className="flex items-center gap-3 rounded-md px-2 py-1.5"
+                  className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-1.5 transition-colors hover:bg-muted/50"
+                  onClick={() =>
+                     setSelectedItem({
+                        ratingKey: String(
+                           item.grandparent_rating_key || item.rating_key,
+                        ),
+                        key: "",
+                        type:
+                           item.media_type === "episode" ? "show" : item.media_type,
+                        title: item.grandparent_title || item.title,
+                        addedAt: 0,
+                     })
+                  }
                >
                   <PlexImage
                      path={
@@ -47,6 +63,14 @@ export const RecentlyWatched = () => {
                </div>
             ))}
          </div>
+
+         <MediaDetailDialog
+            item={selectedItem}
+            open={!!selectedItem}
+            onOpenChange={(v) => {
+               if (!v) setSelectedItem(null);
+            }}
+         />
       </section>
    );
 };
