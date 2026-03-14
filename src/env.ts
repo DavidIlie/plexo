@@ -18,6 +18,14 @@ export const env = createEnv({
       PLAUSIBLE_DOMAIN: z.string().optional(),
       PLAUSIBLE_SCRIPT_URL: z.string().optional(),
       PLAUSIBLE_API_URL: z.string().optional(),
+      SHOW_DEVICES: z
+         .enum(["true", "false"])
+         .default("true")
+         .transform((v) => v === "true"),
+      SHOW_LOCATIONS: z
+         .enum(["true", "false"])
+         .default("false")
+         .transform((v) => v === "true"),
       NODE_ENV: z
          .enum(["development", "test", "production"])
          .default("development"),

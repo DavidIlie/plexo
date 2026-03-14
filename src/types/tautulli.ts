@@ -33,6 +33,7 @@ export interface TautulliHistoryItem {
    rating_key: number;
    parent_rating_key: number;
    grandparent_rating_key: number;
+   ip_address: string;
    watched_status: number;
    group_count: number;
    group_ids: string;

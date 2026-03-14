@@ -293,7 +293,7 @@ export const MediaDetailDialog: React.FC<MediaDetailDialogProps> = ({
 
    return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-         <DialogContent className="max-h-[85vh] overflow-y-auto p-0 sm:max-w-lg">
+         <DialogContent className="max-h-[85vh] overflow-y-scroll overscroll-contain p-0 sm:max-w-lg">
             {detail.art && (
                <div className="relative h-32 w-full overflow-hidden">
                   <PlexImage

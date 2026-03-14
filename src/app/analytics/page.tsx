@@ -6,6 +6,8 @@ import { WatchTimeByDayChart } from "~/components/analytics/watch-time-by-day-ch
 import { WatchTimeByHourChart } from "~/components/analytics/watch-time-by-hour-chart";
 import { MonthlyTrendsChart } from "~/components/analytics/monthly-trends-chart";
 import { MediaRatioChart } from "~/components/analytics/media-ratio-chart";
+import { DeviceChart } from "~/components/analytics/device-chart";
+import { LocationChart } from "~/components/analytics/location-chart";
 
 const AnalyticsPage = () => {
    return (
@@ -17,13 +19,15 @@ const AnalyticsPage = () => {
             </p>
          </div>
 
-         <div className="grid gap-6 md:grid-cols-2">
+         <div className="grid gap-4 md:grid-cols-2">
             <GenreDistributionChart />
             <TopGenresChart />
             <WatchTimeByDayChart />
             <WatchTimeByHourChart />
             <MonthlyTrendsChart />
             <MediaRatioChart />
+            <DeviceChart />
+            <LocationChart />
          </div>
       </div>
    );

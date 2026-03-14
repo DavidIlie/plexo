@@ -6,6 +6,7 @@ import {
    getPlaysByDate,
    getPlaysByDayOfWeek,
    getPlaysByHourOfDay,
+   getGeoipLookup,
 } from "~/lib/tautulli";
 import { env } from "~/env";
 
@@ -327,6 +328,89 @@ export const analyticsRouter = createTRPCRouter({
                      ? Math.round((totalPlays / daysWatched) * 10) / 10
                      : 0,
             };
+         },
+         CacheTTL.ANALYTICS,
+      );
+
+      return {
+         data: result.data,
+         lastUpdatedAt: result.fetchedAt.toISOString(),
+      };
+   }),
+
+   getDeviceStats: publicProcedure.query(async () => {
+      if (!env.SHOW_DEVICES) {
+         return { data: null, lastUpdatedAt: new Date().toISOString() };
+      }
+
+      const result = await getCachedOrFetch(
+         "analytics:deviceStats",
+         async () => {
+            const history = await getHistory(2000);
+            const platforms = new Map<string, { plays: number; lastUsed: number }>();
+
+            for (const item of history.data) {
+               const key = item.platform || item.product || "Unknown";
+               const existing = platforms.get(key);
+               if (existing) {
+                  existing.plays++;
+                  existing.lastUsed = Math.max(existing.lastUsed, item.stopped);
+               } else {
+                  platforms.set(key, { plays: 1, lastUsed: item.stopped });
+               }
+            }
+
+            return Array.from(platforms.entries())
+               .map(([name, stats]) => ({
+                  name,
+                  plays: stats.plays,
+                  lastUsed: stats.lastUsed,
+               }))
+               .sort((a, b) => b.plays - a.plays);
+         },
+         CacheTTL.ANALYTICS,
+      );
+
+      return {
+         data: result.data,
+         lastUpdatedAt: result.fetchedAt.toISOString(),
+      };
+   }),
+
+   getLocationStats: publicProcedure.query(async () => {
+      if (!env.SHOW_LOCATIONS) {
+         return { data: null, lastUpdatedAt: new Date().toISOString() };
+      }
+
+      const result = await getCachedOrFetch(
+         "analytics:locationStats",
+         async () => {
+            const history = await getHistory(500);
+            const uniqueIps = new Set<string>();
+
+            for (const item of history.data) {
+               if (item.ip_address && item.ip_address !== "127.0.0.1") {
+                  uniqueIps.add(item.ip_address);
+               }
+            }
+
+            const locations = new Map<string, number>();
+
+            for (const ip of uniqueIps) {
+               try {
+                  const geo = await getGeoipLookup(ip);
+                  if (geo.city && geo.country) {
+                     const key = `${geo.city}, ${geo.country}`;
+                     locations.set(key, (locations.get(key) ?? 0) + 1);
+                  }
+               } catch {
+                  // skip failed lookups
+               }
+            }
+
+            return Array.from(locations.entries())
+               .map(([location, count]) => ({ location, count }))
+               .sort((a, b) => b.count - a.count);
          },
          CacheTTL.ANALYTICS,
       );

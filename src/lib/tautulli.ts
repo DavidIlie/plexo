@@ -89,3 +89,23 @@ export const getMostWatched = async (
       stats_count: limit,
    });
 };
+
+export interface TautulliGeoData {
+   code: string;
+   country: string;
+   region: string;
+   city: string;
+   postal_code: string;
+   timezone: string;
+   latitude: number;
+   longitude: number;
+   accuracy: number;
+}
+
+export const getGeoipLookup = async (
+   ipAddress: string,
+): Promise<TautulliGeoData> => {
+   return tautulliFetch<TautulliGeoData>("get_geoip_lookup", {
+      ip_address: ipAddress,
+   });
+};
