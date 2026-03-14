@@ -154,7 +154,7 @@ You need at least one channel configured to receive recommendations. All configu
 
 **Discord (easiest):** Create a webhook in your Discord server (Server Settings → Integrations → Webhooks) and set `DISCORD_WEBHOOK_URL`.
 
-**Resend:** Sign up at [resend.com](https://resend.com), get an API key, and set `RESEND_API_KEY`, `RESEND_FROM`, and `RECOMMEND_EMAIL_TO`.
+**Resend:** Sign up at [resend.com](https://resend.com), get an API key, and set `RESEND_API_KEY`, `RESEND_FROM`, and `RECOMMEND_EMAIL_TO`. The `RESEND_FROM` address must use a domain you've verified in Resend, formatted as `Name <email@yourdomain.com>` (e.g. `Plexo <noreply@yourdomain.com>`).
 
 **SMTP:** Set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, and `RECOMMEND_EMAIL_TO`.
 
