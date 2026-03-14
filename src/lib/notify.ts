@@ -1,5 +1,7 @@
 import "server-only";
 
+import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import { env } from "~/env";
 
 interface RecommendationPayload {
@@ -36,7 +38,6 @@ const sendViaResend = async (payload: RecommendationPayload) => {
    if (!env.RESEND_API_KEY || !env.RESEND_FROM || !env.RECOMMEND_EMAIL_TO)
       return;
 
-   const { Resend } = await import("resend");
    const resend = new Resend(env.RESEND_API_KEY);
 
    await resend.emails.send({
@@ -50,7 +51,6 @@ const sendViaResend = async (payload: RecommendationPayload) => {
 const sendViaSMTP = async (payload: RecommendationPayload) => {
    if (!env.SMTP_HOST || !env.SMTP_FROM || !env.RECOMMEND_EMAIL_TO) return;
 
-   const nodemailer = await import("nodemailer");
    const transport = nodemailer.createTransport({
       host: env.SMTP_HOST,
       port: env.SMTP_PORT ?? 587,

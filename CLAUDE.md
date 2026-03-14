@@ -6,6 +6,7 @@ Personal Plex media dashboard built with Next.js 16.
 
 - **Commit after every change** — each feature, fix, or refactor gets its own commit immediately.
 - **No `as any`** — use proper types, generics, or type narrowing.
+- **No inline imports** — all imports must be top-level, never `await import()` inside functions.
 - **Branch**: `master` (not main).
 
 ## Tech Stack
