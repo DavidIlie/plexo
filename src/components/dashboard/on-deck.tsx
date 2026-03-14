@@ -51,7 +51,8 @@ export const OnDeck = () => {
                      <div className="absolute inset-0 bg-foreground/0 transition-colors duration-300 group-hover:bg-foreground/10" />
                      {item.viewOffset != null && item.duration != null && item.duration > 0 && (
                         <>
-                           <div className="pointer-events-none absolute bottom-0 left-0 right-0 flex items-end justify-between px-1.5 pb-2.5 text-[10px] font-medium text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+                           <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-black/80 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                           <div className="pointer-events-none absolute bottom-0 left-0 right-0 flex items-end justify-between px-2 pb-2.5 text-[11px] font-medium text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100">
                               <span>{formatDuration(item.viewOffset)}</span>
                               <span>{formatDuration(item.duration)}</span>
                            </div>
