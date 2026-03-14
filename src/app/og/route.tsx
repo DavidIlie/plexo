@@ -72,7 +72,7 @@ const getArtistOG = async (ratingKey: string) => {
                height: "500px",
                borderRadius: "50%",
                background:
-                  "radial-gradient(circle, rgba(192,120,32,0.12) 0%, transparent 70%)",
+                  "radial-gradient(circle, rgba(229,160,13,0.12) 0%, transparent 70%)",
                display: "flex",
             }}
          />
@@ -90,7 +90,7 @@ const getArtistOG = async (ratingKey: string) => {
                   style={{
                      width: "40px",
                      height: "40px",
-                     backgroundColor: "#171717",
+                     backgroundColor: "#1a1a1a",
                      borderRadius: "8px",
                      display: "flex",
                      alignItems: "center",
@@ -104,7 +104,7 @@ const getArtistOG = async (ratingKey: string) => {
                      fill="none"
                      style={{ display: "flex" }}
                   >
-                     <path d="M12 9L24 16L12 23V9Z" fill="#c07820" />
+                     <path d="M12 9L24 16L12 23V9Z" fill="#e5a00d" />
                   </svg>
                </div>
                <span
@@ -112,7 +112,7 @@ const getArtistOG = async (ratingKey: string) => {
                      fontSize: "24px",
                      fontWeight: 600,
                      letterSpacing: "-0.02em",
-                     color: "#c07820",
+                     color: "#e5a00d",
                      display: "flex",
                   }}
                >
@@ -156,7 +156,7 @@ const getArtistOG = async (ratingKey: string) => {
                <div style={{ display: "flex", gap: "40px" }}>
                   <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                      <span
-                        style={{ fontSize: "40px", fontWeight: 800, color: "#c07820", display: "flex" }}
+                        style={{ fontSize: "40px", fontWeight: 800, color: "#e5a00d", display: "flex" }}
                      >
                         {albums.length}
                      </span>
@@ -167,7 +167,7 @@ const getArtistOG = async (ratingKey: string) => {
                   {totalPlays > 0 && (
                      <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                         <span
-                           style={{ fontSize: "40px", fontWeight: 800, color: "#c07820", display: "flex" }}
+                           style={{ fontSize: "40px", fontWeight: 800, color: "#e5a00d", display: "flex" }}
                         >
                            {totalPlays.toLocaleString()}
                         </span>
@@ -184,9 +184,9 @@ const getArtistOG = async (ratingKey: string) => {
                   style={{
                      display: "flex",
                      padding: "10px 24px",
-                     background: "#171717",
+                     background: "#1a1a1a",
                      borderRadius: "100px",
-                     border: "1px solid rgba(192,120,32,0.3)",
+                     border: "1px solid rgba(229,160,13,0.3)",
                   }}
                >
                   <span style={{ fontSize: "18px", fontWeight: 500, color: "#737373", display: "flex" }}>
@@ -274,7 +274,7 @@ export const GET = async (req: NextRequest) => {
                height: "500px",
                borderRadius: "50%",
                background:
-                  "radial-gradient(circle, rgba(192,120,32,0.12) 0%, transparent 70%)",
+                  "radial-gradient(circle, rgba(229,160,13,0.12) 0%, transparent 70%)",
                display: "flex",
             }}
          />
@@ -284,7 +284,7 @@ export const GET = async (req: NextRequest) => {
                style={{
                   width: "40px",
                   height: "40px",
-                  backgroundColor: "#171717",
+                  backgroundColor: "#1a1a1a",
                   borderRadius: "8px",
                   display: "flex",
                   alignItems: "center",
@@ -298,7 +298,7 @@ export const GET = async (req: NextRequest) => {
                   fill="none"
                   style={{ display: "flex" }}
                >
-                  <path d="M12 9L24 16L12 23V9Z" fill="#c07820" />
+                  <path d="M12 9L24 16L12 23V9Z" fill="#e5a00d" />
                </svg>
             </div>
             <span
@@ -306,7 +306,7 @@ export const GET = async (req: NextRequest) => {
                   fontSize: "24px",
                   fontWeight: 600,
                   letterSpacing: "-0.02em",
-                  color: "#c07820",
+                  color: "#e5a00d",
                   display: "flex",
                }}
             >
@@ -341,7 +341,7 @@ export const GET = async (req: NextRequest) => {
                         style={{
                            fontSize: "48px",
                            fontWeight: 800,
-                           color: "#c07820",
+                           color: "#e5a00d",
                            display: "flex",
                         }}
                      >
@@ -367,9 +367,9 @@ export const GET = async (req: NextRequest) => {
                style={{
                   display: "flex",
                   padding: "10px 24px",
-                  background: "#171717",
+                  background: "#1a1a1a",
                   borderRadius: "100px",
-                  border: "1px solid rgba(192,120,32,0.3)",
+                  border: "1px solid rgba(229,160,13,0.3)",
                }}
             >
                <span
