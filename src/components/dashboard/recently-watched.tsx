@@ -9,6 +9,12 @@ import { PlexImage } from "~/components/plex-image";
 import { MediaDetailDialog } from "~/components/media/media-detail-dialog";
 import type { PlexMediaItem } from "~/types/plex";
 
+const formatDuration = (seconds: number) => {
+   const mins = Math.round(seconds / 60);
+   if (mins < 60) return `${mins}m`;
+   return `${Math.floor(mins / 60)}h ${mins % 60}m`;
+};
+
 export const RecentlyWatched = () => {
    const trpc = useTRPC();
    const { data } = useSuspenseQuery(
@@ -25,11 +31,11 @@ export const RecentlyWatched = () => {
          <h2 className="mb-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
             Recently Watched
          </h2>
-         <div className="space-y-1">
+         <div className="space-y-0.5">
             {items.map((item) => (
                <div
                   key={item.row_id}
-                  className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-1.5 transition-colors hover:bg-muted/50"
+                  className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-muted/50"
                   onClick={() =>
                      setSelectedItem({
                         ratingKey: String(
@@ -37,7 +43,9 @@ export const RecentlyWatched = () => {
                         ),
                         key: "",
                         type:
-                           item.media_type === "episode" ? "show" : item.media_type,
+                           item.media_type === "episode"
+                              ? "show"
+                              : item.media_type,
                         title: item.grandparent_title || item.title,
                         addedAt: 0,
                      })
@@ -45,20 +53,43 @@ export const RecentlyWatched = () => {
                >
                   <PlexImage
                      path={
-                        item.grandparent_thumb || item.parent_thumb || item.thumb
+                        item.grandparent_thumb ||
+                        item.parent_thumb ||
+                        item.thumb
                      }
                      alt={item.full_title}
-                     width={32}
-                     height={48}
-                     className="rounded object-cover"
+                     width={36}
+                     height={54}
+                     className="shrink-0 rounded object-cover"
                   />
                   <div className="min-w-0 flex-1">
                      <p className="truncate text-sm">{item.full_title}</p>
-                     <p className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(item.stopped * 1000), {
-                           addSuffix: true,
-                        })}
-                     </p>
+                     <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                        <span>
+                           {formatDistanceToNow(
+                              new Date(item.stopped * 1000),
+                              { addSuffix: true },
+                           )}
+                        </span>
+                        {item.play_duration > 0 && (
+                           <>
+                              <span className="text-border">·</span>
+                              <span>{formatDuration(item.play_duration)}</span>
+                           </>
+                        )}
+                        {item.platform && (
+                           <>
+                              <span className="text-border">·</span>
+                              <span>{item.platform}</span>
+                           </>
+                        )}
+                        {item.player && item.player !== item.platform && (
+                           <>
+                              <span className="text-border">·</span>
+                              <span>{item.player}</span>
+                           </>
+                        )}
+                     </div>
                   </div>
                </div>
             ))}

@@ -9,6 +9,8 @@ import {
    Calendar,
    Play,
    TrendingUp,
+   Monitor,
+   MapPin,
 } from "lucide-react";
 
 import { useTRPC } from "~/trpc/react";
@@ -136,6 +138,21 @@ export const Highlights = () => {
                label="Daily Average"
                value={`${h.avgPlaysPerDay} plays/day`}
             />
+            {h.topDevice && (
+               <Highlight
+                  icon={Monitor}
+                  label="Top Device"
+                  value={h.topDevice.name}
+                  detail={`${h.topDevice.plays} plays`}
+               />
+            )}
+            {h.topLocation && (
+               <Highlight
+                  icon={MapPin}
+                  label="Most Common Location"
+                  value={h.topLocation}
+               />
+            )}
          </div>
 
          <MediaDetailDialog

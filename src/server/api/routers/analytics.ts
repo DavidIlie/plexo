@@ -316,6 +316,43 @@ export const analyticsRouter = createTRPCRouter({
                }),
             ).size;
 
+            let topDevice: { name: string; plays: number } | null = null;
+            if (env.SHOW_DEVICES) {
+               const deviceCounts = new Map<string, number>();
+               for (const item of history.data) {
+                  const dev = item.platform || item.product || "Unknown";
+                  deviceCounts.set(dev, (deviceCounts.get(dev) ?? 0) + 1);
+               }
+               let maxPlays = 0;
+               for (const [name, plays] of deviceCounts) {
+                  if (plays > maxPlays) {
+                     maxPlays = plays;
+                     topDevice = { name, plays };
+                  }
+               }
+            }
+
+            let topLocation: string | null = null;
+            if (env.SHOW_LOCATIONS) {
+               const ips = new Set<string>();
+               for (const item of history.data) {
+                  if (item.ip_address && item.ip_address !== "127.0.0.1") {
+                     ips.add(item.ip_address);
+                  }
+               }
+               if (ips.size > 0) {
+                  const firstIp = Array.from(ips)[0];
+                  try {
+                     const geo = await getGeoipLookup(firstIp);
+                     if (geo.city && geo.country) {
+                        topLocation = `${geo.city}, ${geo.country}`;
+                     }
+                  } catch {
+                     // ignore
+                  }
+               }
+            }
+
             return {
                mostWatched,
                mostRewatched,
@@ -327,6 +364,8 @@ export const analyticsRouter = createTRPCRouter({
                   daysWatched > 0
                      ? Math.round((totalPlays / daysWatched) * 10) / 10
                      : 0,
+               topDevice,
+               topLocation,
             };
          },
          CacheTTL.ANALYTICS,
