@@ -269,9 +269,10 @@ const AlbumQualityProfile = ({ tracks }: { tracks: PlexMediaItem[] }) => {
 
 const AlbumTracks = ({ albumKey }: { albumKey: string }) => {
    const trpc = useTRPC();
-   const { data, isLoading } = useQuery(
-      trpc.plex.getChildren.queryOptions({ ratingKey: albumKey }),
-   );
+   const { data, isLoading } = useQuery({
+      ...trpc.plex.getChildren.queryOptions({ ratingKey: albumKey }),
+      enabled: !!albumKey,
+   });
 
    if (isLoading) {
       return (
@@ -322,42 +323,6 @@ const AlbumTracks = ({ albumKey }: { albumKey: string }) => {
    );
 };
 
-const AlbumFormatPreview = ({ albumKey }: { albumKey: string }) => {
-   const trpc = useTRPC();
-   const { data } = useQuery(
-      trpc.plex.getChildren.queryOptions({ ratingKey: albumKey }),
-   );
-   const tracks = data?.data ?? [];
-   if (tracks.length === 0) return null;
-
-   const codecs = new Set<string>();
-   let totalSize = 0;
-   for (const track of tracks) {
-      const media = track.Media?.[0];
-      const stream = media?.Part?.[0]?.Stream?.find((s) => s.streamType === 2);
-      const codec = (media?.audioCodec ?? stream?.codec)?.toUpperCase();
-      if (codec) codecs.add(codec);
-      if (media?.Part?.[0]?.size) totalSize += media.Part[0].size;
-   }
-   if (codecs.size === 0) return null;
-
-   return (
-      <div className="flex items-center gap-1">
-         {Array.from(codecs).map((c) => (
-            <span key={c} className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
-               {c}
-            </span>
-         ))}
-         {totalSize > 0 && (
-            <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
-               <HardDrive className="h-2.5 w-2.5" />
-               {formatFileSize(totalSize)}
-            </span>
-         )}
-      </div>
-   );
-};
-
 const AlbumCard = ({ album }: { album: PlexMediaItem }) => {
    const [expanded, setExpanded] = useState(false);
 
@@ -381,7 +346,6 @@ const AlbumCard = ({ album }: { album: PlexMediaItem }) => {
                      .filter(Boolean)
                      .join(" · ")}
                </p>
-               <AlbumFormatPreview albumKey={album.ratingKey} />
             </div>
             {(album.viewCount ?? 0) > 0 && (
                <span className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -400,8 +364,11 @@ const AlbumCard = ({ album }: { album: PlexMediaItem }) => {
    );
 };
 
+const ALBUMS_PER_PAGE = 20;
+
 export const ArtistDetail = ({ ratingKey }: { ratingKey: string }) => {
    const trpc = useTRPC();
+   const [albumsShown, setAlbumsShown] = useState(ALBUMS_PER_PAGE);
 
    const { data: artistData } = useQuery(
       trpc.plex.getMetadata.queryOptions({ ratingKey }),
@@ -420,6 +387,8 @@ export const ArtistDetail = ({ ratingKey }: { ratingKey: string }) => {
       }
       return count;
    }, [albums]);
+
+   const visibleAlbums = albums.slice(0, albumsShown);
 
    if (!artist) return null;
 
@@ -484,9 +453,17 @@ export const ArtistDetail = ({ ratingKey }: { ratingKey: string }) => {
                </div>
             ) : (
                <div className="space-y-2">
-                  {albums.map((album) => (
+                  {visibleAlbums.map((album) => (
                      <AlbumCard key={album.ratingKey} album={album} />
                   ))}
+                  {albumsShown < albums.length && (
+                     <button
+                        onClick={() => setAlbumsShown((n) => n + ALBUMS_PER_PAGE)}
+                        className="w-full rounded-md border border-border/50 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/30 hover:text-foreground"
+                     >
+                        Show more ({albums.length - albumsShown} remaining)
+                     </button>
+                  )}
                </div>
             )}
          </div>
