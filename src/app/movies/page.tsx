@@ -71,9 +71,11 @@ const MoviesPage = () => {
       <div className="space-y-6">
          <div>
             <h1 className="text-lg font-semibold">Movies</h1>
-            <p className="text-sm text-muted-foreground">
-               {filteredMovies.length} of {movies.length}
-            </p>
+            {filteredMovies.length !== movies.length && (
+               <p className="text-sm text-muted-foreground">
+                  {filteredMovies.length} of {movies.length}
+               </p>
+            )}
          </div>
 
          <MediaFilters
