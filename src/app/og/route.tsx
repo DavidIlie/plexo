@@ -37,31 +37,19 @@ export const GET = async (req: NextRequest) => {
    const stats = await getStats();
    const name = env.DISPLAY_NAME;
 
-   const statItems: Array<{ label: string; value: string }> = [];
-
-   if (page === "movies") {
-      statItems.push({ label: "Movies", value: String(stats.totalMovies) });
-      statItems.push({ label: "Hours Watched", value: String(stats.hoursWatched) });
-   } else if (page === "tv") {
-      statItems.push({ label: "TV Shows", value: String(stats.totalShows) });
-      statItems.push({ label: "Hours Watched", value: String(stats.hoursWatched) });
-   } else if (page === "analytics") {
-      statItems.push({ label: "Movies", value: String(stats.totalMovies) });
-      statItems.push({ label: "Shows", value: String(stats.totalShows) });
-      statItems.push({ label: "Hours", value: String(stats.hoursWatched) });
-   } else {
-      statItems.push({ label: "Movies", value: String(stats.totalMovies) });
-      statItems.push({ label: "Shows", value: String(stats.totalShows) });
-      statItems.push({ label: "Hours Watched", value: String(stats.hoursWatched) });
-   }
+   const statItems: Array<{ label: string; value: string }> = [
+      { label: "Movies", value: stats.totalMovies.toLocaleString() },
+      { label: "Shows", value: stats.totalShows.toLocaleString() },
+      { label: "Hours Watched", value: stats.hoursWatched.toLocaleString() },
+   ];
 
    const pageTitle =
       page === "movies"
-         ? "Movies"
+         ? `${name}'s Movies`
          : page === "tv"
-           ? "TV Shows"
+           ? `${name}'s TV Shows`
            : page === "analytics"
-             ? "Analytics"
+             ? `${name}'s Analytics`
              : `${name}'s Library`;
 
    return new ImageResponse(
@@ -86,7 +74,7 @@ export const GET = async (req: NextRequest) => {
                height: "500px",
                borderRadius: "50%",
                background:
-                  "radial-gradient(circle, rgba(100,100,120,0.15) 0%, transparent 70%)",
+                  "radial-gradient(circle, rgba(192,120,32,0.12) 0%, transparent 70%)",
                display: "flex",
             }}
          />
@@ -110,7 +98,7 @@ export const GET = async (req: NextRequest) => {
                   fill="none"
                   style={{ display: "flex" }}
                >
-                  <path d="M12 9L24 16L12 23V9Z" fill="#e5e5e5" />
+                  <path d="M12 9L24 16L12 23V9Z" fill="#c07820" />
                </svg>
             </div>
             <span
@@ -118,6 +106,7 @@ export const GET = async (req: NextRequest) => {
                   fontSize: "24px",
                   fontWeight: 600,
                   letterSpacing: "-0.02em",
+                  color: "#c07820",
                   display: "flex",
                }}
             >
@@ -152,7 +141,7 @@ export const GET = async (req: NextRequest) => {
                         style={{
                            fontSize: "48px",
                            fontWeight: 800,
-                           color: "#a3a3a3",
+                           color: "#c07820",
                            display: "flex",
                         }}
                      >
@@ -180,7 +169,7 @@ export const GET = async (req: NextRequest) => {
                   padding: "10px 24px",
                   background: "#171717",
                   borderRadius: "100px",
-                  border: "1px solid #262626",
+                  border: "1px solid rgba(192,120,32,0.3)",
                }}
             >
                <span
