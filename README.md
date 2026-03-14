@@ -17,6 +17,7 @@ Built with Next.js 16, tRPC, Tailwind CSS v4, Recharts, and Framer Motion.
 - **Global Search** — <kbd>Cmd+K</kbd> command palette searching movies and TV shows, filter by genre or director
 - **Admin Panel** — <kbd>Cmd+L</kbd> to view cache status, purge caches (protected by secret)
 - **Smart Caching** — tiered TTLs (library 1hr, metadata 30min, analytics 15min, activity 5min), server-side image cache (24hr)
+- **Recommendations** — visitors can recommend movies/TV shows via a dialog: search TMDB, enter name + optional message, submit. Notifications sent via Resend, SMTP, or Discord webhook. Optional Cloudflare Turnstile captcha. Rate limited to 5/hr per IP with Turnstile bypass.
 - **Privacy Controls** — `SHOW_DEVICES` and `SHOW_LOCATIONS` env vars to control what data is exposed
 - **Docker** — multi-stage build, pushes to GHCR via GitHub Actions
 - **Analytics** — optional Plausible integration with self-hosted instance support
@@ -120,6 +121,59 @@ docker pull ghcr.io/davidilie/plexo:latest
 | `PLAUSIBLE_DOMAIN` | No | Domain for Plausible tracking |
 | `PLAUSIBLE_SCRIPT_URL` | No | Self-hosted Plausible script URL |
 | `PLAUSIBLE_API_URL` | No | Self-hosted Plausible event API URL |
+| `RECOMMEND_ENABLED` | No | Enable recommend feature server-side (default: false) |
+| `NEXT_PUBLIC_RECOMMEND_ENABLED` | No | Show recommend button in navbar (default: false) |
+| `TMDB_API_KEY` | No | TMDB API key for searching movies/TV (required if recommendations enabled) |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | No | Cloudflare Turnstile site key (enables captcha on form) |
+| `TURNSTILE_SECRET_KEY` | No | Cloudflare Turnstile secret key (enables server-side verification + rate limit bypass) |
+| `RESEND_API_KEY` | No | Resend API key for email notifications |
+| `RECOMMEND_EMAIL_TO` | No | Email address to receive recommendations (used by Resend and SMTP) |
+| `SMTP_HOST` | No | SMTP server hostname |
+| `SMTP_PORT` | No | SMTP server port (default: 587) |
+| `SMTP_USER` | No | SMTP username |
+| `SMTP_PASS` | No | SMTP password |
+| `SMTP_FROM` | No | SMTP sender address |
+| `DISCORD_WEBHOOK_URL` | No | Discord webhook URL for recommendation notifications |
+
+## Recommendations Setup
+
+The recommend feature lets visitors suggest movies/TV shows to you. To enable it:
+
+### 1. Get a TMDB API key
+
+1. Create an account at [themoviedb.org](https://www.themoviedb.org/)
+2. Go to **Settings** → **API** → **Request an API Key**
+3. Copy your API key (v3 auth)
+
+### 2. Set up a notification channel
+
+You need at least one channel configured to receive recommendations. All configured channels fire in parallel.
+
+**Discord (easiest):** Create a webhook in your Discord server (Server Settings → Integrations → Webhooks) and set `DISCORD_WEBHOOK_URL`.
+
+**Resend:** Sign up at [resend.com](https://resend.com), get an API key, and set `RESEND_API_KEY` + `RECOMMEND_EMAIL_TO`.
+
+**SMTP:** Set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, and `RECOMMEND_EMAIL_TO`.
+
+### 3. Enable the feature
+
+```env
+RECOMMEND_ENABLED=true
+NEXT_PUBLIC_RECOMMEND_ENABLED=true
+TMDB_API_KEY=your_tmdb_api_key
+# Plus at least one notification channel from above
+```
+
+A "Recommend" button with a heart icon will appear in the navbar.
+
+### 4. Optional: Cloudflare Turnstile
+
+To add captcha protection:
+
+1. Go to [Cloudflare Turnstile](https://dash.cloudflare.com/?to=/:account/turnstile) and create a widget
+2. Set `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (client) and `TURNSTILE_SECRET_KEY` (server)
+
+When Turnstile is configured, the captcha widget appears on the recommendation form. If a user hits the 5/hr rate limit, they can verify via Turnstile to reset their limit and continue.
 
 ## Caching
 
