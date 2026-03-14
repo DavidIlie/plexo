@@ -20,6 +20,7 @@ interface ChartWrapperProps {
    isLoading: boolean;
    height?: number;
    children: ReactNode;
+   headerRight?: ReactNode;
 }
 
 export const ChartWrapper = ({
@@ -28,11 +29,15 @@ export const ChartWrapper = ({
    isLoading,
    height = 280,
    children,
+   headerRight,
 }: ChartWrapperProps) => {
    if (isLoading) {
       return (
          <div className="rounded-lg border border-border/50 bg-card/50 p-4">
-            <p className="mb-1 text-sm font-medium">{title}</p>
+            <div className="mb-1 flex items-center justify-between">
+               <p className="text-sm font-medium">{title}</p>
+               {headerRight}
+            </div>
             {description && (
                <p className="mb-3 text-xs text-muted-foreground">
                   {description}
@@ -50,7 +55,10 @@ export const ChartWrapper = ({
          transition={{ duration: 0.35 }}
          className="rounded-lg border border-border/50 bg-card/50 p-4"
       >
-         <p className="mb-1 text-sm font-medium">{title}</p>
+         <div className="mb-1 flex items-center justify-between">
+            <p className="text-sm font-medium">{title}</p>
+            {headerRight}
+         </div>
          {description && (
             <p className="mb-3 text-xs text-muted-foreground">{description}</p>
          )}
