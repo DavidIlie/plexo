@@ -2,15 +2,24 @@ interface CacheEntry<T> {
    data: T;
    fetchedAt: Date;
    expiresAt: Date;
+   ttlMs: number;
 }
+
+const MAX_CACHE_SIZE = 500;
 
 const globalForCache = globalThis as unknown as {
    __plexoCache?: Map<string, CacheEntry<unknown>>;
+   __plexoInFlight?: Map<string, Promise<unknown>>;
 };
 
 const cache = (globalForCache.__plexoCache ??= new Map<
    string,
    CacheEntry<unknown>
+>());
+
+const inFlight = (globalForCache.__plexoInFlight ??= new Map<
+   string,
+   Promise<unknown>
 >());
 
 export const CacheTTL = {
@@ -20,6 +29,51 @@ export const CacheTTL = {
    ANALYTICS: 15 * 60 * 1000,
 } as const;
 
+const evictOldest = () => {
+   const evictCount = Math.ceil(MAX_CACHE_SIZE * 0.1);
+   const keys = cache.keys();
+   for (let i = 0; i < evictCount; i++) {
+      const result = keys.next();
+      if (result.done) break;
+      cache.delete(result.value);
+   }
+};
+
+const doFetch = async <T>(
+   key: string,
+   fetcher: () => Promise<T>,
+   ttlMs: number,
+): Promise<{ data: T; fetchedAt: Date }> => {
+   const existing = inFlight.get(key);
+   if (existing) {
+      return existing as Promise<{ data: T; fetchedAt: Date }>;
+   }
+
+   const promise = fetcher()
+      .then((data) => {
+         const now = new Date();
+         const entry: CacheEntry<T> = {
+            data,
+            fetchedAt: now,
+            expiresAt: new Date(now.getTime() + ttlMs),
+            ttlMs,
+         };
+         cache.set(key, entry);
+
+         if (cache.size > MAX_CACHE_SIZE) {
+            evictOldest();
+         }
+
+         return { data, fetchedAt: now };
+      })
+      .finally(() => {
+         inFlight.delete(key);
+      });
+
+   inFlight.set(key, promise);
+   return promise;
+};
+
 export const getCachedOrFetch = async <T>(
    key: string,
    fetcher: () => Promise<T>,
@@ -27,20 +81,25 @@ export const getCachedOrFetch = async <T>(
 ): Promise<{ data: T; fetchedAt: Date }> => {
    const existing = cache.get(key) as CacheEntry<T> | undefined;
 
-   if (existing && existing.expiresAt.getTime() > Date.now()) {
-      return { data: existing.data, fetchedAt: existing.fetchedAt };
+   if (existing) {
+      const now = Date.now();
+
+      // Fresh hit — return immediately
+      if (existing.expiresAt.getTime() > now) {
+         return { data: existing.data, fetchedAt: existing.fetchedAt };
+      }
+
+      // Stale-while-revalidate: within 20% grace window of original TTL
+      const graceMs = existing.ttlMs * 0.2;
+      if (now < existing.expiresAt.getTime() + graceMs) {
+         // Return stale data immediately, trigger background revalidation
+         void doFetch(key, fetcher, ttlMs);
+         return { data: existing.data, fetchedAt: existing.fetchedAt };
+      }
    }
 
-   const data = await fetcher();
-   const now = new Date();
-   const entry: CacheEntry<T> = {
-      data,
-      fetchedAt: now,
-      expiresAt: new Date(now.getTime() + ttlMs),
-   };
-   cache.set(key, entry);
-
-   return { data, fetchedAt: now };
+   // Hard miss — coalesced fetch
+   return doFetch(key, fetcher, ttlMs);
 };
 
 export const invalidateAll = () => {
@@ -75,6 +134,7 @@ export const getCacheStats = () => {
    return {
       totalEntries: cache.size,
       activeEntries: entries.filter((e) => !e.expired).length,
+      inFlightCount: inFlight.size,
       entries: entries.sort((a, b) => b.fetchedAt.localeCompare(a.fetchedAt)),
    };
 };
