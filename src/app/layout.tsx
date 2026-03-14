@@ -11,6 +11,7 @@ import { Footer } from "~/components/footer";
 import { RefreshDialog } from "~/components/refresh-dialog";
 import { SearchDialog } from "~/components/search-dialog";
 import { RecommendDialog } from "~/components/recommend-dialog";
+import { AppConfigProvider } from "~/components/app-config-provider";
 
 const geistSans = Geist({
    variable: "--font-geist-sans",
@@ -65,18 +66,23 @@ const RootLayout = ({
             suppressHydrationWarning
          >
             <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-               <NuqsAdapter>
-                  <TRPCReactProvider>
-                     <Navbar />
-                     <main className="mx-auto max-w-7xl px-4 py-6">
-                        {children}
-                     </main>
-                     <Footer />
-                     <SearchDialog />
-                     <RefreshDialog />
-                     <RecommendDialog />
-                  </TRPCReactProvider>
-               </NuqsAdapter>
+               <AppConfigProvider
+                  recommendEnabled={env.RECOMMEND_ENABLED}
+                  turnstileSiteKey={env.TURNSTILE_SITE_KEY}
+               >
+                  <NuqsAdapter>
+                     <TRPCReactProvider>
+                        <Navbar />
+                        <main className="mx-auto max-w-7xl px-4 py-6">
+                           {children}
+                        </main>
+                        <Footer />
+                        <SearchDialog />
+                        <RefreshDialog />
+                        <RecommendDialog />
+                     </TRPCReactProvider>
+                  </NuqsAdapter>
+               </AppConfigProvider>
             </ThemeProvider>
          </body>
       </html>

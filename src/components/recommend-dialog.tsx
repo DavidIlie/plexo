@@ -8,7 +8,7 @@ import { usePlausible } from "next-plausible";
 import { Turnstile } from "@marsidev/react-turnstile";
 
 import { useTRPC } from "~/trpc/react";
-import { env } from "~/env";
+import { useAppConfig } from "~/components/app-config-provider";
 import {
    Dialog,
    DialogContent,
@@ -27,6 +27,7 @@ type Phase = "search" | "form" | "success" | "rate-limited";
 export const RecommendDialog = () => {
    const trpc = useTRPC();
    const plausible = usePlausible();
+   const { turnstileSiteKey } = useAppConfig();
    const [open, setOpen] = useState(false);
    const [phase, setPhase] = useState<Phase>("search");
    const [query, setQuery] = useState("");
@@ -36,8 +37,6 @@ export const RecommendDialog = () => {
    const [turnstileToken, setTurnstileToken] = useState<string | undefined>();
 
    const debouncedQuery = useDebounce(query, 300);
-
-   const turnstileSiteKey = env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
    const reset = useCallback(() => {
       setPhase("search");

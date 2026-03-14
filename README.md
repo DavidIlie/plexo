@@ -121,10 +121,9 @@ docker pull ghcr.io/davidilie/plexo:latest
 | `PLAUSIBLE_DOMAIN` | No | Domain for Plausible tracking |
 | `PLAUSIBLE_SCRIPT_URL` | No | Self-hosted Plausible script URL |
 | `PLAUSIBLE_API_URL` | No | Self-hosted Plausible event API URL |
-| `RECOMMEND_ENABLED` | No | Enable recommend feature server-side (default: false) |
-| `NEXT_PUBLIC_RECOMMEND_ENABLED` | No | Show recommend button in navbar (default: false) |
+| `RECOMMEND_ENABLED` | No | Enable recommend feature (default: false) |
 | `TMDB_API_KEY` | No | TMDB API key for searching movies/TV (required if recommendations enabled) |
-| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | No | Cloudflare Turnstile site key (enables captcha on form) |
+| `TURNSTILE_SITE_KEY` | No | Cloudflare Turnstile site key (enables captcha on form) |
 | `TURNSTILE_SECRET_KEY` | No | Cloudflare Turnstile secret key (enables server-side verification + rate limit bypass) |
 | `RESEND_API_KEY` | No | Resend API key for email notifications |
 | `RECOMMEND_EMAIL_TO` | No | Email address to receive recommendations (used by Resend and SMTP) |
@@ -159,7 +158,6 @@ You need at least one channel configured to receive recommendations. All configu
 
 ```env
 RECOMMEND_ENABLED=true
-NEXT_PUBLIC_RECOMMEND_ENABLED=true
 TMDB_API_KEY=your_tmdb_api_key
 # Plus at least one notification channel from above
 ```
@@ -171,7 +169,7 @@ A "Recommend" button with a heart icon will appear in the navbar.
 To add captcha protection:
 
 1. Go to [Cloudflare Turnstile](https://dash.cloudflare.com/?to=/:account/turnstile) and create a widget
-2. Set `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (client) and `TURNSTILE_SECRET_KEY` (server)
+2. Set `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY`
 
 When Turnstile is configured, the captcha widget appears on the recommendation form. If a user hits the 5/hr rate limit, they can verify via Turnstile to reset their limit and continue.
 

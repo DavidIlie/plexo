@@ -31,6 +31,7 @@ export const env = createEnv({
          .default("false")
          .transform((v) => v === "true"),
       TMDB_API_KEY: z.string().optional(),
+      TURNSTILE_SITE_KEY: z.string().optional(),
       TURNSTILE_SECRET_KEY: z.string().optional(),
       RESEND_API_KEY: z.string().optional(),
       RECOMMEND_EMAIL_TO: z.string().optional(),
@@ -44,19 +45,8 @@ export const env = createEnv({
          .enum(["development", "test", "production"])
          .default("development"),
    },
-   client: {
-      NEXT_PUBLIC_TURNSTILE_SITE_KEY: z.string().optional(),
-      NEXT_PUBLIC_RECOMMEND_ENABLED: z
-         .enum(["true", "false"])
-         .default("false")
-         .transform((v) => v === "true"),
-   },
+   client: {},
    skipValidation: !!process.env.SKIP_ENV_VALIDATION,
    emptyStringAsUndefined: true,
-   experimental__runtimeEnv: {
-      NEXT_PUBLIC_TURNSTILE_SITE_KEY:
-         process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
-      NEXT_PUBLIC_RECOMMEND_ENABLED:
-         process.env.NEXT_PUBLIC_RECOMMEND_ENABLED,
-   },
+   experimental__runtimeEnv: {},
 });

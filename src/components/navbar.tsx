@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "~/lib/utils";
-import { env } from "~/env";
+import { useAppConfig } from "~/components/app-config-provider";
 import { Button } from "~/components/ui/button";
 
 const navItems = [
@@ -29,6 +29,7 @@ const navItems = [
 export const Navbar = () => {
    const pathname = usePathname();
    const { theme, setTheme } = useTheme();
+   const { recommendEnabled } = useAppConfig();
 
    const openSearch = () => {
       window.dispatchEvent(
@@ -83,7 +84,7 @@ export const Navbar = () => {
                </div>
             </div>
             <div className="flex items-center gap-1">
-               {env.NEXT_PUBLIC_RECOMMEND_ENABLED && (
+               {recommendEnabled && (
                   <Button
                      variant="ghost"
                      size="sm"
