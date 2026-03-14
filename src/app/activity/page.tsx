@@ -4,14 +4,16 @@ import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { formatDistanceToNow, format } from "date-fns";
-import { Film, Tv, Music, ArrowLeft } from "lucide-react";
+import { Film, Tv, Music, ArrowLeft, Search, X } from "lucide-react";
 import Link from "next/link";
 
 import { useTRPC } from "~/trpc/react";
+import { useDebounce } from "~/hooks/use-debounce";
 import { useIntersectionObserver } from "~/hooks/use-intersection-observer";
 import { PlexImage } from "~/components/plex-image";
 import { MediaDetailDialog } from "~/components/media/media-detail-dialog";
 import { Skeleton } from "~/components/ui/skeleton";
+import { Input } from "~/components/ui/input";
 import {
    Select,
    SelectContent,
@@ -44,6 +46,8 @@ const ActivityPage = () => {
    const trpc = useTRPC();
    const router = useRouter();
    const [mediaType, setMediaType] = useState("all");
+   const [search, setSearch] = useState("");
+   const debouncedSearch = useDebounce(search, 200);
    const [selectedItem, setSelectedItem] = useState<PlexMediaItem | null>(null);
 
    const {
@@ -62,10 +66,20 @@ const ActivityPage = () => {
       ),
    );
 
-   const items = useMemo(
+   const allItems = useMemo(
       () => data?.pages.flatMap((p) => p.items) ?? [],
       [data],
    );
+
+   const items = useMemo(() => {
+      if (!debouncedSearch) return allItems;
+      const q = debouncedSearch.toLowerCase();
+      return allItems.filter((item) =>
+         item.full_title.toLowerCase().includes(q) ||
+         (item.grandparent_title && item.grandparent_title.toLowerCase().includes(q)) ||
+         item.title.toLowerCase().includes(q),
+      );
+   }, [allItems, debouncedSearch]);
 
    const loadMore = useCallback(() => {
       if (hasNextPage && !isFetchingNextPage) {
@@ -98,6 +112,24 @@ const ActivityPage = () => {
                   <SelectItem value="track">Music</SelectItem>
                </SelectContent>
             </Select>
+         </div>
+
+         <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+               placeholder="Search activity..."
+               value={search}
+               onChange={(e) => setSearch(e.target.value)}
+               className="pl-9 pr-8"
+            />
+            {search && (
+               <button
+                  onClick={() => setSearch("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+               >
+                  <X className="h-3.5 w-3.5" />
+               </button>
+            )}
          </div>
 
          {isLoading ? (
