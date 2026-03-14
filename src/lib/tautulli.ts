@@ -102,6 +102,23 @@ export interface TautulliGeoData {
    accuracy: number;
 }
 
+export interface TautulliLibraryMediaInfo {
+   recordsTotal: number;
+   recordsFiltered: number;
+   total_file_size: number;
+   filtered_file_size: number;
+   data: unknown[];
+}
+
+export const getLibraryMediaInfo = async (
+   sectionId: string,
+): Promise<TautulliLibraryMediaInfo> => {
+   return tautulliFetch<TautulliLibraryMediaInfo>("get_library_media_info", {
+      section_id: sectionId,
+      length: 0,
+   });
+};
+
 export const getGeoipLookup = async (
    ipAddress: string,
 ): Promise<TautulliGeoData> => {

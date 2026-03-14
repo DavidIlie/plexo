@@ -7,6 +7,7 @@ import {
    getPlaysByDayOfWeek,
    getPlaysByHourOfDay,
    getGeoipLookup,
+   getLibraryMediaInfo,
 } from "~/lib/tautulli";
 import { env } from "~/env";
 
@@ -468,6 +469,105 @@ export const analyticsRouter = createTRPCRouter({
                .sort((a, b) => b.plays - a.plays);
          },
          CacheTTL.ANALYTICS,
+      );
+
+      return {
+         data: result.data,
+         lastUpdatedAt: result.fetchedAt.toISOString(),
+      };
+   }),
+
+   getVideoQualityStats: publicProcedure.query(async () => {
+      const result = await getCachedOrFetch(
+         "analytics:videoQualityStats",
+         async () => {
+            const history = await getHistory(2000);
+            const resolutions = new Map<string, number>();
+
+            for (const item of history.data) {
+               if (
+                  item.media_type === "track" ||
+                  !item.video_full_resolution
+               )
+                  continue;
+               const res = item.video_full_resolution || "Unknown";
+               resolutions.set(res, (resolutions.get(res) ?? 0) + 1);
+            }
+
+            return Array.from(resolutions.entries())
+               .map(([name, plays]) => ({ name, plays }))
+               .sort((a, b) => b.plays - a.plays)
+               .slice(0, 10);
+         },
+         CacheTTL.ANALYTICS,
+      );
+
+      return {
+         data: result.data,
+         lastUpdatedAt: result.fetchedAt.toISOString(),
+      };
+   }),
+
+   getAudioFormatStats: publicProcedure.query(async () => {
+      const result = await getCachedOrFetch(
+         "analytics:audioFormatStats",
+         async () => {
+            const history = await getHistory(2000);
+            const codecs = new Map<string, number>();
+
+            for (const item of history.data) {
+               if (item.media_type === "track" || !item.audio_codec) continue;
+               const codec = item.audio_codec.toUpperCase();
+               codecs.set(codec, (codecs.get(codec) ?? 0) + 1);
+            }
+
+            return Array.from(codecs.entries())
+               .map(([name, plays]) => ({ name, plays }))
+               .sort((a, b) => b.plays - a.plays)
+               .slice(0, 10);
+         },
+         CacheTTL.ANALYTICS,
+      );
+
+      return {
+         data: result.data,
+         lastUpdatedAt: result.fetchedAt.toISOString(),
+      };
+   }),
+
+   getLibrarySizeStats: publicProcedure.query(async () => {
+      const result = await getCachedOrFetch(
+         "analytics:librarySizeStats",
+         async () => {
+            const sections = await getLibrarySections();
+            const sizes: Array<{
+               name: string;
+               type: string;
+               bytes: number;
+               items: number;
+            }> = [];
+
+            for (const section of sections) {
+               if (
+                  section.type !== "movie" &&
+                  section.type !== "show" &&
+                  section.type !== "artist"
+               )
+                  continue;
+               if (section.type === "artist" && !env.SHOW_MUSIC) continue;
+
+               const info = await getLibraryMediaInfo(section.key);
+               sizes.push({
+                  name: section.title,
+                  type: section.type,
+                  bytes: info.total_file_size,
+                  items: info.recordsTotal,
+               });
+            }
+
+            return sizes;
+         },
+         CacheTTL.LIBRARY,
       );
 
       return {

@@ -10,6 +10,9 @@ import { MonthlyTrendsChart } from "~/components/analytics/monthly-trends-chart"
 import { MediaRatioChart } from "~/components/analytics/media-ratio-chart";
 import { DeviceChart } from "~/components/analytics/device-chart";
 import { LocationChart } from "~/components/analytics/location-chart";
+import { VideoQualityChart } from "~/components/analytics/video-quality-chart";
+import { AudioFormatChart } from "~/components/analytics/audio-format-chart";
+import { LibrarySizeChart } from "~/components/analytics/library-size-chart";
 import { PeriodSelector, usePeriodDays } from "~/components/analytics/period-selector";
 import { RefreshButton } from "~/components/refresh-button";
 import { Skeleton } from "~/components/ui/skeleton";
@@ -18,15 +21,27 @@ const AnalyticsCharts = () => {
    const days = usePeriodDays();
 
    return (
-      <div className="grid gap-4 md:grid-cols-2">
-         <MonthlyTrendsChart timeRange={days} />
-         <MediaRatioChart />
-         <GenreDistributionChart />
-         <TopGenresChart />
-         <WatchTimeByDayChart timeRange={days} />
-         <WatchTimeByHourChart timeRange={days} />
-         <DeviceChart />
-         <LocationChart />
+      <div className="space-y-6">
+         <div className="grid gap-4 md:grid-cols-2">
+            <MonthlyTrendsChart timeRange={days} />
+            <MediaRatioChart />
+            <GenreDistributionChart />
+            <TopGenresChart />
+            <WatchTimeByDayChart timeRange={days} />
+            <WatchTimeByHourChart timeRange={days} />
+            <DeviceChart />
+            <LocationChart />
+         </div>
+         <div>
+            <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-muted-foreground">
+               Quality & Storage
+            </h2>
+            <div className="grid gap-4 md:grid-cols-2">
+               <VideoQualityChart />
+               <AudioFormatChart />
+               <LibrarySizeChart />
+            </div>
+         </div>
       </div>
    );
 };
