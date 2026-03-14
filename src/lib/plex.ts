@@ -84,6 +84,13 @@ export const getMetadata = async (ratingKey: string): Promise<PlexMediaItem | nu
    return data.MediaContainer.Metadata?.[0] ?? null;
 };
 
+export const getChildren = async (ratingKey: string): Promise<PlexMediaItem[]> => {
+   const data = await plexFetch<PlexMediaContainer<PlexMediaItem>>(
+      `/library/metadata/${ratingKey}/children`,
+   );
+   return data.MediaContainer.Metadata ?? [];
+};
+
 export const getGenres = async (sectionId: string): Promise<PlexGenre[]> => {
    const data = await plexFetch<PlexMediaContainer<PlexGenre>>(
       `/library/sections/${sectionId}/genre`,

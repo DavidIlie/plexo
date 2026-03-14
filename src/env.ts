@@ -10,6 +10,14 @@ export const env = createEnv({
       TAUTULLI_USER_ID: z.string().optional(),
       REFRESH_SECRET: z.string(),
       DISPLAY_NAME: z.string().default("David"),
+      APP_URL: z.string().url().default("http://localhost:3000"),
+      PLAUSIBLE_ENABLED: z
+         .enum(["true", "false"])
+         .default("false")
+         .transform((v) => v === "true"),
+      PLAUSIBLE_DOMAIN: z.string().optional(),
+      PLAUSIBLE_SCRIPT_URL: z.string().optional(),
+      PLAUSIBLE_API_URL: z.string().optional(),
       NODE_ENV: z
          .enum(["development", "test", "production"])
          .default("development"),

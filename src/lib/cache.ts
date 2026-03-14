@@ -47,3 +47,27 @@ export const invalidateByPrefix = (prefix: string) => {
       }
    }
 };
+
+export const getCacheStats = () => {
+   const entries: Array<{
+      key: string;
+      fetchedAt: string;
+      expiresAt: string;
+      expired: boolean;
+   }> = [];
+
+   for (const [key, entry] of cache.entries()) {
+      entries.push({
+         key,
+         fetchedAt: entry.fetchedAt.toISOString(),
+         expiresAt: entry.expiresAt.toISOString(),
+         expired: entry.expiresAt.getTime() < Date.now(),
+      });
+   }
+
+   return {
+      totalEntries: cache.size,
+      activeEntries: entries.filter((e) => !e.expired).length,
+      entries: entries.sort((a, b) => b.fetchedAt.localeCompare(a.fetchedAt)),
+   };
+};

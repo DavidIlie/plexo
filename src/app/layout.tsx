@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import PlausibleProvider from "next-plausible";
 import "./globals.css";
+import { env } from "~/env";
 import { TRPCReactProvider } from "~/trpc/react";
 import { ThemeProvider } from "~/components/theme-provider";
 import { Navbar } from "~/components/navbar";
@@ -30,6 +32,7 @@ export const metadata: Metadata = {
    },
    description: "Personal media dashboard for Plex",
    icons: [{ rel: "icon", url: "/icon.svg", type: "image/svg+xml" }],
+   metadataBase: new URL(env.APP_URL ?? "http://localhost:3000"),
 };
 
 const RootLayout = ({
@@ -39,6 +42,20 @@ const RootLayout = ({
 }>) => {
    return (
       <html lang="en" suppressHydrationWarning>
+         <head>
+            {env.PLAUSIBLE_ENABLED && env.PLAUSIBLE_DOMAIN && (
+               <PlausibleProvider
+                  domain={env.PLAUSIBLE_DOMAIN}
+                  selfHosted={!!env.PLAUSIBLE_SCRIPT_URL}
+                  scriptProps={{
+                     src: env.PLAUSIBLE_SCRIPT_URL ?? "/js/script.js",
+                     ...(env.PLAUSIBLE_API_URL
+                        ? { "data-api": env.PLAUSIBLE_API_URL }
+                        : {}),
+                  }}
+               />
+            )}
+         </head>
          <body
             className={`${geistSans.variable} ${geistMono.variable} antialiased`}
             suppressHydrationWarning

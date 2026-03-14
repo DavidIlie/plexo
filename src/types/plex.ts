@@ -61,6 +61,7 @@ export interface PlexMediaContainer<T> {
 
 export interface PlexOnDeckItem extends PlexMediaItem {
    grandparentTitle?: string;
+   grandparentRatingKey?: string;
    parentTitle?: string;
    grandparentThumb?: string;
    parentThumb?: string;

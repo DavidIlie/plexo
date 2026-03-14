@@ -12,6 +12,14 @@ interface PlexImageProps {
    priority?: boolean;
 }
 
+const shimmer = (w: number, h: number) =>
+   `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g"><stop stop-color="#1a1a1a" offset="0%"/><stop stop-color="#262626" offset="50%"/><stop stop-color="#1a1a1a" offset="100%"/></linearGradient></defs><rect width="${w}" height="${h}" fill="url(#g)"/></svg>`;
+
+const toBase64 = (str: string) =>
+   typeof window === "undefined"
+      ? Buffer.from(str).toString("base64")
+      : btoa(str);
+
 export const PlexImage: React.FC<PlexImageProps> = ({
    path,
    alt,
@@ -24,7 +32,7 @@ export const PlexImage: React.FC<PlexImageProps> = ({
       return (
          <div
             className={cn(
-               "flex items-center justify-center bg-muted text-muted-foreground",
+               "flex items-center justify-center bg-muted text-xs text-muted-foreground",
                className,
             )}
             style={{ width, height }}
@@ -43,6 +51,8 @@ export const PlexImage: React.FC<PlexImageProps> = ({
          className={className}
          priority={priority}
          unoptimized
+         placeholder="blur"
+         blurDataURL={`data:image/svg+xml;base64,${toBase64(shimmer(width, height))}`}
       />
    );
 };
