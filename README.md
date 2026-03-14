@@ -15,9 +15,10 @@ Built with Next.js 16, tRPC, Tailwind CSS v4, Recharts, and Framer Motion.
 - **TV Shows** — library grid with episode progress bars and completion filters, per-season episode breakdown with missing episode detection
 - **Analytics** — 8 chart visualizations with configurable time range (7d/30d/MTD/90d/year), period navigation with left/right arrows
 - **Global Search** — <kbd>Cmd+K</kbd> command palette searching movies and TV shows, filter by genre or director
-- **Admin Panel** — <kbd>Cmd+L</kbd> to view cache status, purge caches (protected by secret)
 - **Smart Caching** — tiered TTLs (library 1hr, metadata 30min, analytics 15min, activity 5min), server-side image cache (24hr)
-- **Recommendations** — visitors can recommend movies/TV shows via a dialog: search TMDB, enter name + optional message, submit. Notifications sent via Resend, SMTP, or Discord webhook. Optional Cloudflare Turnstile captcha. Rate limited to 5/hr per IP with Turnstile bypass.
+- **Recommendations** — visitors can recommend movies/TV shows via a dialog: search TMDB (with "In Library" badges for titles you already have), enter name + optional message, submit. Notifications via Resend, SMTP, or Discord webhook. Optional Turnstile captcha with rate limit bypass. Optional Overseerr integration to auto-create requests.
+- **Wishlist** — dashboard section showing pending items from Overseerr requests and Plex Watchlist, merged and deduplicated
+- **Admin Panel** — <kbd>Cmd+L</kbd> to view cache status, purge caches, test Discord/email notifications (protected by secret + optional Turnstile)
 - **Privacy Controls** — `SHOW_DEVICES` and `SHOW_LOCATIONS` env vars to control what data is exposed
 - **Docker** — multi-stage build, pushes to GHCR via GitHub Actions
 - **Analytics** — optional Plausible integration with self-hosted instance support
@@ -134,6 +135,8 @@ docker pull ghcr.io/davidilie/plexo:latest
 | `SMTP_PASS` | No | SMTP password |
 | `SMTP_FROM` | No | SMTP sender address |
 | `DISCORD_WEBHOOK_URL` | No | Discord webhook URL for recommendation notifications |
+| `OVERSEERR_URL` | No | Overseerr instance URL (enables request creation + dashboard wishlist) |
+| `OVERSEERR_API_KEY` | No | Overseerr API key |
 
 ## Recommendations Setup
 

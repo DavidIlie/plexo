@@ -8,6 +8,7 @@ import { StatCard } from "~/components/dashboard/stat-card";
 import { OnDeck } from "~/components/dashboard/on-deck";
 import { RecentlyWatched } from "~/components/dashboard/recently-watched";
 import { Highlights } from "~/components/dashboard/highlights";
+import { Wishlist } from "~/components/dashboard/wishlist";
 import { GenreDistributionChart } from "~/components/analytics/genre-distribution-chart";
 import { WatchTimeByHourChart } from "~/components/analytics/watch-time-by-hour-chart";
 import { Skeleton } from "~/components/ui/skeleton";
@@ -82,6 +83,9 @@ const DashboardPage = async () => {
    void queryClient.prefetchQuery(
       trpc.analytics.getHighlights.queryOptions(),
    );
+   void queryClient.prefetchQuery(
+      trpc.recommend.getWishlist.queryOptions(),
+   );
 
    return (
       <HydrateClient>
@@ -90,6 +94,10 @@ const DashboardPage = async () => {
 
             <Suspense fallback={<SectionFallback />}>
                <Highlights />
+            </Suspense>
+
+            <Suspense fallback={null}>
+               <Wishlist />
             </Suspense>
 
             <div>

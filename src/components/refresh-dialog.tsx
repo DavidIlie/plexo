@@ -1,9 +1,25 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { RefreshCw, Database, Clock, Trash2, Shield, Gauge } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import {
+   RefreshCw,
+   Database,
+   Clock,
+   Trash2,
+   Shield,
+   Gauge,
+   Bell,
+   Mail,
+   MessageSquare,
+   Check,
+   Loader2,
+} from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { Turnstile } from "@marsidev/react-turnstile";
 
+import { useTRPC } from "~/trpc/react";
+import { useAppConfig } from "~/components/app-config-provider";
 import {
    Dialog,
    DialogContent,
@@ -35,9 +51,119 @@ interface CacheStats {
    rateLimits: RateLimitEntry[];
 }
 
+const NotificationTests = ({
+   secret,
+   turnstileSiteKey,
+   adminTurnstileToken,
+   onTurnstileSuccess,
+}: {
+   secret: string;
+   turnstileSiteKey?: string;
+   adminTurnstileToken?: string;
+   onTurnstileSuccess: (token: string) => void;
+}) => {
+   const trpc = useTRPC();
+
+   const testDiscord = useMutation(
+      trpc.recommend.testNotification.mutationOptions(),
+   );
+   const testEmail = useMutation(
+      trpc.recommend.testNotification.mutationOptions(),
+   );
+
+   const needsTurnstile = !!turnstileSiteKey && !adminTurnstileToken;
+
+   return (
+      <>
+         <Separator />
+         <div className="space-y-2">
+            <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+               <Bell className="h-3 w-3" />
+               Test notifications
+            </p>
+
+            {needsTurnstile && (
+               <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                     Complete verification to test notifications
+                  </p>
+                  <Turnstile
+                     siteKey={turnstileSiteKey!}
+                     onSuccess={onTurnstileSuccess}
+                  />
+               </div>
+            )}
+
+            {!needsTurnstile && (
+               <div className="flex gap-2">
+                  <Button
+                     variant="outline"
+                     size="sm"
+                     className="flex-1 gap-1.5"
+                     disabled={testDiscord.isPending}
+                     onClick={() =>
+                        testDiscord.mutate({
+                           channel: "discord",
+                           secret,
+                           turnstileToken: adminTurnstileToken,
+                        })
+                     }
+                  >
+                     {testDiscord.isPending ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                     ) : testDiscord.isSuccess ? (
+                        <Check className="h-3 w-3 text-green-500" />
+                     ) : (
+                        <MessageSquare className="h-3 w-3" />
+                     )}
+                     Discord
+                  </Button>
+                  <Button
+                     variant="outline"
+                     size="sm"
+                     className="flex-1 gap-1.5"
+                     disabled={testEmail.isPending}
+                     onClick={() =>
+                        testEmail.mutate({
+                           channel: "email",
+                           secret,
+                           turnstileToken: adminTurnstileToken,
+                        })
+                     }
+                  >
+                     {testEmail.isPending ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                     ) : testEmail.isSuccess ? (
+                        <Check className="h-3 w-3 text-green-500" />
+                     ) : (
+                        <Mail className="h-3 w-3" />
+                     )}
+                     Email
+                  </Button>
+               </div>
+            )}
+
+            {testDiscord.error && (
+               <p className="text-xs text-destructive">
+                  Discord: {testDiscord.error.message}
+               </p>
+            )}
+            {testEmail.error && (
+               <p className="text-xs text-destructive">
+                  Email: {testEmail.error.message}
+               </p>
+            )}
+         </div>
+      </>
+   );
+};
+
 export const RefreshDialog = () => {
+   const trpc = useTRPC();
+   const { turnstileSiteKey } = useAppConfig();
    const [open, setOpen] = useState(false);
    const [secret, setSecret] = useState("");
+   const [adminTurnstileToken, setAdminTurnstileToken] = useState<string | undefined>();
    const [authenticated, setAuthenticated] = useState(false);
    const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
    const [errorMessage, setErrorMessage] = useState("");
@@ -50,6 +176,7 @@ export const RefreshDialog = () => {
       setStatus("idle");
       setErrorMessage("");
       setCacheStats(null);
+      setAdminTurnstileToken(undefined);
    }, []);
 
    useEffect(() => {
@@ -261,6 +388,13 @@ export const RefreshDialog = () => {
                            </div>
                         </>
                      )}
+
+                  <NotificationTests
+                     secret={secret}
+                     turnstileSiteKey={turnstileSiteKey}
+                     adminTurnstileToken={adminTurnstileToken}
+                     onTurnstileSuccess={setAdminTurnstileToken}
+                  />
                </div>
             )}
          </DialogContent>

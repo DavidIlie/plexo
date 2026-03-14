@@ -2,7 +2,17 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Search, Film, Tv, X, Check, Loader2, ShieldAlert } from "lucide-react";
+import {
+   Search,
+   Film,
+   Tv,
+   X,
+   Check,
+   Loader2,
+   ShieldAlert,
+   Heart,
+   Library,
+} from "lucide-react";
 import Image from "next/image";
 import { usePlausible } from "next-plausible";
 import { Turnstile } from "@marsidev/react-turnstile";
@@ -20,7 +30,7 @@ import { Textarea } from "~/components/ui/textarea";
 import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
 import { useDebounce } from "~/hooks/use-debounce";
-import type { TmdbSearchResult } from "~/types/tmdb";
+import type { TmdbSearchResultWithLibrary } from "~/types/tmdb";
 
 type Phase = "search" | "form" | "success" | "rate-limited";
 
@@ -31,7 +41,9 @@ export const RecommendDialog = () => {
    const [open, setOpen] = useState(false);
    const [phase, setPhase] = useState<Phase>("search");
    const [query, setQuery] = useState("");
-   const [selected, setSelected] = useState<TmdbSearchResult | null>(null);
+   const [selected, setSelected] = useState<TmdbSearchResultWithLibrary | null>(
+      null,
+   );
    const [senderName, setSenderName] = useState("");
    const [message, setMessage] = useState("");
    const [turnstileToken, setTurnstileToken] = useState<string | undefined>();
@@ -54,7 +66,8 @@ export const RecommendDialog = () => {
          }
       };
       window.addEventListener("open-recommend-dialog", handler);
-      return () => window.removeEventListener("open-recommend-dialog", handler);
+      return () =>
+         window.removeEventListener("open-recommend-dialog", handler);
    }, []);
 
    const { data: searchResults, isFetching: isSearching } = useQuery({
@@ -91,7 +104,7 @@ export const RecommendDialog = () => {
       }),
    );
 
-   const handleSelect = (item: TmdbSearchResult) => {
+   const handleSelect = (item: TmdbSearchResultWithLibrary) => {
       setSelected(item);
       setPhase("form");
    };
@@ -115,9 +128,9 @@ export const RecommendDialog = () => {
       });
    };
 
-   const getTitle = (item: TmdbSearchResult) =>
+   const getTitle = (item: TmdbSearchResultWithLibrary) =>
       item.title ?? item.name ?? "Unknown";
-   const getYear = (item: TmdbSearchResult) =>
+   const getYear = (item: TmdbSearchResultWithLibrary) =>
       (item.release_date ?? item.first_air_date)?.slice(0, 4) ?? "";
 
    return (
@@ -170,9 +183,20 @@ export const RecommendDialog = () => {
                         )}
 
                      {!isSearching && !debouncedQuery && (
-                        <p className="py-8 text-center text-sm text-muted-foreground">
-                           Search TMDB for a movie or TV show to recommend
-                        </p>
+                        <div className="flex flex-col items-center gap-3 px-4 py-8">
+                           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                              <Heart className="h-5 w-5 text-primary" />
+                           </div>
+                           <div className="text-center">
+                              <p className="text-sm font-medium">
+                                 Recommend something to watch
+                              </p>
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                 Search for a movie or TV show and
+                                 I&apos;ll get notified about your pick.
+                              </p>
+                           </div>
+                        </div>
                      )}
 
                      {searchResults?.data.map((item) => (
@@ -206,12 +230,25 @@ export const RecommendDialog = () => {
                                  {getYear(item)}
                               </p>
                            </div>
-                           <Badge
-                              variant="secondary"
-                              className="shrink-0 text-[10px]"
-                           >
-                              {item.media_type === "movie" ? "Movie" : "TV"}
-                           </Badge>
+                           <div className="flex shrink-0 items-center gap-1.5">
+                              {item.inLibrary && (
+                                 <Badge
+                                    variant="secondary"
+                                    className="gap-1 text-[10px] text-green-500"
+                                 >
+                                    <Library className="h-2.5 w-2.5" />
+                                    Saved
+                                 </Badge>
+                              )}
+                              <Badge
+                                 variant="secondary"
+                                 className="text-[10px]"
+                              >
+                                 {item.media_type === "movie"
+                                    ? "Movie"
+                                    : "TV"}
+                              </Badge>
+                           </div>
                         </button>
                      ))}
                   </div>
@@ -257,6 +294,16 @@ export const RecommendDialog = () => {
                         <X className="h-4 w-4" />
                      </button>
                   </div>
+
+                  {selected.inLibrary && (
+                     <div className="flex items-center gap-2 rounded-md bg-green-500/10 px-3 py-2">
+                        <Library className="h-3.5 w-3.5 shrink-0 text-green-500" />
+                        <p className="text-xs text-green-500">
+                           This is already in the library — but feel free
+                           to recommend it anyway!
+                        </p>
+                     </div>
+                  )}
 
                   <div className="space-y-3">
                      <div>
@@ -333,9 +380,7 @@ export const RecommendDialog = () => {
                      <ShieldAlert className="h-6 w-6 text-amber-500" />
                   </div>
                   <div className="text-center">
-                     <p className="text-sm font-medium">
-                        Rate limit reached
-                     </p>
+                     <p className="text-sm font-medium">Rate limit reached</p>
                      <p className="mt-1 text-xs text-muted-foreground">
                         Verify you&apos;re not a bot to continue
                      </p>

@@ -9,6 +9,10 @@ export interface TmdbSearchResult {
    overview: string;
 }
 
+export interface TmdbSearchResultWithLibrary extends TmdbSearchResult {
+   inLibrary: boolean;
+}
+
 export interface TmdbSearchResponse {
    page: number;
    results: TmdbSearchResult[];

@@ -69,6 +69,7 @@ const RootLayout = ({
                <AppConfigProvider
                   recommendEnabled={env.RECOMMEND_ENABLED}
                   turnstileSiteKey={env.TURNSTILE_SITE_KEY}
+                  overseerrEnabled={!!env.OVERSEERR_URL && !!env.OVERSEERR_API_KEY}
                >
                   <NuqsAdapter>
                      <TRPCReactProvider>

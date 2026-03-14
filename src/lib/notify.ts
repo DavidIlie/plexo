@@ -95,6 +95,26 @@ const sendViaDiscord = async (payload: RecommendationPayload) => {
    });
 };
 
+export const sendTestNotification = async (
+   channel: "discord" | "email",
+): Promise<void> => {
+   const testPayload: RecommendationPayload = {
+      title: "Test Movie",
+      mediaType: "movie",
+      year: "2024",
+      posterPath: null,
+      senderName: "Plexo Admin",
+      message: "This is a test notification from Plexo.",
+   };
+
+   if (channel === "discord") {
+      await sendViaDiscord(testPayload);
+   } else {
+      await sendViaResend(testPayload);
+      await sendViaSMTP(testPayload);
+   }
+};
+
 export const sendRecommendation = async (
    payload: RecommendationPayload,
 ): Promise<void> => {

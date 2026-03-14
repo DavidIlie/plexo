@@ -42,6 +42,8 @@ export const env = createEnv({
       SMTP_PASS: z.string().optional(),
       SMTP_FROM: z.string().optional(),
       DISCORD_WEBHOOK_URL: z.string().url().optional(),
+      OVERSEERR_URL: z.string().url().optional(),
+      OVERSEERR_API_KEY: z.string().optional(),
       NODE_ENV: z
          .enum(["development", "test", "production"])
          .default("development"),
