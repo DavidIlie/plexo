@@ -11,6 +11,7 @@ import { Highlights } from "~/components/dashboard/highlights";
 import { GenreDistributionChart } from "~/components/analytics/genre-distribution-chart";
 import { MediaRatioChart } from "~/components/analytics/media-ratio-chart";
 import { WatchTimeByDayChart } from "~/components/analytics/watch-time-by-day-chart";
+import { WatchTimeByHourChart } from "~/components/analytics/watch-time-by-hour-chart";
 import { Skeleton } from "~/components/ui/skeleton";
 
 export const generateMetadata = async (): Promise<Metadata> => {
@@ -88,36 +89,37 @@ const DashboardPage = async () => {
                <Highlights />
             </Suspense>
 
+            <div>
+               <div className="mb-3 flex items-center justify-between">
+                  <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                     What I Watch
+                  </h2>
+                  <Link
+                     href="/analytics"
+                     className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                     All analytics
+                     <ArrowRight className="h-3 w-3" />
+                  </Link>
+               </div>
+               <div className="grid gap-4 lg:grid-cols-2">
+                  <GenreDistributionChart />
+                  <MediaRatioChart />
+               </div>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+               <WatchTimeByDayChart />
+               <WatchTimeByHourChart />
+            </div>
+
             <Suspense fallback={<SectionFallback />}>
                <OnDeck />
             </Suspense>
 
-            <div className="grid gap-8 lg:grid-cols-[1fr_1fr]">
-               <Suspense fallback={<Skeleton className="h-64" />}>
-                  <RecentlyWatched />
-               </Suspense>
-
-               <div>
-                  <div className="mb-3 flex items-center justify-between">
-                     <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                        Insights
-                     </h2>
-                     <Link
-                        href="/analytics"
-                        className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-                     >
-                        All analytics
-                        <ArrowRight className="h-3 w-3" />
-                     </Link>
-                  </div>
-                  <GenreDistributionChart />
-               </div>
-            </div>
-
-            <div className="grid gap-6 lg:grid-cols-2">
-               <WatchTimeByDayChart />
-               <MediaRatioChart />
-            </div>
+            <Suspense fallback={<Skeleton className="h-64" />}>
+               <RecentlyWatched />
+            </Suspense>
          </div>
       </HydrateClient>
    );
