@@ -65,7 +65,7 @@ const RootLayout = ({
             className={`${geistSans.variable} ${geistMono.variable} antialiased`}
             suppressHydrationWarning
          >
-            <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+            <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
                <AppConfigProvider
                   recommendEnabled={env.RECOMMEND_ENABLED}
                   turnstileSiteKey={env.TURNSTILE_SITE_KEY}
