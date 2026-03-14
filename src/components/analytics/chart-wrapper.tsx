@@ -3,7 +3,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import { ResponsiveContainer } from "recharts";
 
-import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Skeleton } from "~/components/ui/skeleton";
 
 export const CHART_TOOLTIP_STYLE: CSSProperties = {
@@ -11,6 +10,7 @@ export const CHART_TOOLTIP_STYLE: CSSProperties = {
    border: "1px solid var(--border)",
    borderRadius: "var(--radius)",
    color: "var(--foreground)",
+   fontSize: "12px",
 };
 
 interface ChartWrapperProps {
@@ -23,32 +23,24 @@ interface ChartWrapperProps {
 export const ChartWrapper = ({
    title,
    isLoading,
-   height = 300,
+   height = 280,
    children,
 }: ChartWrapperProps) => {
    if (isLoading) {
       return (
-         <Card>
-            <CardHeader>
-               <CardTitle>{title}</CardTitle>
-            </CardHeader>
-            <CardContent>
-               <Skeleton className="w-full" style={{ height }} />
-            </CardContent>
-         </Card>
+         <div className="rounded-lg border border-border/50 p-4">
+            <p className="mb-3 text-sm font-medium">{title}</p>
+            <Skeleton className="w-full" style={{ height }} />
+         </div>
       );
    }
 
    return (
-      <Card>
-         <CardHeader>
-            <CardTitle>{title}</CardTitle>
-         </CardHeader>
-         <CardContent>
-            <ResponsiveContainer width="100%" height={height}>
-               {children}
-            </ResponsiveContainer>
-         </CardContent>
-      </Card>
+      <div className="rounded-lg border border-border/50 p-4">
+         <p className="mb-3 text-sm font-medium">{title}</p>
+         <ResponsiveContainer width="100%" height={height}>
+            {children}
+         </ResponsiveContainer>
+      </div>
    );
 };

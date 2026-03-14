@@ -9,8 +9,6 @@ import { OnDeck } from "~/components/dashboard/on-deck";
 import { RecentlyWatched } from "~/components/dashboard/recently-watched";
 import { Highlights } from "~/components/dashboard/highlights";
 import { GenreDistributionChart } from "~/components/analytics/genre-distribution-chart";
-import { MediaRatioChart } from "~/components/analytics/media-ratio-chart";
-import { WatchTimeByDayChart } from "~/components/analytics/watch-time-by-day-chart";
 import { WatchTimeByHourChart } from "~/components/analytics/watch-time-by-hour-chart";
 import { Skeleton } from "~/components/ui/skeleton";
 
@@ -82,7 +80,7 @@ const DashboardPage = async () => {
 
    return (
       <HydrateClient>
-         <div className="space-y-10">
+         <div className="space-y-8">
             <DashboardStats />
 
             <Suspense fallback={<SectionFallback />}>
@@ -104,13 +102,8 @@ const DashboardPage = async () => {
                </div>
                <div className="grid gap-4 lg:grid-cols-2">
                   <GenreDistributionChart />
-                  <MediaRatioChart />
+                  <WatchTimeByHourChart />
                </div>
-            </div>
-
-            <div className="grid gap-4 lg:grid-cols-2">
-               <WatchTimeByDayChart />
-               <WatchTimeByHourChart />
             </div>
 
             <Suspense fallback={<SectionFallback />}>

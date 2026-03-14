@@ -26,16 +26,19 @@ export const OnDeck = () => {
             {items.map((item) => (
                <div
                   key={item.ratingKey}
-                  className="cursor-pointer"
+                  className="group cursor-pointer"
                   onClick={() => setSelected(item)}
                >
-                  <PlexImage
-                     path={item.grandparentThumb || item.thumb}
-                     alt={item.title}
-                     width={200}
-                     height={300}
-                     className="w-full rounded-md object-cover"
-                  />
+                  <div className="relative overflow-hidden rounded-md">
+                     <PlexImage
+                        path={item.grandparentThumb || item.thumb}
+                        alt={item.title}
+                        width={200}
+                        height={300}
+                        className="w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                     />
+                     <div className="absolute inset-0 bg-foreground/0 transition-colors duration-300 group-hover:bg-foreground/10" />
+                  </div>
                   <p className="mt-1.5 truncate text-sm">
                      {item.grandparentTitle || item.title}
                   </p>
