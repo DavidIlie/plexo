@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Eye } from "lucide-react";
+import { Eye } from "lucide-react";
 import { PlexImage } from "~/components/plex-image";
 import { WatchProgress } from "./watch-progress";
 import { cn } from "~/lib/utils";

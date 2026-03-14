@@ -444,10 +444,7 @@ export const analyticsRouter = createTRPCRouter({
                topIps.map(async ([ip, count]) => {
                   const geo = await getGeoipLookup(ip);
                   return {
-                     location:
-                        geo.country
-                           ? geo.country
-                           : geo.country || "Unknown",
+                     location: geo.country || "Unknown",
                      plays: count,
                   };
                }),
