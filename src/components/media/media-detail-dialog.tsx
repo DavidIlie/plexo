@@ -38,7 +38,6 @@ interface MediaDetailDialogProps {
 
 const EpisodeGrid: React.FC<{ seasonKey: string; seasonTitle: string }> = ({
    seasonKey,
-   seasonTitle,
 }) => {
    const trpc = useTRPC();
    const [expanded, setExpanded] = useState(false);
@@ -90,28 +89,72 @@ const EpisodeGrid: React.FC<{ seasonKey: string; seasonTitle: string }> = ({
             </div>
          )}
 
-         <div className="flex flex-wrap gap-1">
+         <div className="space-y-0.5">
             {Array.from({ length: maxEp }, (_, i) => i + 1).map((epNum) => {
                const have = haveSet.has(epNum);
                const ep = episodes.find((e) => e.index === epNum);
                const watched = have && (ep?.viewCount ?? 0) > 0;
+               const duration = ep?.duration
+                  ? Math.round(ep.duration / 60000)
+                  : null;
+               const lastViewed =
+                  ep?.lastViewedAt
+                     ? formatDistanceToNow(
+                          new Date(ep.lastViewedAt * 1000),
+                          { addSuffix: true },
+                       )
+                     : null;
+
+               if (!have) {
+                  return (
+                     <div
+                        key={epNum}
+                        className="flex items-center gap-2 rounded px-2 py-1 text-xs text-muted-foreground/40"
+                     >
+                        <span className="w-6 tabular-nums text-right">
+                           {epNum}
+                        </span>
+                        <span className="italic">Missing</span>
+                     </div>
+                  );
+               }
 
                return (
                   <div
                      key={epNum}
-                     title={
-                        have
-                           ? `E${epNum}: ${ep?.title ?? ""}${watched ? " (watched)" : ""}`
-                           : `E${epNum}: Missing`
-                     }
                      className={cn(
-                        "flex h-7 w-7 items-center justify-center rounded text-xs tabular-nums",
-                        !have && "border border-dashed border-muted-foreground/30 text-muted-foreground/40",
-                        have && !watched && "bg-muted text-foreground",
-                        have && watched && "bg-chart-1/20 text-chart-1",
+                        "flex items-center gap-2 rounded px-2 py-1.5 text-xs",
+                        watched
+                           ? "text-muted-foreground"
+                           : "text-foreground",
                      )}
                   >
-                     {epNum}
+                     <span className="w-6 shrink-0 tabular-nums text-right">
+                        {epNum}
+                     </span>
+                     {watched ? (
+                        <Check className="h-3 w-3 shrink-0 text-green-500" />
+                     ) : (
+                        <div className="h-3 w-3 shrink-0" />
+                     )}
+                     <span className="min-w-0 flex-1 truncate">
+                        {ep?.title ?? `Episode ${epNum}`}
+                     </span>
+                     <div className="flex shrink-0 items-center gap-2 text-muted-foreground">
+                        {duration && (
+                           <span className="tabular-nums">{duration}m</span>
+                        )}
+                        {lastViewed && (
+                           <span className="hidden sm:inline">
+                              {lastViewed}
+                           </span>
+                        )}
+                        {(ep?.viewCount ?? 0) > 1 && (
+                           <span className="tabular-nums">
+                              {ep?.viewCount}x
+                           </span>
+                        )}
+                     </div>
                   </div>
                );
             })}
