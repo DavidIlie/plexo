@@ -38,6 +38,21 @@ export const OnDeck = () => {
                         className="w-full object-cover transition-transform duration-300 group-hover:scale-105"
                      />
                      <div className="absolute inset-0 bg-foreground/0 transition-colors duration-300 group-hover:bg-foreground/10" />
+                     {item.viewOffset != null && item.duration != null && item.duration > 0 && (
+                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-muted/60">
+                           <div
+                              className="h-full bg-primary"
+                              style={{
+                                 width: `${Math.min(
+                                    100,
+                                    Math.round(
+                                       (item.viewOffset / item.duration) * 100,
+                                    ),
+                                 )}%`,
+                              }}
+                           />
+                        </div>
+                     )}
                   </div>
                   <p className="mt-1.5 truncate text-sm">
                      {item.grandparentTitle || item.title}

@@ -60,6 +60,7 @@ export interface PlexMediaItem {
    updatedAt?: number;
    viewCount?: number;
    lastViewedAt?: number;
+   viewOffset?: number;
    contentRating?: string;
    rating?: number;
    audienceRating?: number;

@@ -27,7 +27,7 @@ export const AudioFormatChart = () => {
             <YAxis
                type="category"
                dataKey="name"
-               width={85}
+               width={100}
                stroke="var(--muted-foreground)"
                tick={{ fontSize: 11 }}
             />

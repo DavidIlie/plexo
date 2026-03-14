@@ -117,6 +117,10 @@ const DashboardPage = async () => {
                <Highlights />
             </Suspense>
 
+            <Suspense fallback={<SectionFallback />}>
+               <OnDeck />
+            </Suspense>
+
             <Suspense fallback={null}>
                <Wishlist />
             </Suspense>
@@ -139,10 +143,6 @@ const DashboardPage = async () => {
                   <WatchTimeByHourChart />
                </div>
             </div>
-
-            <Suspense fallback={<SectionFallback />}>
-               <OnDeck />
-            </Suspense>
 
             <Suspense fallback={<Skeleton className="h-64" />}>
                <RecentlyWatched />
