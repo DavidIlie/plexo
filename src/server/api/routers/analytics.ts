@@ -1,6 +1,6 @@
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import { getCachedOrFetch, CacheTTL } from "~/lib/cache";
-import { getLibrarySections, getMovies, getShows, getArtists, getAlbumCount, getTrackCount, getSectionTotalSize } from "~/lib/plex";
+import { getLibrarySections, getMovies, getShows, getArtists, getAlbumCount, getTrackCount, getSectionTotalSize, getSectionItems } from "~/lib/plex";
 import {
    getHistory,
    getPlaysByDate,
@@ -572,7 +572,8 @@ export const analyticsRouter = createTRPCRouter({
             const musicSection = sections.find((s) => s.type === "artist");
             if (!musicSection) return [];
 
-            const info = await getLibraryMediaInfo(musicSection.key, 5000);
+            // type=10 is tracks in Plex
+            const tracks = await getSectionItems(musicSection.key, 10);
             const codecs = new Map<string, number>();
 
             const codecLabels: Record<string, string> = {
@@ -580,18 +581,16 @@ export const analyticsRouter = createTRPCRouter({
                alac: "ALAC",
                aac: "AAC",
                mp3: "MP3",
-               mpeg3: "MP3",
                opus: "Opus",
                vorbis: "Vorbis",
                wav: "WAV",
-               dca: "DTS",
             };
 
-            for (const item of info.data) {
-               if (!item.audio_codec) continue;
+            for (const track of tracks) {
+               const codec = track.Media?.[0]?.audioCodec;
+               if (!codec) continue;
                const label =
-                  codecLabels[item.audio_codec] ??
-                  item.audio_codec.toUpperCase();
+                  codecLabels[codec] ?? codec.toUpperCase();
                codecs.set(label, (codecs.get(label) ?? 0) + 1);
             }
 

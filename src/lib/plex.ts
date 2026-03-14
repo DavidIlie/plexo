@@ -155,6 +155,25 @@ export const getSectionTotalSize = async (
    return totalSize;
 };
 
+export const getSectionItems = async (
+   sectionId: string,
+   type: number,
+   size = 500,
+): Promise<PlexMediaItem[]> => {
+   const items: PlexMediaItem[] = [];
+   let start = 0;
+   while (true) {
+      const data = await plexFetch<PlexMediaContainer<PlexMediaItem>>(
+         `/library/sections/${sectionId}/all?type=${type}&X-Plex-Container-Start=${start}&X-Plex-Container-Size=${size}`,
+      );
+      const batch = data.MediaContainer.Metadata ?? [];
+      items.push(...batch);
+      if (batch.length < size) break;
+      start += size;
+   }
+   return items;
+};
+
 export const getGenres = async (sectionId: string): Promise<PlexGenre[]> => {
    const data = await plexFetch<PlexMediaContainer<PlexGenre>>(
       `/library/sections/${sectionId}/genre`,
