@@ -141,10 +141,21 @@ export const RecommendDialog = () => {
             if (!v) reset();
          }}
       >
-         <DialogContent className="max-h-[80vh] overflow-hidden p-0 outline-none sm:max-w-md">
-            <DialogHeader className="sr-only">
-               <DialogTitle>Recommend something</DialogTitle>
-            </DialogHeader>
+         <DialogContent className="max-h-[80vh] overflow-hidden p-0 outline-none sm:max-w-lg">
+            {phase !== "search" && (
+               <DialogHeader className="px-4 pt-4 pb-0">
+                  <DialogTitle className="text-base">
+                     {phase === "form" && "Recommend"}
+                     {phase === "rate-limited" && "Verification"}
+                     {phase === "success" && "Sent"}
+                  </DialogTitle>
+               </DialogHeader>
+            )}
+            {phase === "search" && (
+               <DialogHeader className="sr-only">
+                  <DialogTitle>Recommend something</DialogTitle>
+               </DialogHeader>
+            )}
 
             {phase === "search" && (
                <>
@@ -256,7 +267,7 @@ export const RecommendDialog = () => {
             )}
 
             {phase === "form" && selected && (
-               <div className="max-h-[70vh] space-y-4 overflow-y-auto p-4 pt-2">
+               <div className="max-h-[70vh] space-y-4 overflow-y-auto px-4 pb-4">
                   <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
                      {selected.poster_path ? (
                         <Image
