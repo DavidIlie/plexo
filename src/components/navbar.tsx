@@ -1,10 +1,10 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
-import { useMemo } from "react";
 import {
    LayoutDashboard,
    Film,
@@ -15,6 +15,8 @@ import {
    Moon,
    Search,
    Heart,
+   Menu,
+   X,
    type LucideIcon,
 } from "lucide-react";
 
@@ -26,6 +28,7 @@ export const Navbar = () => {
    const pathname = usePathname();
    const { theme, setTheme } = useTheme();
    const { recommendEnabled, musicEnabled } = useAppConfig();
+   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
    const navItems = useMemo(() => {
       const items: Array<{ href: string; label: string; icon: LucideIcon }> = [
@@ -52,7 +55,7 @@ export const Navbar = () => {
 
    return (
       <>
-         {/* Top navbar — full nav on md+, logo + actions only on mobile */}
+         {/* Top navbar — full nav on md+, logo + actions + hamburger on mobile */}
          <nav className="border-b border-border/50 bg-background/80 backdrop-blur-sm">
             <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
                <div className="flex items-center">
@@ -128,8 +131,52 @@ export const Navbar = () => {
                      <Moon className="absolute h-3.5 w-3.5 rotate-90 scale-0 transition-transform dark:rotate-0 dark:scale-100" />
                      <span className="sr-only">Toggle theme</span>
                   </Button>
+                  {/* Hamburger — mobile only */}
+                  <Button
+                     variant="ghost"
+                     size="icon"
+                     className="h-8 w-8 text-muted-foreground md:hidden"
+                     onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  >
+                     {mobileMenuOpen ? (
+                        <X className="h-4 w-4" />
+                     ) : (
+                        <Menu className="h-4 w-4" />
+                     )}
+                     <span className="sr-only">Menu</span>
+                  </Button>
                </div>
             </div>
+
+            {/* Dropdown menu — mobile only */}
+            {mobileMenuOpen && (
+               <div className="border-t border-border/50 md:hidden">
+                  <div className="mx-auto max-w-7xl space-y-1 px-4 py-3">
+                     {navItems.map((item) => {
+                        const isActive =
+                           item.href === "/"
+                              ? pathname === "/"
+                              : pathname.startsWith(item.href);
+                        return (
+                           <Link
+                              key={item.href}
+                              href={item.href}
+                              onClick={() => setMobileMenuOpen(false)}
+                              className={cn(
+                                 "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors",
+                                 isActive
+                                    ? "bg-foreground/5 text-foreground"
+                                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+                              )}
+                           >
+                              <item.icon className="h-4 w-4" />
+                              <span>{item.label}</span>
+                           </Link>
+                        );
+                     })}
+                  </div>
+               </div>
+            )}
          </nav>
 
          {/* Bottom nav — mobile only */}

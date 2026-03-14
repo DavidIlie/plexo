@@ -12,6 +12,7 @@ import {
    Monitor,
    MapPin,
    Music,
+   Tv,
 } from "lucide-react";
 
 import { useTRPC } from "~/trpc/react";
@@ -134,6 +135,13 @@ export const Highlights = () => {
                   label="Top Artist"
                   value={h.topArtist.title}
                   detail={`${h.topArtist.plays} plays`}
+               />
+            )}
+            {h.totalEpisodes > 0 && (
+               <Highlight
+                  icon={Tv}
+                  label="Total Episodes"
+                  value={h.totalEpisodes.toLocaleString()}
                />
             )}
             {h.topDevice && (
