@@ -13,10 +13,14 @@ const formatHour = (h: string) => {
    return num < 12 ? `${num}am` : `${num - 12}pm`;
 };
 
-export const WatchTimeByHourChart = () => {
+interface Props {
+   timeRange?: number;
+}
+
+export const WatchTimeByHourChart: React.FC<Props> = ({ timeRange = 30 }) => {
    const trpc = useTRPC();
    const { data, isLoading } = useQuery(
-      trpc.analytics.getWatchTimeByHour.queryOptions(),
+      trpc.tautulli.getPlaysByHourOfDay.queryOptions({ timeRange }),
    );
 
    const rawData = data?.data;
@@ -30,7 +34,7 @@ export const WatchTimeByHourChart = () => {
       })) ?? [];
 
    return (
-      <ChartWrapper title="Favorite Viewing Times" description="Plays by hour of day over the last 30 days" isLoading={isLoading}>
+      <ChartWrapper title="Favorite Viewing Times" description={`Plays by hour of day, last ${timeRange} days`} isLoading={isLoading}>
          <BarChart data={chartData}>
             <XAxis
                dataKey="hour"

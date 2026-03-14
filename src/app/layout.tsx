@@ -1,11 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import PlausibleProvider from "next-plausible";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 import "./globals.css";
 import { env } from "~/env";
 import { TRPCReactProvider } from "~/trpc/react";
 import { ThemeProvider } from "~/components/theme-provider";
 import { Navbar } from "~/components/navbar";
+import { Footer } from "~/components/footer";
 import { RefreshDialog } from "~/components/refresh-dialog";
 import { SearchDialog } from "~/components/search-dialog";
 
@@ -62,14 +64,17 @@ const RootLayout = ({
             suppressHydrationWarning
          >
             <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-               <TRPCReactProvider>
-                  <Navbar />
-                  <main className="mx-auto max-w-7xl px-4 py-6">
-                     {children}
-                  </main>
-                  <SearchDialog />
-                  <RefreshDialog />
-               </TRPCReactProvider>
+               <NuqsAdapter>
+                  <TRPCReactProvider>
+                     <Navbar />
+                     <main className="mx-auto max-w-7xl px-4 py-6">
+                        {children}
+                     </main>
+                     <Footer />
+                     <SearchDialog />
+                     <RefreshDialog />
+                  </TRPCReactProvider>
+               </NuqsAdapter>
             </ThemeProvider>
          </body>
       </html>

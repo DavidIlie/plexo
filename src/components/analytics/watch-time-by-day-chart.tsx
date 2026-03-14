@@ -6,10 +6,14 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 import { useTRPC } from "~/trpc/react";
 import { ChartWrapper, CHART_TOOLTIP_STYLE } from "~/components/analytics/chart-wrapper";
 
-export const WatchTimeByDayChart = () => {
+interface Props {
+   timeRange?: number;
+}
+
+export const WatchTimeByDayChart: React.FC<Props> = ({ timeRange = 30 }) => {
    const trpc = useTRPC();
    const { data, isLoading } = useQuery(
-      trpc.analytics.getWatchTimeByDay.queryOptions(),
+      trpc.tautulli.getPlaysByDayOfWeek.queryOptions({ timeRange }),
    );
 
    const rawData = data?.data;
@@ -23,14 +27,14 @@ export const WatchTimeByDayChart = () => {
       })) ?? [];
 
    return (
-      <ChartWrapper title="Watch Time by Day" description="Plays by day of week over the last 30 days" isLoading={isLoading}>
+      <ChartWrapper title="Watch Time by Day" description={`Plays by day of week, last ${timeRange} days`} isLoading={isLoading}>
          <BarChart data={chartData}>
             <XAxis
                dataKey="day"
                stroke="var(--muted-foreground)"
                tick={{ fontSize: 12 }}
             />
-            <YAxis stroke="var(--muted-foreground)" />
+            <YAxis stroke="var(--muted-foreground)" width={30} />
             <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
             <Bar
                dataKey="plays"

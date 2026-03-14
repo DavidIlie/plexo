@@ -6,10 +6,14 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, Legend } from "recharts";
 import { useTRPC } from "~/trpc/react";
 import { ChartWrapper, CHART_TOOLTIP_STYLE } from "~/components/analytics/chart-wrapper";
 
-export const MonthlyTrendsChart = () => {
+interface Props {
+   timeRange?: number;
+}
+
+export const MonthlyTrendsChart: React.FC<Props> = ({ timeRange = 365 }) => {
    const trpc = useTRPC();
    const { data, isLoading } = useQuery(
-      trpc.analytics.getMonthlyTrends.queryOptions(),
+      trpc.tautulli.getPlaysByDate.queryOptions({ timeRange }),
    );
 
    const rawData = data?.data;
@@ -26,7 +30,7 @@ export const MonthlyTrendsChart = () => {
    const colors = ["var(--chart-1)", "var(--chart-2)", "var(--chart-4)"];
 
    return (
-      <ChartWrapper title="Monthly Watch Trends" description="Daily plays over the last year" isLoading={isLoading}>
+      <ChartWrapper title="Watch Trends" description={`Daily plays over last ${timeRange} days`} isLoading={isLoading}>
          <AreaChart data={chartData}>
             <XAxis
                dataKey="date"
@@ -37,7 +41,7 @@ export const MonthlyTrendsChart = () => {
                   return `${d.getMonth() + 1}/${d.getDate()}`;
                }}
             />
-            <YAxis stroke="var(--muted-foreground)" />
+            <YAxis stroke="var(--muted-foreground)" width={30} />
             <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
             <Legend />
             {seriesNames.map((name, index) => (
