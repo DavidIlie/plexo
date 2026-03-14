@@ -13,6 +13,7 @@ Built with Next.js 16, tRPC, Tailwind CSS v4, Recharts, and Framer Motion.
 - **Dashboard** — library stats, highlights (most watched, most rewatched, longest movie, top device, location), genre breakdown and viewing time charts, up next, recently watched with platform/duration per play
 - **Movies** — full library grid with genre/watched/unwatched filters and search, click any movie for details (summary, cast, ratings, watch history)
 - **TV Shows** — library grid with episode progress bars and completion filters, per-season episode breakdown with missing episode detection
+- **Music** — artist grid with genre filter and search, click any artist to browse albums and tracks (gated behind `SHOW_MUSIC=true`)
 - **Analytics** — 8 chart visualizations with configurable time range (7d/30d/MTD/90d/year), period navigation with left/right arrows
 - **Global Search** — press <kbd>K</kbd> to search movies and TV shows, filter by genre or director
 - **Smart Caching** — tiered TTLs (library 1hr, metadata 30min, analytics 15min, activity 5min), server-side image cache (24hr)
@@ -118,6 +119,7 @@ docker pull ghcr.io/davidilie/plexo:latest
 | `APP_URL` | No | Base URL for metadata/OG images (default: localhost:3000) |
 | `SHOW_DEVICES` | No | Show device analytics (default: true) |
 | `SHOW_LOCATIONS` | No | Show location analytics via geoip (default: false) |
+| `SHOW_MUSIC` | No | Show music library (artists, albums, tracks) (default: false) |
 | `PLAUSIBLE_ENABLED` | No | Enable Plausible analytics (default: false) |
 | `PLAUSIBLE_DOMAIN` | No | Domain for Plausible tracking |
 | `PLAUSIBLE_SCRIPT_URL` | No | Self-hosted Plausible script URL |

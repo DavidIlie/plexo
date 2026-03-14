@@ -45,15 +45,18 @@ const DashboardStats = async () => {
             </h1>
             <RefreshButton />
          </div>
-         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+         <div className={`grid grid-cols-2 gap-3 ${data.totalArtists > 0 ? "lg:grid-cols-5" : "lg:grid-cols-4"}`}>
             <StatCard icon="Film" label="Movies" value={data.totalMovies} index={0} />
             <StatCard icon="Tv" label="Shows" value={data.totalShows} index={1} />
-            <StatCard icon="Eye" label="Watched" value={data.watchedItems} index={2} />
+            {data.totalArtists > 0 && (
+               <StatCard icon="Music" label="Artists" value={data.totalArtists} index={2} />
+            )}
+            <StatCard icon="Eye" label="Watched" value={data.watchedItems} index={data.totalArtists > 0 ? 3 : 2} />
             <StatCard
                icon="Clock"
                label="Hours Watched"
                value={data.hoursWatched.toLocaleString()}
-               index={3}
+               index={data.totalArtists > 0 ? 4 : 3}
             />
          </div>
       </div>

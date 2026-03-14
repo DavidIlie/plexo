@@ -5,6 +5,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 
 import { useTRPC } from "~/trpc/react";
+import { useAppConfig } from "~/components/app-config-provider";
 import { PlexImage } from "~/components/plex-image";
 import { MediaDetailDialog } from "~/components/media/media-detail-dialog";
 import type { PlexMediaItem } from "~/types/plex";
@@ -17,6 +18,7 @@ const formatDuration = (seconds: number) => {
 
 export const RecentlyWatched = () => {
    const trpc = useTRPC();
+   const { musicEnabled } = useAppConfig();
    const { data } = useSuspenseQuery(
       trpc.tautulli.getHistory.queryOptions({ length: 10 }),
    );
@@ -29,7 +31,7 @@ export const RecentlyWatched = () => {
    return (
       <section>
          <h2 className="mb-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Recently Watched
+            {musicEnabled ? "Recent Activity" : "Recently Watched"}
          </h2>
          <div className="space-y-0.5">
             {items.map((item) => (

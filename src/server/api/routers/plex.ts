@@ -5,6 +5,7 @@ import {
    getLibrarySections,
    getMovies,
    getShows,
+   getArtists,
    getOnDeck,
    getRecentlyAdded,
    getGenres,
@@ -57,6 +58,26 @@ export const plexRouter = createTRPCRouter({
          const result = await getCachedOrFetch(
             `plex:shows:${input.sectionId}:${input.start}:${input.size}`,
             () => getShows(input.sectionId, input.start, input.size),
+            CacheTTL.METADATA,
+         );
+         return {
+            data: result.data,
+            lastUpdatedAt: result.fetchedAt.toISOString(),
+         };
+      }),
+
+   getArtists: publicProcedure
+      .input(
+         z.object({
+            sectionId: z.string(),
+            start: z.number().default(0),
+            size: z.number().default(500),
+         }),
+      )
+      .query(async ({ input }) => {
+         const result = await getCachedOrFetch(
+            `plex:artists:${input.sectionId}:${input.start}:${input.size}`,
+            () => getArtists(input.sectionId, input.start, input.size),
             CacheTTL.METADATA,
          );
          return {

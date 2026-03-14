@@ -63,7 +63,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                   />
                </div>
             )}
-            {!isWatched && !isPartial && (
+            {!isWatched && !isPartial && item.type !== "artist" && (
                <div className="absolute left-1.5 top-1.5">
                   <div className="h-1.5 w-1.5 rounded-full bg-primary" />
                </div>
@@ -79,6 +79,9 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                   durationMinutes && item.type === "movie" ? `${durationMinutes}m` : null,
                   item.childCount !== undefined && item.type === "show"
                      ? `${item.childCount}S`
+                     : null,
+                  item.childCount !== undefined && item.type === "artist"
+                     ? `${item.childCount} albums`
                      : null,
                   item.Genre?.[0]?.tag,
                ]

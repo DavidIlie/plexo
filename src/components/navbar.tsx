@@ -4,32 +4,41 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
+import { useMemo } from "react";
 import {
    LayoutDashboard,
    Film,
    Tv,
+   Music,
    BarChart3,
    Sun,
    Moon,
    Search,
    Heart,
+   type LucideIcon,
 } from "lucide-react";
 
 import { cn } from "~/lib/utils";
 import { useAppConfig } from "~/components/app-config-provider";
 import { Button } from "~/components/ui/button";
 
-const navItems = [
-   { href: "/", label: "Dashboard", icon: LayoutDashboard },
-   { href: "/movies", label: "Movies", icon: Film },
-   { href: "/tv", label: "TV Shows", icon: Tv },
-   { href: "/analytics", label: "Analytics", icon: BarChart3 },
-];
-
 export const Navbar = () => {
    const pathname = usePathname();
    const { theme, setTheme } = useTheme();
-   const { recommendEnabled } = useAppConfig();
+   const { recommendEnabled, musicEnabled } = useAppConfig();
+
+   const navItems = useMemo(() => {
+      const items: Array<{ href: string; label: string; icon: LucideIcon }> = [
+         { href: "/", label: "Dashboard", icon: LayoutDashboard },
+         { href: "/movies", label: "Movies", icon: Film },
+         { href: "/tv", label: "TV Shows", icon: Tv },
+      ];
+      if (musicEnabled) {
+         items.push({ href: "/music", label: "Music", icon: Music });
+      }
+      items.push({ href: "/analytics", label: "Analytics", icon: BarChart3 });
+      return items;
+   }, [musicEnabled]);
 
    const openSearch = () => {
       window.dispatchEvent(
@@ -68,7 +77,7 @@ export const Navbar = () => {
                            key={item.href}
                            href={item.href}
                            className={cn(
-                              "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors",
+                              "flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm transition-colors sm:px-3",
                               isActive
                                  ? "bg-foreground/5 text-foreground"
                                  : "text-muted-foreground hover:text-foreground",

@@ -1,6 +1,6 @@
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import { getCachedOrFetch, CacheTTL } from "~/lib/cache";
-import { getLibrarySections, getMovies, getShows } from "~/lib/plex";
+import { getLibrarySections, getMovies, getShows, getArtists } from "~/lib/plex";
 import {
    getHistory,
    getPlaysByDate,
@@ -19,8 +19,13 @@ export const analyticsRouter = createTRPCRouter({
             const movieSection = sections.find((s) => s.type === "movie");
             const showSection = sections.find((s) => s.type === "show");
 
+            const musicSection = env.SHOW_MUSIC
+               ? sections.find((s) => s.type === "artist")
+               : undefined;
+
             let totalMovies = 0;
             let totalShows = 0;
+            let totalArtists = 0;
             let watchedMovies = 0;
             let watchedShows = 0;
 
@@ -48,6 +53,11 @@ export const analyticsRouter = createTRPCRouter({
                }
             }
 
+            if (musicSection) {
+               const artists = await getArtists(musicSection.key);
+               totalArtists = artists.totalSize;
+            }
+
             const history = await getHistory(5000);
             let totalSeconds = 0;
             for (const item of history.data) {
@@ -59,6 +69,7 @@ export const analyticsRouter = createTRPCRouter({
                displayName: env.DISPLAY_NAME,
                totalMovies,
                totalShows,
+               totalArtists,
                watchedItems: watchedMovies + watchedShows,
                hoursWatched: totalHoursWatched,
             };
@@ -224,6 +235,7 @@ export const analyticsRouter = createTRPCRouter({
 
             let moviePlays = 0;
             let tvPlays = 0;
+            let musicPlays = 0;
 
             for (const item of history.data) {
                if (item.media_type === "movie") {
@@ -233,13 +245,19 @@ export const analyticsRouter = createTRPCRouter({
                   item.media_type === "show"
                ) {
                   tvPlays++;
+               } else if (item.media_type === "track") {
+                  musicPlays++;
                }
             }
 
-            return [
+            const result = [
                { name: "Movies", value: moviePlays },
                { name: "TV Shows", value: tvPlays },
             ];
+            if (musicPlays > 0) {
+               result.push({ name: "Music", value: musicPlays });
+            }
+            return result;
          },
          CacheTTL.ANALYTICS,
       );

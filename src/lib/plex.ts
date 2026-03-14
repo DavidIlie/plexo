@@ -61,6 +61,20 @@ export const getShows = async (
    };
 };
 
+export const getArtists = async (
+   sectionId: string,
+   start = 0,
+   size = 500,
+): Promise<{ items: PlexMediaItem[]; totalSize: number }> => {
+   const data = await plexFetch<PlexMediaContainer<PlexMediaItem>>(
+      `/library/sections/${sectionId}/all?type=8&X-Plex-Container-Start=${start}&X-Plex-Container-Size=${size}`,
+   );
+   return {
+      items: data.MediaContainer.Metadata ?? [],
+      totalSize: data.MediaContainer.totalSize ?? 0,
+   };
+};
+
 export const getOnDeck = async (): Promise<PlexOnDeckItem[]> => {
    const data =
       await plexFetch<PlexMediaContainer<PlexOnDeckItem>>("/library/onDeck");

@@ -26,6 +26,10 @@ export const env = createEnv({
          .enum(["true", "false"])
          .default("false")
          .transform((v) => v === "true"),
+      SHOW_MUSIC: z
+         .enum(["true", "false"])
+         .default("false")
+         .transform((v) => v === "true"),
       RECOMMEND_ENABLED: z
          .enum(["true", "false"])
          .default("false")

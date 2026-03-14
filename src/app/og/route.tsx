@@ -2,7 +2,7 @@ import { ImageResponse } from "@takumi-rs/image-response";
 import { type NextRequest } from "next/server";
 import { env } from "~/env";
 import { getCachedOrFetch, CacheTTL } from "~/lib/cache";
-import { getLibrarySections, getMovies, getShows } from "~/lib/plex";
+import { getLibrarySections, getMovies, getShows, getArtists } from "~/lib/plex";
 import { getHistory } from "~/lib/tautulli";
 
 const getStats = async () => {
@@ -13,11 +13,16 @@ const getStats = async () => {
          const movieSection = sections.find((s) => s.type === "movie");
          const showSection = sections.find((s) => s.type === "show");
 
+         const musicSection = sections.find((s) => s.type === "artist");
+
          const totalMovies = movieSection
             ? (await getMovies(movieSection.key)).totalSize
             : 0;
          const totalShows = showSection
             ? (await getShows(showSection.key)).totalSize
+            : 0;
+         const totalArtists = musicSection
+            ? (await getArtists(musicSection.key)).totalSize
             : 0;
 
          const history = await getHistory(1000);
@@ -25,7 +30,7 @@ const getStats = async () => {
             parseInt(history.total_duration) / 3600,
          );
 
-         return { totalMovies, totalShows, hoursWatched };
+         return { totalMovies, totalShows, totalArtists, hoursWatched };
       },
       CacheTTL.ANALYTICS,
    );
@@ -40,17 +45,22 @@ export const GET = async (req: NextRequest) => {
    const statItems: Array<{ label: string; value: string }> = [
       { label: "Movies", value: stats.totalMovies.toLocaleString() },
       { label: "Shows", value: stats.totalShows.toLocaleString() },
-      { label: "Hours Watched", value: stats.hoursWatched.toLocaleString() },
    ];
+   if (stats.totalArtists > 0) {
+      statItems.push({ label: "Artists", value: stats.totalArtists.toLocaleString() });
+   }
+   statItems.push({ label: "Hours Watched", value: stats.hoursWatched.toLocaleString() });
 
    const pageTitle =
       page === "movies"
          ? `${name}'s Movies`
          : page === "tv"
            ? `${name}'s TV Shows`
-           : page === "analytics"
-             ? `${name}'s Analytics`
-             : `${name}'s Library`;
+           : page === "music"
+             ? `${name}'s Music`
+             : page === "analytics"
+               ? `${name}'s Analytics`
+               : `${name}'s Library`;
 
    return new ImageResponse(
       <div
