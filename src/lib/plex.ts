@@ -75,9 +75,16 @@ export const getArtists = async (
    };
 };
 
+export const getAlbumCount = async (sectionId: string): Promise<number> => {
+   const data = await plexFetch<PlexMediaContainer<PlexMediaItem>>(
+      `/library/sections/${sectionId}/all?type=9&X-Plex-Container-Start=0&X-Plex-Container-Size=1`,
+   );
+   return data.MediaContainer.totalSize ?? 0;
+};
+
 export const getTrackCount = async (sectionId: string): Promise<number> => {
    const data = await plexFetch<PlexMediaContainer<PlexMediaItem>>(
-      `/library/sections/${sectionId}/all?type=10&X-Plex-Container-Start=0&X-Plex-Container-Size=0`,
+      `/library/sections/${sectionId}/all?type=10&X-Plex-Container-Start=0&X-Plex-Container-Size=1`,
    );
    return data.MediaContainer.totalSize ?? 0;
 };

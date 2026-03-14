@@ -1,9 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Film, Tv, Eye, Clock, Music, Disc3, type LucideIcon } from "lucide-react";
+import { Film, Tv, Eye, Clock, Music, Disc3, Library, type LucideIcon } from "lucide-react";
 
-const icons: Record<string, LucideIcon> = { Film, Tv, Eye, Clock, Music, Disc3 };
+const icons: Record<string, LucideIcon> = { Film, Tv, Eye, Clock, Music, Disc3, Library };
 
 interface StatCardProps {
    icon: string;
@@ -31,7 +31,9 @@ export const StatCard: React.FC<StatCardProps> = ({
             <Icon className="h-3.5 w-3.5 text-primary/70" />
             <span className="text-xs">{label}</span>
          </div>
-         <p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p>
+         <p className="mt-1 text-2xl font-semibold tabular-nums">
+            {typeof value === "number" ? value.toLocaleString() : value}
+         </p>
       </motion.div>
    );
 };

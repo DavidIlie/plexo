@@ -1,6 +1,6 @@
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import { getCachedOrFetch, CacheTTL } from "~/lib/cache";
-import { getLibrarySections, getMovies, getShows, getArtists, getTrackCount } from "~/lib/plex";
+import { getLibrarySections, getMovies, getShows, getArtists, getAlbumCount, getTrackCount } from "~/lib/plex";
 import {
    getHistory,
    getPlaysByDate,
@@ -53,13 +53,16 @@ export const analyticsRouter = createTRPCRouter({
                }
             }
 
+            let totalAlbums = 0;
             let totalTracks = 0;
             if (musicSection) {
-               const [artists, trackCount] = await Promise.all([
-                  getArtists(musicSection.key, 0, 0),
+               const [artists, albumCount, trackCount] = await Promise.all([
+                  getArtists(musicSection.key, 0, 1),
+                  getAlbumCount(musicSection.key),
                   getTrackCount(musicSection.key),
                ]);
                totalArtists = artists.totalSize;
+               totalAlbums = albumCount;
                totalTracks = trackCount;
             }
 
@@ -80,6 +83,7 @@ export const analyticsRouter = createTRPCRouter({
                totalMovies,
                totalShows,
                totalArtists,
+               totalAlbums,
                totalTracks,
                watchedItems: watchedMovies + watchedShows,
                hoursWatched: totalHoursWatched,

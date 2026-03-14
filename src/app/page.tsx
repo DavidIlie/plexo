@@ -64,13 +64,14 @@ const DashboardStats = async () => {
             {data.totalArtists > 0 && (
                <>
                   <StatCard icon="Music" label="Artists" value={data.totalArtists} index={4} />
-                  <StatCard icon="Disc3" label="Tracks" value={data.totalTracks} index={5} />
+                  <StatCard icon="Library" label="Albums" value={data.totalAlbums} index={5} />
+                  <StatCard icon="Disc3" label="Tracks" value={data.totalTracks} index={6} />
                   {data.musicHoursListened > 0 && (
                      <StatCard
                         icon="Clock"
                         label="Hours Listened"
                         value={data.musicHoursListened.toLocaleString()}
-                        index={6}
+                        index={7}
                      />
                   )}
                </>
