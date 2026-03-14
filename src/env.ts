@@ -48,6 +48,10 @@ export const env = createEnv({
       DISCORD_WEBHOOK_URL: z.string().url().optional(),
       OVERSEERR_URL: z.string().url().optional(),
       OVERSEERR_API_KEY: z.string().optional(),
+      RECOMMEND_AUTO_REQUEST: z
+         .enum(["true", "false"])
+         .default("false")
+         .transform((v) => v === "true"),
       NODE_ENV: z
          .enum(["development", "test", "production"])
          .default("development"),

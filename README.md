@@ -139,6 +139,7 @@ docker pull ghcr.io/davidilie/plexo:latest
 | `DISCORD_WEBHOOK_URL` | No | Discord webhook URL for recommendation notifications |
 | `OVERSEERR_URL` | No | Overseerr instance URL (enables request creation + dashboard wishlist) |
 | `OVERSEERR_API_KEY` | No | Overseerr API key |
+| `RECOMMEND_AUTO_REQUEST` | No | Auto-create Overseerr request on recommendation (default: false) |
 
 ## Recommendations Setup
 

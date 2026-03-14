@@ -25,6 +25,12 @@ import {
    DialogTitle,
 } from "~/components/ui/dialog";
 import { Badge } from "~/components/ui/badge";
+import {
+   Accordion,
+   AccordionContent,
+   AccordionItem,
+   AccordionTrigger,
+} from "~/components/ui/accordion";
 import { PlexImage } from "~/components/plex-image";
 import { Separator } from "~/components/ui/separator";
 import { cn } from "~/lib/utils";
@@ -313,84 +319,110 @@ const formatFileSize = (bytes: number) => {
    return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
 };
 
+const StreamRow = ({ label, children }: { label: string; children: React.ReactNode }) => (
+   <div className="flex items-center justify-between gap-2 py-0.5">
+      <span className="shrink-0 text-muted-foreground">{label}</span>
+      <div className="flex items-center gap-1.5 text-right">{children}</div>
+   </div>
+);
+
 const MediaInfoSection: React.FC<{ media: PlexMedia[] }> = ({ media }) => {
    const m = media[0];
    if (!m) return null;
 
    const part = m.Part?.[0];
-   const videoStream = part?.Stream?.find((s) => s.streamType === 1);
-   const audioStream = part?.Stream?.find((s) => s.streamType === 2);
-   const subtitleStream = part?.Stream?.find((s) => s.streamType === 3);
+   const streams = part?.Stream ?? [];
+   const videoStreams = streams.filter((s) => s.streamType === 1);
+   const audioStreams = streams.filter((s) => s.streamType === 2);
+   const subtitleStreams = streams.filter((s) => s.streamType === 3);
+
+   const summaryParts: string[] = [];
+   if (videoStreams[0]) summaryParts.push((videoStreams[0].codec ?? "").toUpperCase());
+   if (videoStreams[0]?.displayTitle) summaryParts.push(videoStreams[0].displayTitle);
+   if (!videoStreams[0] && audioStreams[0]) summaryParts.push((audioStreams[0].codec ?? "").toUpperCase());
+   if (m.container) summaryParts.push(m.container.toUpperCase());
+   if (part?.size) summaryParts.push(formatFileSize(part.size));
 
    return (
-      <div>
-         <p className="mb-2 text-xs font-medium text-muted-foreground">
-            Media Info
-         </p>
-         <div className="space-y-2 rounded-lg border border-border/50 bg-muted/20 p-3 text-xs">
-            {videoStream && (
-               <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Video</span>
-                  <div className="flex items-center gap-1.5">
-                     <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                        {(videoStream.codec ?? "").toUpperCase()}
-                     </Badge>
-                     {videoStream.displayTitle && (
-                        <span>{videoStream.displayTitle}</span>
+      <Accordion type="single" collapsible>
+         <AccordionItem value="media-info" className="border-border/50">
+            <AccordionTrigger className="py-2 text-xs font-medium text-muted-foreground hover:no-underline">
+               <div className="flex items-center gap-2">
+                  <span>Media Info</span>
+                  <span className="font-normal text-muted-foreground/70">
+                     {summaryParts.join(" · ")}
+                  </span>
+               </div>
+            </AccordionTrigger>
+            <AccordionContent>
+               <div className="space-y-3 text-xs">
+                  {videoStreams.length > 0 && (
+                     <div>
+                        <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">Video</p>
+                        {videoStreams.map((s, i) => (
+                           <StreamRow key={i} label={`Track ${i + 1}`}>
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                 {(s.codec ?? "").toUpperCase()}
+                              </Badge>
+                              <span>{s.displayTitle ?? s.extendedDisplayTitle ?? ""}</span>
+                           </StreamRow>
+                        ))}
+                     </div>
+                  )}
+                  {audioStreams.length > 0 && (
+                     <div>
+                        <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">Audio ({audioStreams.length})</p>
+                        {audioStreams.map((s, i) => (
+                           <StreamRow key={i} label={`Track ${i + 1}`}>
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                 {(s.codec ?? "").toUpperCase()}
+                              </Badge>
+                              <span>{s.displayTitle ?? s.extendedDisplayTitle ?? ""}</span>
+                           </StreamRow>
+                        ))}
+                     </div>
+                  )}
+                  {subtitleStreams.length > 0 && (
+                     <div>
+                        <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">Subtitles ({subtitleStreams.length})</p>
+                        {subtitleStreams.map((s, i) => (
+                           <StreamRow key={i} label={`Track ${i + 1}`}>
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                 {(s.codec ?? "").toUpperCase()}
+                              </Badge>
+                              <span>{s.displayTitle ?? s.extendedDisplayTitle ?? ""}</span>
+                           </StreamRow>
+                        ))}
+                     </div>
+                  )}
+                  <div>
+                     <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">File</p>
+                     {m.container && (
+                        <StreamRow label="Container">
+                           <span>{m.container.toUpperCase()}</span>
+                        </StreamRow>
+                     )}
+                     {m.bitrate && (
+                        <StreamRow label="Bitrate">
+                           <span>{m.bitrate >= 1000 ? `${(m.bitrate / 1000).toFixed(1)} Mbps` : `${m.bitrate} kbps`}</span>
+                        </StreamRow>
+                     )}
+                     {part?.size && (
+                        <StreamRow label="Size">
+                           <HardDrive className="h-3 w-3" />
+                           <span>{formatFileSize(part.size)}</span>
+                        </StreamRow>
+                     )}
+                     {part?.file && (
+                        <div className="mt-1 break-all text-[10px] text-muted-foreground/60">
+                           {part.file.split("/").pop()}
+                        </div>
                      )}
                   </div>
                </div>
-            )}
-            {audioStream && (
-               <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Audio</span>
-                  <div className="flex items-center gap-1.5">
-                     <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                        {(audioStream.codec ?? "").toUpperCase()}
-                     </Badge>
-                     {audioStream.displayTitle && (
-                        <span>{audioStream.displayTitle}</span>
-                     )}
-                  </div>
-               </div>
-            )}
-            {subtitleStream && (
-               <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Subtitles</span>
-                  <span>{subtitleStream.displayTitle ?? (subtitleStream.codec ?? "").toUpperCase()}</span>
-               </div>
-            )}
-            {m.container && (
-               <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Container</span>
-                  <span>{m.container.toUpperCase()}</span>
-               </div>
-            )}
-            {m.bitrate && (
-               <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Bitrate</span>
-                  <span>{m.bitrate >= 1000 ? `${(m.bitrate / 1000).toFixed(1)} Mbps` : `${m.bitrate} kbps`}</span>
-               </div>
-            )}
-            {part?.size && (
-               <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">File Size</span>
-                  <span className="flex items-center gap-1">
-                     <HardDrive className="h-3 w-3" />
-                     {formatFileSize(part.size)}
-                  </span>
-               </div>
-            )}
-            {part?.file && (
-               <div className="flex items-start justify-between gap-2">
-                  <span className="shrink-0 text-muted-foreground">File</span>
-                  <span className="break-all text-right text-[10px] text-muted-foreground/70">
-                     {part.file.split("/").pop()}
-                  </span>
-               </div>
-            )}
-         </div>
-      </div>
+            </AccordionContent>
+         </AccordionItem>
+      </Accordion>
    );
 };
 

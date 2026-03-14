@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
+import { formatDistanceToNow } from "date-fns";
 import {
    ArrowLeft,
    ChevronDown,
@@ -23,6 +24,11 @@ import {
    DialogTitle,
    DialogDescription,
 } from "~/components/ui/dialog";
+import {
+   HoverCard,
+   HoverCardContent,
+   HoverCardTrigger,
+} from "~/components/ui/hover-card";
 import type { PlexMediaItem } from "~/types/plex";
 
 const SUMMARY_LIMIT = 300;
@@ -90,10 +96,16 @@ const formatSampleRate = (hz: number) => {
    return `${hz} Hz`;
 };
 
+const fmtPlayDuration = (secs: number) => {
+   const mins = Math.round(secs / 60);
+   if (mins < 60) return `${mins}m`;
+   return `${Math.floor(mins / 60)}h ${mins % 60}m`;
+};
+
 const TrackAudioBadges = ({ track }: { track: PlexMediaItem }) => {
    const media = track.Media?.[0];
    const part = media?.Part?.[0];
-   const stream = part?.Stream?.find((s) => s.streamType === 2); // audio stream
+   const stream = part?.Stream?.find((s) => s.streamType === 2);
 
    if (!media && !part) return null;
 
@@ -127,6 +139,134 @@ const TrackAudioBadges = ({ track }: { track: PlexMediaItem }) => {
    );
 };
 
+const TrackPlayPopover = ({ ratingKey, viewCount }: { ratingKey: string; viewCount: number }) => {
+   const trpc = useTRPC();
+   const [open, setOpen] = useState(false);
+
+   const { data } = useQuery({
+      ...trpc.tautulli.getItemHistory.queryOptions({ ratingKey }),
+      enabled: open,
+   });
+
+   const plays = data?.data ?? [];
+
+   return (
+      <HoverCard open={open} onOpenChange={setOpen} openDelay={200} closeDelay={100}>
+         <HoverCardTrigger asChild>
+            <button className="flex items-center gap-0.5 text-[10px] text-primary/70 hover:text-primary">
+               <Play className="h-2.5 w-2.5" />
+               {viewCount}
+            </button>
+         </HoverCardTrigger>
+         <HoverCardContent side="top" className="w-56 p-3">
+            <p className="mb-2 text-xs font-medium">
+               {viewCount} play{viewCount !== 1 ? "s" : ""}
+            </p>
+            {plays.length === 0 && open && (
+               <p className="text-xs text-muted-foreground">Loading...</p>
+            )}
+            {plays.length > 0 && (
+               <div className="space-y-1.5">
+                  {plays.slice(0, 5).map((play) => (
+                     <div key={play.row_id} className="text-[11px]">
+                        <p className="text-muted-foreground">
+                           {formatDistanceToNow(
+                              new Date(play.stopped * 1000),
+                              { addSuffix: true },
+                           )}
+                        </p>
+                        <div className="flex items-center gap-2 text-muted-foreground/70">
+                           {play.play_duration > 0 && (
+                              <span>{fmtPlayDuration(play.play_duration)}</span>
+                           )}
+                           {play.platform && <span>{play.platform}</span>}
+                        </div>
+                     </div>
+                  ))}
+                  {plays.length > 5 && (
+                     <p className="text-[10px] text-muted-foreground">
+                        +{plays.length - 5} more
+                     </p>
+                  )}
+               </div>
+            )}
+         </HoverCardContent>
+      </HoverCard>
+   );
+};
+
+const AlbumQualityProfile = ({ tracks }: { tracks: PlexMediaItem[] }) => {
+   const profile = useMemo(() => {
+      const codecs = new Set<string>();
+      let totalSize = 0;
+      let minBitrate = Infinity;
+      let maxBitrate = 0;
+      let sampleRate = 0;
+      let bitDepth = 0;
+
+      for (const track of tracks) {
+         const media = track.Media?.[0];
+         const part = media?.Part?.[0];
+         const stream = part?.Stream?.find((s) => s.streamType === 2);
+         const codec = (media?.audioCodec ?? stream?.codec)?.toUpperCase();
+         if (codec) codecs.add(codec);
+         if (part?.size) totalSize += part.size;
+         if (media?.bitrate) {
+            minBitrate = Math.min(minBitrate, media.bitrate);
+            maxBitrate = Math.max(maxBitrate, media.bitrate);
+         }
+         if (stream?.samplingRate && stream.samplingRate > sampleRate) {
+            sampleRate = stream.samplingRate;
+         }
+         if (stream?.bitDepth && stream.bitDepth > bitDepth) {
+            bitDepth = stream.bitDepth;
+         }
+      }
+
+      if (codecs.size === 0) return null;
+
+      return {
+         codecs: Array.from(codecs),
+         totalSize,
+         bitrateRange:
+            minBitrate !== Infinity
+               ? minBitrate === maxBitrate
+                  ? formatBitrate(maxBitrate)
+                  : `${formatBitrate(minBitrate)}–${formatBitrate(maxBitrate)}`
+               : null,
+         sampleRate: sampleRate > 0 ? formatSampleRate(sampleRate) : null,
+         bitDepth: bitDepth > 0 ? `${bitDepth}-bit` : null,
+      };
+   }, [tracks]);
+
+   if (!profile) return null;
+
+   return (
+      <div className="flex flex-wrap items-center gap-1.5">
+         {profile.codecs.map((c) => (
+            <span key={c} className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+               {c}
+            </span>
+         ))}
+         {profile.sampleRate && (
+            <span className="text-[10px] text-muted-foreground">{profile.sampleRate}</span>
+         )}
+         {profile.bitDepth && (
+            <span className="text-[10px] text-muted-foreground">{profile.bitDepth}</span>
+         )}
+         {profile.bitrateRange && (
+            <span className="text-[10px] text-muted-foreground">{profile.bitrateRange}</span>
+         )}
+         {profile.totalSize > 0 && (
+            <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+               <HardDrive className="h-2.5 w-2.5" />
+               {formatFileSize(profile.totalSize)}
+            </span>
+         )}
+      </div>
+   );
+};
+
 const AlbumTracks = ({ albumKey }: { albumKey: string }) => {
    const trpc = useTRPC();
    const { data, isLoading } = useQuery(
@@ -146,33 +286,38 @@ const AlbumTracks = ({ albumKey }: { albumKey: string }) => {
    const tracks = data?.data ?? [];
 
    return (
-      <div className="border-t border-border/50 px-4 pb-4 pt-2">
-         {tracks.map((track) => (
-            <div
-               key={track.ratingKey}
-               className="flex items-center gap-3 rounded-md px-2 py-2 text-sm hover:bg-muted/50"
-            >
-               <span className="w-6 text-right text-xs text-muted-foreground tabular-nums">
-                  {track.index}
-               </span>
-               <div className="flex-1 min-w-0">
-                  <p className="truncate">{track.title}</p>
-                  <TrackAudioBadges track={track} />
+      <div className="border-t border-border/50">
+         <div className="px-4 pt-2 pb-1">
+            <AlbumQualityProfile tracks={tracks} />
+         </div>
+         <div className="px-4 pb-4">
+            {tracks.map((track) => (
+               <div
+                  key={track.ratingKey}
+                  className="flex items-center gap-3 rounded-md px-2 py-2 text-sm hover:bg-muted/50"
+               >
+                  <span className="w-6 text-right text-xs text-muted-foreground tabular-nums">
+                     {track.index}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                     <p className="truncate">{track.title}</p>
+                     <TrackAudioBadges track={track} />
+                  </div>
+                  {(track.viewCount ?? 0) > 0 && (
+                     <TrackPlayPopover
+                        ratingKey={track.ratingKey}
+                        viewCount={track.viewCount!}
+                     />
+                  )}
+                  {track.duration && (
+                     <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        {formatDuration(track.duration)}
+                     </span>
+                  )}
                </div>
-               {(track.viewCount ?? 0) > 0 && (
-                  <span className="flex items-center gap-0.5 text-[10px] text-primary/70">
-                     <Play className="h-2.5 w-2.5" />
-                     {track.viewCount}
-                  </span>
-               )}
-               {track.duration && (
-                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                     <Clock className="h-3 w-3" />
-                     {formatDuration(track.duration)}
-                  </span>
-               )}
-            </div>
-         ))}
+            ))}
+         </div>
       </div>
    );
 };

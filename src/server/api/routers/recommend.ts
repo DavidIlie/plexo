@@ -140,7 +140,11 @@ export const recommendRouter = createTRPCRouter({
             message: input.message,
          });
 
-         if (env.OVERSEERR_URL && env.OVERSEERR_API_KEY) {
+         if (
+            env.RECOMMEND_AUTO_REQUEST &&
+            env.OVERSEERR_URL &&
+            env.OVERSEERR_API_KEY
+         ) {
             try {
                await createOverseerrRequest(input.tmdbId, input.mediaType);
             } catch {
