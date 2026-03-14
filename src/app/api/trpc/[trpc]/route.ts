@@ -1,9 +1,10 @@
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
-import { type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
 import { env } from "~/env";
 import { appRouter } from "~/server/api/root";
 import { createTRPCContext } from "~/server/api/trpc";
+import { checkRateLimit } from "~/lib/rate-limit";
 
 const createContext = async (req: NextRequest) => {
    return createTRPCContext({
@@ -11,8 +12,18 @@ const createContext = async (req: NextRequest) => {
    });
 };
 
-const handler = (req: NextRequest) =>
-   fetchRequestHandler({
+const handler = (req: NextRequest) => {
+   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anonymous";
+   const { allowed } = checkRateLimit(`trpc:${ip}`);
+
+   if (!allowed) {
+      return NextResponse.json(
+         { error: "Too many requests. Please try again later." },
+         { status: 429 },
+      );
+   }
+
+   return fetchRequestHandler({
       endpoint: "/api/trpc",
       req,
       router: appRouter,
@@ -26,6 +37,7 @@ const handler = (req: NextRequest) =>
               }
             : undefined,
    });
+};
 
 export { handler as GET, handler as POST };
 

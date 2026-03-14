@@ -23,7 +23,7 @@ export const WatchTimeByDayChart = () => {
       })) ?? [];
 
    return (
-      <ChartWrapper title="Watch Time by Day" isLoading={isLoading}>
+      <ChartWrapper title="Watch Time by Day" description="Plays by day of week over the last 30 days" isLoading={isLoading}>
          <BarChart data={chartData}>
             <XAxis
                dataKey="day"

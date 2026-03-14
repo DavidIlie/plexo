@@ -44,7 +44,7 @@ export const LocationChart = () => {
                         <span className="text-sm">{loc.location}</span>
                      </div>
                      <span className="text-xs tabular-nums text-muted-foreground">
-                        {loc.count} IP{loc.count !== 1 ? "s" : ""}
+                        {loc.count} {loc.count !== 1 ? "entries" : "entry"}
                      </span>
                   </div>
                ))}

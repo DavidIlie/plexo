@@ -26,7 +26,7 @@ export const GenreDistributionChart = () => {
    const chartData = data?.data ?? [];
 
    return (
-      <ChartWrapper title="Library by Genre" isLoading={isLoading}>
+      <ChartWrapper title="Library by Genre" description="Top genres across all movies and TV shows" isLoading={isLoading}>
          <PieChart>
             <Pie
                data={chartData}

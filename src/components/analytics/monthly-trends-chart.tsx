@@ -26,7 +26,7 @@ export const MonthlyTrendsChart = () => {
    const colors = ["var(--chart-1)", "var(--chart-2)", "var(--chart-4)"];
 
    return (
-      <ChartWrapper title="Monthly Watch Trends" isLoading={isLoading}>
+      <ChartWrapper title="Monthly Watch Trends" description="Daily plays over the last year" isLoading={isLoading}>
          <AreaChart data={chartData}>
             <XAxis
                dataKey="date"

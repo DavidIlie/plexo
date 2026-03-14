@@ -15,6 +15,7 @@ export const CHART_TOOLTIP_STYLE: CSSProperties = {
 
 interface ChartWrapperProps {
    title: string;
+   description?: string;
    isLoading: boolean;
    height?: number;
    children: ReactNode;
@@ -22,6 +23,7 @@ interface ChartWrapperProps {
 
 export const ChartWrapper = ({
    title,
+   description,
    isLoading,
    height = 280,
    children,
@@ -29,7 +31,12 @@ export const ChartWrapper = ({
    if (isLoading) {
       return (
          <div className="rounded-lg border border-border/50 p-4">
-            <p className="mb-3 text-sm font-medium">{title}</p>
+            <p className="mb-1 text-sm font-medium">{title}</p>
+            {description && (
+               <p className="mb-3 text-xs text-muted-foreground">
+                  {description}
+               </p>
+            )}
             <Skeleton className="w-full" style={{ height }} />
          </div>
       );
@@ -37,7 +44,10 @@ export const ChartWrapper = ({
 
    return (
       <div className="rounded-lg border border-border/50 p-4">
-         <p className="mb-3 text-sm font-medium">{title}</p>
+         <p className="mb-1 text-sm font-medium">{title}</p>
+         {description && (
+            <p className="mb-3 text-xs text-muted-foreground">{description}</p>
+         )}
          <ResponsiveContainer width="100%" height={height}>
             {children}
          </ResponsiveContainer>

@@ -30,7 +30,7 @@ export const WatchTimeByHourChart = () => {
       })) ?? [];
 
    return (
-      <ChartWrapper title="Favorite Viewing Times" isLoading={isLoading}>
+      <ChartWrapper title="Favorite Viewing Times" description="Plays by hour of day over the last 30 days" isLoading={isLoading}>
          <BarChart data={chartData}>
             <XAxis
                dataKey="hour"

@@ -180,14 +180,11 @@ const SeasonBreakdown: React.FC<{ ratingKey: string }> = ({ ratingKey }) => {
 
    return (
       <div className="space-y-3">
-         <div className="flex items-center justify-between">
-            <p className="text-xs font-medium text-muted-foreground">Seasons</p>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-               <HardDrive className="h-3 w-3" />
-               <span>
-                  {realSeasons.reduce((sum, s) => sum + (s.leafCount ?? 0), 0)} episodes on disk
-               </span>
-            </div>
+         <div className="flex items-center justify-between gap-2">
+            <p className="shrink-0 text-xs font-medium text-muted-foreground">Seasons</p>
+            <p className="truncate text-xs text-muted-foreground">
+               {realSeasons.reduce((sum, s) => sum + (s.leafCount ?? 0), 0)} ep on disk
+            </p>
          </div>
          <div className="space-y-2">
             {realSeasons.map((season) => {
@@ -201,24 +198,18 @@ const SeasonBreakdown: React.FC<{ ratingKey: string }> = ({ ratingKey }) => {
                      key={season.ratingKey}
                      className="rounded-lg border border-border/50 bg-muted/20 p-3"
                   >
-                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                           <span className="text-sm font-medium">
+                     <div className="flex items-center justify-between gap-2">
+                        <div className="flex min-w-0 items-center gap-2">
+                           <span className="truncate text-sm font-medium">
                               {season.title}
                            </span>
                            {watchPct === 100 && (
-                              <Check className="h-3.5 w-3.5 text-green-500" />
+                              <Check className="h-3.5 w-3.5 shrink-0 text-green-500" />
                            )}
                         </div>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                           <span className="flex items-center gap-1">
-                              <HardDrive className="h-3 w-3" />
-                              {total} ep
-                           </span>
-                           <span className="flex items-center gap-1">
-                              <Eye className="h-3 w-3" />
-                              {watched}/{total}
-                           </span>
+                        <div className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
+                           <span>{total} ep</span>
+                           <span>{watched}/{total}</span>
                         </div>
                      </div>
 
@@ -373,7 +364,7 @@ export const MediaDetailDialog: React.FC<MediaDetailDialogProps> = ({
                </div>
             )}
 
-            <div className="space-y-4 px-6 pb-6">
+            <div className="min-w-0 space-y-4 overflow-hidden px-6 pb-6">
                <DialogHeader>
                   <DialogTitle className="text-lg">{detail.title}</DialogTitle>
                   <div className="flex flex-wrap items-center gap-1.5 pt-1">

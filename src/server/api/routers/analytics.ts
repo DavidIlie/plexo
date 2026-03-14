@@ -344,8 +344,8 @@ export const analyticsRouter = createTRPCRouter({
                   const firstIp = Array.from(ips)[0];
                   try {
                      const geo = await getGeoipLookup(firstIp);
-                     if (geo.city && geo.country) {
-                        topLocation = `${geo.city}, ${geo.country}`;
+                     if (geo.country) {
+                        topLocation = geo.country;
                      }
                   } catch {
                      // ignore
@@ -445,8 +445,8 @@ export const analyticsRouter = createTRPCRouter({
                   const geo = await getGeoipLookup(ip);
                   return {
                      location:
-                        geo.city && geo.country
-                           ? `${geo.city}, ${geo.country}`
+                        geo.country
+                           ? geo.country
                            : geo.country || "Unknown",
                      plays: count,
                   };
