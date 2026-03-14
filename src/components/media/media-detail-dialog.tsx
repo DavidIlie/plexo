@@ -28,7 +28,7 @@ import { Badge } from "~/components/ui/badge";
 import { PlexImage } from "~/components/plex-image";
 import { Separator } from "~/components/ui/separator";
 import { cn } from "~/lib/utils";
-import type { PlexMediaItem } from "~/types/plex";
+import type { PlexMediaItem, PlexMedia } from "~/types/plex";
 
 interface MediaDetailDialogProps {
    item: PlexMediaItem | null;
@@ -307,6 +307,93 @@ const WatchHistorySection: React.FC<{ ratingKey: string }> = ({
    );
 };
 
+const formatFileSize = (bytes: number) => {
+   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+   if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+   return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+};
+
+const MediaInfoSection: React.FC<{ media: PlexMedia[] }> = ({ media }) => {
+   const m = media[0];
+   if (!m) return null;
+
+   const part = m.Part?.[0];
+   const videoStream = part?.Stream?.find((s) => s.streamType === 1);
+   const audioStream = part?.Stream?.find((s) => s.streamType === 2);
+   const subtitleStream = part?.Stream?.find((s) => s.streamType === 3);
+
+   return (
+      <div>
+         <p className="mb-2 text-xs font-medium text-muted-foreground">
+            Media Info
+         </p>
+         <div className="space-y-2 rounded-lg border border-border/50 bg-muted/20 p-3 text-xs">
+            {videoStream && (
+               <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Video</span>
+                  <div className="flex items-center gap-1.5">
+                     <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                        {(videoStream.codec ?? "").toUpperCase()}
+                     </Badge>
+                     {videoStream.displayTitle && (
+                        <span>{videoStream.displayTitle}</span>
+                     )}
+                  </div>
+               </div>
+            )}
+            {audioStream && (
+               <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Audio</span>
+                  <div className="flex items-center gap-1.5">
+                     <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                        {(audioStream.codec ?? "").toUpperCase()}
+                     </Badge>
+                     {audioStream.displayTitle && (
+                        <span>{audioStream.displayTitle}</span>
+                     )}
+                  </div>
+               </div>
+            )}
+            {subtitleStream && (
+               <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Subtitles</span>
+                  <span>{subtitleStream.displayTitle ?? (subtitleStream.codec ?? "").toUpperCase()}</span>
+               </div>
+            )}
+            {m.container && (
+               <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Container</span>
+                  <span>{m.container.toUpperCase()}</span>
+               </div>
+            )}
+            {m.bitrate && (
+               <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Bitrate</span>
+                  <span>{m.bitrate >= 1000 ? `${(m.bitrate / 1000).toFixed(1)} Mbps` : `${m.bitrate} kbps`}</span>
+               </div>
+            )}
+            {part?.size && (
+               <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">File Size</span>
+                  <span className="flex items-center gap-1">
+                     <HardDrive className="h-3 w-3" />
+                     {formatFileSize(part.size)}
+                  </span>
+               </div>
+            )}
+            {part?.file && (
+               <div className="flex items-start justify-between gap-2">
+                  <span className="shrink-0 text-muted-foreground">File</span>
+                  <span className="break-all text-right text-[10px] text-muted-foreground/70">
+                     {part.file.split("/").pop()}
+                  </span>
+               </div>
+            )}
+         </div>
+      </div>
+   );
+};
+
 export const MediaDetailDialog: React.FC<MediaDetailDialogProps> = ({
    item,
    open,
@@ -523,6 +610,13 @@ export const MediaDetailDialog: React.FC<MediaDetailDialogProps> = ({
                            ))}
                         </div>
                      </div>
+                  </>
+               )}
+
+               {detail.Media && detail.Media.length > 0 && (
+                  <>
+                     <Separator />
+                     <MediaInfoSection media={detail.Media} />
                   </>
                )}
 
