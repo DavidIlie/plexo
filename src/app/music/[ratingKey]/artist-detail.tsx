@@ -1,9 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ChevronDown, ChevronRight, Clock } from "lucide-react";
+import {
+   ArrowLeft,
+   ChevronDown,
+   ChevronRight,
+   Clock,
+   Headphones,
+   HardDrive,
+   Play,
+} from "lucide-react";
 
 import { useTRPC } from "~/trpc/react";
 import { PlexImage } from "~/components/plex-image";
@@ -65,6 +73,60 @@ const formatDuration = (ms: number) => {
    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 };
 
+const formatFileSize = (bytes: number) => {
+   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+   if (bytes < 1024 * 1024 * 1024)
+      return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+   return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+};
+
+const formatBitrate = (kbps: number) => {
+   if (kbps >= 1000) return `${(kbps / 1000).toFixed(1)} Mbps`;
+   return `${kbps} kbps`;
+};
+
+const formatSampleRate = (hz: number) => {
+   if (hz >= 1000) return `${(hz / 1000).toFixed(1)} kHz`;
+   return `${hz} Hz`;
+};
+
+const TrackAudioBadges = ({ track }: { track: PlexMediaItem }) => {
+   const media = track.Media?.[0];
+   const part = media?.Part?.[0];
+   const stream = part?.Stream?.find((s) => s.streamType === 2); // audio stream
+
+   if (!media && !part) return null;
+
+   const badges: string[] = [];
+   const codec = (media?.audioCodec ?? stream?.codec)?.toUpperCase();
+   if (codec) badges.push(codec);
+   if (stream?.samplingRate) badges.push(formatSampleRate(stream.samplingRate));
+   if (stream?.bitDepth) badges.push(`${stream.bitDepth}-bit`);
+   if (media?.bitrate) badges.push(formatBitrate(media.bitrate));
+   if (stream?.channels) {
+      badges.push(stream.channels === 2 ? "Stereo" : `${stream.channels}ch`);
+   }
+
+   return (
+      <div className="flex items-center gap-1">
+         {badges.map((b) => (
+            <span
+               key={b}
+               className="rounded bg-muted px-1 py-0.5 text-[10px] text-muted-foreground"
+            >
+               {b}
+            </span>
+         ))}
+         {part?.size && (
+            <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+               <HardDrive className="h-2.5 w-2.5" />
+               {formatFileSize(part.size)}
+            </span>
+         )}
+      </div>
+   );
+};
+
 const AlbumTracks = ({ albumKey }: { albumKey: string }) => {
    const trpc = useTRPC();
    const { data, isLoading } = useQuery(
@@ -75,7 +137,7 @@ const AlbumTracks = ({ albumKey }: { albumKey: string }) => {
       return (
          <div className="space-y-2 px-4 pb-4">
             {Array.from({ length: 4 }).map((_, i) => (
-               <Skeleton key={i} className="h-8 w-full" />
+               <Skeleton key={i} className="h-10 w-full" />
             ))}
          </div>
       );
@@ -88,12 +150,21 @@ const AlbumTracks = ({ albumKey }: { albumKey: string }) => {
          {tracks.map((track) => (
             <div
                key={track.ratingKey}
-               className="flex items-center gap-3 rounded-md px-2 py-1.5 text-sm hover:bg-muted/50"
+               className="flex items-center gap-3 rounded-md px-2 py-2 text-sm hover:bg-muted/50"
             >
                <span className="w-6 text-right text-xs text-muted-foreground tabular-nums">
                   {track.index}
                </span>
-               <span className="flex-1 truncate">{track.title}</span>
+               <div className="flex-1 min-w-0">
+                  <p className="truncate">{track.title}</p>
+                  <TrackAudioBadges track={track} />
+               </div>
+               {(track.viewCount ?? 0) > 0 && (
+                  <span className="flex items-center gap-0.5 text-[10px] text-primary/70">
+                     <Play className="h-2.5 w-2.5" />
+                     {track.viewCount}
+                  </span>
+               )}
                {track.duration && (
                   <span className="flex items-center gap-1 text-xs text-muted-foreground">
                      <Clock className="h-3 w-3" />
@@ -130,6 +201,12 @@ const AlbumCard = ({ album }: { album: PlexMediaItem }) => {
                      .join(" · ")}
                </p>
             </div>
+            {(album.viewCount ?? 0) > 0 && (
+               <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Headphones className="h-3.5 w-3.5" />
+                  {album.viewCount}
+               </span>
+            )}
             {expanded ? (
                <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
             ) : (
@@ -154,6 +231,14 @@ export const ArtistDetail = ({ ratingKey }: { ratingKey: string }) => {
    const artist = artistData?.data;
    const albums = albumsData?.data ?? [];
 
+   const totalPlays = useMemo(() => {
+      let count = 0;
+      for (const album of albums) {
+         count += album.viewCount ?? 0;
+      }
+      return count;
+   }, [albums]);
+
    if (!artist) return null;
 
    return (
@@ -176,6 +261,17 @@ export const ArtistDetail = ({ ratingKey }: { ratingKey: string }) => {
             />
             <div className="space-y-3">
                <h1 className="text-2xl font-bold">{artist.title}</h1>
+               <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                  {albums.length > 0 && (
+                     <span>{albums.length} albums</span>
+                  )}
+                  {totalPlays > 0 && (
+                     <span className="flex items-center gap-1">
+                        <Headphones className="h-3.5 w-3.5" />
+                        {totalPlays} plays
+                     </span>
+                  )}
+               </div>
                {artist.Genre && artist.Genre.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
                      {artist.Genre.map((g) => (

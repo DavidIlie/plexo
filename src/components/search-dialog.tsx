@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Film, Tv, X } from "lucide-react";
+import { Search, Film, Tv, Music, X } from "lucide-react";
 
 import { useTRPC } from "~/trpc/react";
+import { useAppConfig } from "~/components/app-config-provider";
 import {
    Dialog,
    DialogContent,
@@ -18,13 +20,15 @@ import { MediaDetailDialog } from "~/components/media/media-detail-dialog";
 import { useDebounce } from "~/hooks/use-debounce";
 import type { PlexMediaItem } from "~/types/plex";
 
+type TypeFilter = "all" | "movie" | "show" | "artist";
+
 export const SearchDialog = () => {
    const trpc = useTRPC();
+   const router = useRouter();
+   const { musicEnabled } = useAppConfig();
    const [open, setOpen] = useState(false);
    const [query, setQuery] = useState("");
-   const [typeFilter, setTypeFilter] = useState<"all" | "movie" | "show">(
-      "all",
-   );
+   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
    const [genreFilter, setGenreFilter] = useState<string | null>(null);
    const [directorFilter, setDirectorFilter] = useState<string | null>(null);
    const [selectedItem, setSelectedItem] = useState<PlexMediaItem | null>(null);
@@ -61,6 +65,9 @@ export const SearchDialog = () => {
       (s) => s.type === "movie",
    )?.key;
    const showSectionId = sections?.data.find((s) => s.type === "show")?.key;
+   const musicSectionId = sections?.data.find(
+      (s) => s.type === "artist",
+   )?.key;
 
    const { data: moviesData } = useQuery({
       ...trpc.plex.getMovies.queryOptions({
@@ -76,11 +83,21 @@ export const SearchDialog = () => {
       enabled: open && !!showSectionId,
    });
 
+   const { data: artistsData } = useQuery({
+      ...trpc.plex.getArtists.queryOptions({
+         sectionId: musicSectionId ?? "1",
+      }),
+      enabled: open && musicEnabled && !!musicSectionId,
+   });
+
    const allItems = useMemo(() => {
       const movies = moviesData?.data.items ?? [];
       const shows = showsData?.data.items ?? [];
-      return [...movies, ...shows];
-   }, [moviesData, showsData]);
+      const artists = musicEnabled
+         ? (artistsData?.data.items ?? []).filter((a) => a.thumb)
+         : [];
+      return [...movies, ...shows, ...artists];
+   }, [moviesData, showsData, artistsData, musicEnabled]);
 
    const allGenres = useMemo(() => {
       const genreSet = new Set<string>();
@@ -93,6 +110,7 @@ export const SearchDialog = () => {
    const allDirectors = useMemo(() => {
       const dirSet = new Set<string>();
       for (const item of allItems) {
+         if (item.type === "artist") continue;
          for (const d of item.Director ?? []) dirSet.add(d.tag);
       }
       return Array.from(dirSet).sort();
@@ -103,6 +121,7 @@ export const SearchDialog = () => {
          .filter((item) => {
             if (typeFilter === "movie" && item.type !== "movie") return false;
             if (typeFilter === "show" && item.type !== "show") return false;
+            if (typeFilter === "artist" && item.type !== "artist") return false;
             if (
                genreFilter &&
                !item.Genre?.some((g) => g.tag === genreFilter)
@@ -128,6 +147,45 @@ export const SearchDialog = () => {
    const hasActiveFilters =
       typeFilter !== "all" || !!genreFilter || !!directorFilter;
 
+   const typeFilters: Array<{ value: TypeFilter; label: string }> = [
+      { value: "all", label: "All" },
+      { value: "movie", label: "Movies" },
+      { value: "show", label: "TV" },
+   ];
+   if (musicEnabled) {
+      typeFilters.push({ value: "artist", label: "Music" });
+   }
+
+   const handleItemClick = (item: PlexMediaItem) => {
+      if (item.type === "artist") {
+         setOpen(false);
+         resetFilters();
+         router.push(`/music/${item.ratingKey}`);
+      } else {
+         setSelectedItem(item);
+         setOpen(false);
+      }
+   };
+
+   const getItemIcon = (type: string) => {
+      if (type === "artist")
+         return <Music className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />;
+      if (type === "show")
+         return <Tv className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />;
+      return <Film className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />;
+   };
+
+   const getItemSubtitle = (item: PlexMediaItem) => {
+      const parts: string[] = [];
+      if (item.year) parts.push(String(item.year));
+      if (item.type === "artist" && item.childCount) {
+         parts.push(`${item.childCount} albums`);
+      }
+      if (item.Genre?.[0]) parts.push(item.Genre[0].tag);
+      if (item.Director?.[0]) parts.push(item.Director[0].tag);
+      return parts.join(" · ");
+   };
+
    return (
       <>
          <Dialog
@@ -147,7 +205,11 @@ export const SearchDialog = () => {
                   <Input
                      value={query}
                      onChange={(e) => setQuery(e.target.value)}
-                     placeholder="Search movies and TV shows..."
+                     placeholder={
+                        musicEnabled
+                           ? "Search movies, TV shows, and artists..."
+                           : "Search movies and TV shows..."
+                     }
                      className="border-0 shadow-none outline-none focus-visible:ring-0 focus-visible:outline-none"
                      autoFocus
                   />
@@ -162,17 +224,17 @@ export const SearchDialog = () => {
                </div>
 
                <div className="flex flex-wrap items-center gap-1.5 border-b border-border px-4 py-2">
-                  {(["all", "movie", "show"] as const).map((t) => (
+                  {typeFilters.map((t) => (
                      <button
-                        key={t}
-                        onClick={() => setTypeFilter(t)}
+                        key={t.value}
+                        onClick={() => setTypeFilter(t.value)}
                         className={`rounded-full px-2.5 py-0.5 text-xs transition-colors ${
-                           typeFilter === t
+                           typeFilter === t.value
                               ? "bg-foreground/10 text-foreground"
                               : "text-muted-foreground hover:text-foreground"
                         }`}
                      >
-                        {t === "all" ? "All" : t === "movie" ? "Movies" : "TV"}
+                        {t.label}
                      </button>
                   ))}
 
@@ -220,22 +282,24 @@ export const SearchDialog = () => {
                            ))}
                         </div>
                      </div>
-                     <div>
-                        <p className="mb-1.5 text-xs text-muted-foreground">
-                           Directors
-                        </p>
-                        <div className="flex flex-wrap gap-1">
-                           {allDirectors.slice(0, 12).map((d) => (
-                              <button
-                                 key={d}
-                                 onClick={() => setDirectorFilter(d)}
-                                 className="rounded-full border border-border/50 px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"
-                              >
-                                 {d}
-                              </button>
-                           ))}
+                     {allDirectors.length > 0 && (
+                        <div>
+                           <p className="mb-1.5 text-xs text-muted-foreground">
+                              Directors
+                           </p>
+                           <div className="flex flex-wrap gap-1">
+                              {allDirectors.slice(0, 12).map((d) => (
+                                 <button
+                                    key={d}
+                                    onClick={() => setDirectorFilter(d)}
+                                    className="rounded-full border border-border/50 px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"
+                                 >
+                                    {d}
+                                 </button>
+                              ))}
+                           </div>
                         </div>
-                     </div>
+                     )}
                   </div>
                )}
 
@@ -249,10 +313,7 @@ export const SearchDialog = () => {
                      {filtered.map((item) => (
                         <button
                            key={item.ratingKey}
-                           onClick={() => {
-                              setSelectedItem(item);
-                              setOpen(false);
-                           }}
+                           onClick={() => handleItemClick(item)}
                            className="flex w-full items-center gap-3 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-muted/50"
                         >
                            <PlexImage
@@ -265,18 +326,10 @@ export const SearchDialog = () => {
                            <div className="min-w-0 flex-1">
                               <p className="truncate text-sm">{item.title}</p>
                               <p className="text-xs text-muted-foreground">
-                                 {item.year}
-                                 {item.Genre?.[0] &&
-                                    ` · ${item.Genre[0].tag}`}
-                                 {item.Director?.[0] &&
-                                    ` · ${item.Director[0].tag}`}
+                                 {getItemSubtitle(item)}
                               </p>
                            </div>
-                           {item.type === "movie" ? (
-                              <Film className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                           ) : (
-                              <Tv className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                           )}
+                           {getItemIcon(item.type)}
                         </button>
                      ))}
                      {filtered.length > 0 && (

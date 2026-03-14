@@ -8,6 +8,39 @@ export interface PlexLibrarySection {
    uuid: string;
 }
 
+export interface PlexStream {
+   id: number;
+   streamType: number;
+   codec: string;
+   channels?: number;
+   bitrate?: number;
+   samplingRate?: number;
+   bitDepth?: number;
+   audioChannelLayout?: string;
+   displayTitle?: string;
+   extendedDisplayTitle?: string;
+}
+
+export interface PlexPart {
+   id: number;
+   key: string;
+   file?: string;
+   size?: number;
+   container?: string;
+   duration?: number;
+   Stream?: PlexStream[];
+}
+
+export interface PlexMedia {
+   id: number;
+   duration?: number;
+   bitrate?: number;
+   audioChannels?: number;
+   audioCodec?: string;
+   container?: string;
+   Part?: PlexPart[];
+}
+
 export interface PlexMediaItem {
    ratingKey: string;
    key: string;
@@ -30,6 +63,7 @@ export interface PlexMediaItem {
    Genre?: PlexTag[];
    Director?: PlexTag[];
    Role?: PlexTag[];
+   Media?: PlexMedia[];
    leafCount?: number;
    viewedLeafCount?: number;
    childCount?: number;
