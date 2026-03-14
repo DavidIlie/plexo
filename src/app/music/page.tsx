@@ -94,11 +94,12 @@ const MusicPage = () => {
          <div className="flex items-center justify-between">
             <div>
                <h1 className="text-lg font-semibold">Music</h1>
-               {filteredArtists.length !== totalSize && (
-                  <p className="text-sm text-muted-foreground">
-                     {filteredArtists.length} of {totalSize}
-                  </p>
-               )}
+               {(debouncedSearch || genre !== "all") &&
+                  filteredArtists.length !== artists.length && (
+                     <p className="text-sm text-muted-foreground">
+                        {filteredArtists.length} of {artists.length}
+                     </p>
+                  )}
             </div>
             <RefreshButton />
          </div>

@@ -108,11 +108,12 @@ const TVPage = () => {
          <div className="flex items-center justify-between">
             <div>
                <h1 className="text-lg font-semibold">TV Shows</h1>
-               {filteredShows.length !== totalSize && (
-                  <p className="text-sm text-muted-foreground">
-                     {filteredShows.length} of {totalSize}
-                  </p>
-               )}
+               {(debouncedSearch || genre !== "all" || completionFilter !== "all") &&
+                  filteredShows.length !== shows.length && (
+                     <p className="text-sm text-muted-foreground">
+                        {filteredShows.length} of {shows.length}
+                     </p>
+                  )}
             </div>
             <RefreshButton />
          </div>

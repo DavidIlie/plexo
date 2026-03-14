@@ -426,6 +426,42 @@ const MediaInfoSection: React.FC<{ media: PlexMedia[] }> = ({ media }) => {
    );
 };
 
+const ShowMediaProfile: React.FC<{ ratingKey: string }> = ({ ratingKey }) => {
+   const trpc = useTRPC();
+   // Fetch seasons, then first season's first episode for quality info
+   const { data: seasonsData } = useQuery(
+      trpc.plex.getChildren.queryOptions({ ratingKey }),
+   );
+   const firstSeason = (seasonsData?.data ?? []).find(
+      (s) => s.index !== undefined && s.index > 0,
+   );
+   const { data: episodesData } = useQuery({
+      ...trpc.plex.getChildren.queryOptions({
+         ratingKey: firstSeason?.ratingKey ?? "",
+      }),
+      enabled: !!firstSeason,
+   });
+   const firstEpisode = (episodesData?.data ?? [])[0];
+   const { data: episodeDetail } = useQuery({
+      ...trpc.plex.getMetadata.queryOptions({
+         ratingKey: firstEpisode?.ratingKey ?? "",
+      }),
+      enabled: !!firstEpisode,
+   });
+
+   const media = episodeDetail?.data?.Media;
+   if (!media?.length) return null;
+
+   return (
+      <div>
+         <p className="mb-1 text-[10px] text-muted-foreground/60">
+            Based on S{firstSeason?.index}E{firstEpisode?.index}
+         </p>
+         <MediaInfoSection media={media} />
+      </div>
+   );
+};
+
 export const MediaDetailDialog: React.FC<MediaDetailDialogProps> = ({
    item,
    open,
@@ -649,6 +685,13 @@ export const MediaDetailDialog: React.FC<MediaDetailDialogProps> = ({
                   <>
                      <Separator />
                      <MediaInfoSection media={detail.Media} />
+                  </>
+               )}
+
+               {detail.type === "show" && !detail.Media?.length && (
+                  <>
+                     <Separator />
+                     <ShowMediaProfile ratingKey={detail.ratingKey} />
                   </>
                )}
 

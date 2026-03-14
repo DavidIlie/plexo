@@ -97,11 +97,12 @@ const MoviesPage = () => {
          <div className="flex items-center justify-between">
             <div>
                <h1 className="text-lg font-semibold">Movies</h1>
-               {filteredMovies.length !== totalSize && (
-                  <p className="text-sm text-muted-foreground">
-                     {filteredMovies.length} of {totalSize}
-                  </p>
-               )}
+               {(debouncedSearch || genre !== "all" || watchStatus !== "all") &&
+                  filteredMovies.length !== movies.length && (
+                     <p className="text-sm text-muted-foreground">
+                        {filteredMovies.length} of {movies.length}
+                     </p>
+                  )}
             </div>
             <RefreshButton />
          </div>
