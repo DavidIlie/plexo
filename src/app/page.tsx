@@ -10,6 +10,8 @@ import { RecentlyWatched } from "~/components/dashboard/recently-watched";
 import { Highlights } from "~/components/dashboard/highlights";
 import { Wishlist } from "~/components/dashboard/wishlist";
 import { GenreDistributionChart } from "~/components/analytics/genre-distribution-chart";
+import { MusicGenreChart } from "~/components/analytics/music-genre-chart";
+import { TopArtistsChart } from "~/components/analytics/top-artists-chart";
 import { WatchTimeByHourChart } from "~/components/analytics/watch-time-by-hour-chart";
 import { Skeleton } from "~/components/ui/skeleton";
 import { RefreshButton } from "~/components/refresh-button";
@@ -141,6 +143,8 @@ const DashboardPage = async () => {
                <div className="grid gap-4 lg:grid-cols-2">
                   <GenreDistributionChart />
                   <WatchTimeByHourChart />
+                  <MusicGenreChart />
+                  <TopArtistsChart />
                </div>
             </div>
 

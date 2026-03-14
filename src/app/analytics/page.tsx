@@ -14,6 +14,8 @@ import { VideoQualityChart } from "~/components/analytics/video-quality-chart";
 import { AudioFormatChart } from "~/components/analytics/audio-format-chart";
 import { LibrarySizeChart } from "~/components/analytics/library-size-chart";
 import { MusicAudioFormatChart } from "~/components/analytics/music-audio-format-chart";
+import { MusicGenreChart } from "~/components/analytics/music-genre-chart";
+import { TopArtistsChart } from "~/components/analytics/top-artists-chart";
 import { PeriodSelector, usePeriodDays } from "~/components/analytics/period-selector";
 import { RefreshButton } from "~/components/refresh-button";
 import { Skeleton } from "~/components/ui/skeleton";
@@ -32,6 +34,15 @@ const AnalyticsCharts = () => {
             <WatchTimeByHourChart timeRange={days} />
             <DeviceChart />
             <LocationChart />
+         </div>
+         <div>
+            <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-muted-foreground">
+               Music
+            </h2>
+            <div className="grid gap-4 md:grid-cols-2">
+               <MusicGenreChart />
+               <TopArtistsChart />
+            </div>
          </div>
          <div>
             <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-muted-foreground">

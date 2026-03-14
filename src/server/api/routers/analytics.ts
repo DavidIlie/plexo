@@ -612,6 +612,78 @@ export const analyticsRouter = createTRPCRouter({
       };
    }),
 
+   getMusicGenreDistribution: publicProcedure.query(async () => {
+      if (!env.SHOW_MUSIC) {
+         return { data: null, lastUpdatedAt: new Date().toISOString() };
+      }
+
+      const result = await getCachedOrFetch(
+         "analytics:musicGenreDistribution",
+         async () => {
+            const sections = await getLibrarySections();
+            const musicSection = sections.find((s) => s.type === "artist");
+            if (!musicSection) return [];
+
+            const artists = await getArtists(musicSection.key);
+            const genreCounts = new Map<string, number>();
+
+            for (const artist of artists.items) {
+               if (artist.Genre) {
+                  for (const genre of artist.Genre) {
+                     genreCounts.set(
+                        genre.tag,
+                        (genreCounts.get(genre.tag) ?? 0) + 1,
+                     );
+                  }
+               }
+            }
+
+            return Array.from(genreCounts.entries())
+               .map(([name, count]) => ({ name, count }))
+               .sort((a, b) => b.count - a.count)
+               .slice(0, 15);
+         },
+         CacheTTL.METADATA,
+      );
+
+      return {
+         data: result.data,
+         lastUpdatedAt: result.fetchedAt.toISOString(),
+      };
+   }),
+
+   getTopArtists: publicProcedure.query(async () => {
+      if (!env.SHOW_MUSIC) {
+         return { data: null, lastUpdatedAt: new Date().toISOString() };
+      }
+
+      const result = await getCachedOrFetch(
+         "analytics:topArtists",
+         async () => {
+            const history = await getHistory(5000);
+            const artistPlays = new Map<string, number>();
+
+            for (const item of history.data) {
+               if (item.media_type === "track") {
+                  const name = item.grandparent_title || item.title;
+                  artistPlays.set(name, (artistPlays.get(name) ?? 0) + 1);
+               }
+            }
+
+            return Array.from(artistPlays.entries())
+               .map(([name, plays]) => ({ name, plays }))
+               .sort((a, b) => b.plays - a.plays)
+               .slice(0, 15);
+         },
+         CacheTTL.ANALYTICS,
+      );
+
+      return {
+         data: result.data,
+         lastUpdatedAt: result.fetchedAt.toISOString(),
+      };
+   }),
+
    getLibrarySizeStats: publicProcedure.query(async () => {
       const result = await getCachedOrFetch(
          "analytics:librarySizeStats",
