@@ -86,6 +86,81 @@ export const plexRouter = createTRPCRouter({
          };
       }),
 
+   browseMovies: publicProcedure
+      .input(
+         z.object({
+            sectionId: z.string(),
+            cursor: z.number().nullish(),
+            limit: z.number().default(60),
+         }),
+      )
+      .query(async ({ input }) => {
+         const start = input.cursor ?? 0;
+         const result = await getCachedOrFetch(
+            `plex:movies:${input.sectionId}:${start}:${input.limit}`,
+            () => getMovies(input.sectionId, start, input.limit),
+            CacheTTL.METADATA,
+         );
+         const nextCursor = start + input.limit < result.data.totalSize
+            ? start + input.limit
+            : undefined;
+         return {
+            items: result.data.items,
+            totalSize: result.data.totalSize,
+            nextCursor,
+         };
+      }),
+
+   browseShows: publicProcedure
+      .input(
+         z.object({
+            sectionId: z.string(),
+            cursor: z.number().nullish(),
+            limit: z.number().default(60),
+         }),
+      )
+      .query(async ({ input }) => {
+         const start = input.cursor ?? 0;
+         const result = await getCachedOrFetch(
+            `plex:shows:${input.sectionId}:${start}:${input.limit}`,
+            () => getShows(input.sectionId, start, input.limit),
+            CacheTTL.METADATA,
+         );
+         const nextCursor = start + input.limit < result.data.totalSize
+            ? start + input.limit
+            : undefined;
+         return {
+            items: result.data.items,
+            totalSize: result.data.totalSize,
+            nextCursor,
+         };
+      }),
+
+   browseArtists: publicProcedure
+      .input(
+         z.object({
+            sectionId: z.string(),
+            cursor: z.number().nullish(),
+            limit: z.number().default(60),
+         }),
+      )
+      .query(async ({ input }) => {
+         const start = input.cursor ?? 0;
+         const result = await getCachedOrFetch(
+            `plex:artists:${input.sectionId}:${start}:${input.limit}`,
+            () => getArtists(input.sectionId, start, input.limit),
+            CacheTTL.METADATA,
+         );
+         const nextCursor = start + input.limit < result.data.totalSize
+            ? start + input.limit
+            : undefined;
+         return {
+            items: result.data.items,
+            totalSize: result.data.totalSize,
+            nextCursor,
+         };
+      }),
+
    getOnDeck: publicProcedure.query(async () => {
       const result = await getCachedOrFetch(
          "plex:onDeck",

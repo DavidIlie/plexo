@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useMemo, useCallback } from "react";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 
 import { useTRPC } from "~/trpc/react";
 import { RefreshButton } from "~/components/refresh-button";
 import { useDebounce } from "~/hooks/use-debounce";
+import { useIntersectionObserver } from "~/hooks/use-intersection-observer";
 import { MediaGrid } from "~/components/media/media-grid";
 import { MediaFilters } from "~/components/media/media-filters";
 import { Skeleton } from "~/components/ui/skeleton";
@@ -24,13 +25,28 @@ const MoviesPage = () => {
       (s) => s.type === "movie",
    )?.key;
 
-   const { data: moviesData, isLoading } = useQuery(
-      trpc.plex.getMovies.queryOptions(
+   const {
+      data: moviesData,
+      isLoading,
+      fetchNextPage,
+      hasNextPage,
+      isFetchingNextPage,
+   } = useInfiniteQuery(
+      trpc.plex.browseMovies.infiniteQueryOptions(
          { sectionId: movieSectionId ?? "1" },
+         {
+            initialCursor: 0,
+            getNextPageParam: (lastPage) => lastPage.nextCursor,
+         },
       ),
    );
 
-   const movies = moviesData?.data.items ?? [];
+   const movies = useMemo(
+      () => moviesData?.pages.flatMap((p) => p.items) ?? [],
+      [moviesData],
+   );
+
+   const totalSize = moviesData?.pages[0]?.totalSize ?? 0;
 
    const genres = useMemo(() => {
       const genreSet = new Set<string>();
@@ -68,14 +84,22 @@ const MoviesPage = () => {
       });
    }, [movies, debouncedSearch, genre, watchStatus]);
 
+   const loadMore = useCallback(() => {
+      if (hasNextPage && !isFetchingNextPage) {
+         void fetchNextPage();
+      }
+   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+   const sentinelRef = useIntersectionObserver(loadMore, !!hasNextPage);
+
    return (
       <div className="space-y-6">
          <div className="flex items-center justify-between">
             <div>
                <h1 className="text-lg font-semibold">Movies</h1>
-               {filteredMovies.length !== movies.length && (
+               {filteredMovies.length !== totalSize && (
                   <p className="text-sm text-muted-foreground">
-                     {filteredMovies.length} of {movies.length}
+                     {filteredMovies.length} of {totalSize}
                   </p>
                )}
             </div>
@@ -104,7 +128,17 @@ const MoviesPage = () => {
                ))}
             </div>
          ) : (
-            <MediaGrid items={filteredMovies} />
+            <>
+               <MediaGrid items={filteredMovies} />
+               <div ref={sentinelRef} className="h-1" />
+               {isFetchingNextPage && (
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                     {Array.from({ length: 6 }).map((_, i) => (
+                        <Skeleton key={i} className="aspect-[2/3] w-full rounded-md" />
+                     ))}
+                  </div>
+               )}
+            </>
          )}
       </div>
    );

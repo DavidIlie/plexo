@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useMemo, useCallback } from "react";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 
 import { useTRPC } from "~/trpc/react";
 import { RefreshButton } from "~/components/refresh-button";
 import { useDebounce } from "~/hooks/use-debounce";
+import { useIntersectionObserver } from "~/hooks/use-intersection-observer";
 import { MediaGrid } from "~/components/media/media-grid";
 import { MediaFilters } from "~/components/media/media-filters";
 import { Skeleton } from "~/components/ui/skeleton";
@@ -34,13 +35,28 @@ const TVPage = () => {
       (s) => s.type === "show",
    )?.key;
 
-   const { data: showsData, isLoading } = useQuery(
-      trpc.plex.getShows.queryOptions(
+   const {
+      data: showsData,
+      isLoading,
+      fetchNextPage,
+      hasNextPage,
+      isFetchingNextPage,
+   } = useInfiniteQuery(
+      trpc.plex.browseShows.infiniteQueryOptions(
          { sectionId: showSectionId ?? "2" },
+         {
+            initialCursor: 0,
+            getNextPageParam: (lastPage) => lastPage.nextCursor,
+         },
       ),
    );
 
-   const shows = showsData?.data.items ?? [];
+   const shows = useMemo(
+      () => showsData?.pages.flatMap((p) => p.items) ?? [],
+      [showsData],
+   );
+
+   const totalSize = showsData?.pages[0]?.totalSize ?? 0;
 
    const genres = useMemo(() => {
       const genreSet = new Set<string>();
@@ -79,14 +95,22 @@ const TVPage = () => {
       });
    }, [shows, debouncedSearch, genre, completionFilter]);
 
+   const loadMore = useCallback(() => {
+      if (hasNextPage && !isFetchingNextPage) {
+         void fetchNextPage();
+      }
+   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+   const sentinelRef = useIntersectionObserver(loadMore, !!hasNextPage);
+
    return (
       <div className="space-y-6">
          <div className="flex items-center justify-between">
             <div>
                <h1 className="text-lg font-semibold">TV Shows</h1>
-               {filteredShows.length !== shows.length && (
+               {filteredShows.length !== totalSize && (
                   <p className="text-sm text-muted-foreground">
-                     {filteredShows.length} of {shows.length}
+                     {filteredShows.length} of {totalSize}
                   </p>
                )}
             </div>
@@ -116,7 +140,17 @@ const TVPage = () => {
                ))}
             </div>
          ) : (
-            <MediaGrid items={filteredShows} showProgress />
+            <>
+               <MediaGrid items={filteredShows} showProgress />
+               <div ref={sentinelRef} className="h-1" />
+               {isFetchingNextPage && (
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                     {Array.from({ length: 6 }).map((_, i) => (
+                        <Skeleton key={i} className="aspect-[2/3] w-full rounded-md" />
+                     ))}
+                  </div>
+               )}
+            </>
          )}
       </div>
    );
