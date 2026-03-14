@@ -14,7 +14,7 @@ Built with Next.js 16, tRPC, Tailwind CSS v4, Recharts, and Framer Motion.
 - **Movies** — full library grid with genre/watched/unwatched filters and search, click any movie for details (summary, cast, ratings, watch history)
 - **TV Shows** — library grid with episode progress bars and completion filters, per-season episode breakdown with missing episode detection
 - **Analytics** — 8 chart visualizations with configurable time range (7d/30d/MTD/90d/year), period navigation with left/right arrows
-- **Global Search** — <kbd>Cmd+K</kbd> command palette searching movies and TV shows, filter by genre or director
+- **Global Search** — press <kbd>K</kbd> to search movies and TV shows, filter by genre or director
 - **Smart Caching** — tiered TTLs (library 1hr, metadata 30min, analytics 15min, activity 5min), server-side image cache (24hr)
 - **Recommendations** — visitors can recommend movies/TV shows via a dialog: search TMDB (with "In Library" badges for titles you already have), enter name + optional message, submit. Notifications via Resend, SMTP, or Discord webhook. Optional Turnstile captcha with rate limit bypass. Optional Overseerr integration to auto-create requests.
 - **Wishlist** — dashboard section showing pending items from Overseerr requests and Plex Watchlist, merged and deduplicated
