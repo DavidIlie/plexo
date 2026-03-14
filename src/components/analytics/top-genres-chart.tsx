@@ -8,9 +8,10 @@ import { ChartWrapper, CHART_TOOLTIP_STYLE } from "~/components/analytics/chart-
 
 export const TopGenresChart = () => {
    const trpc = useTRPC();
-   const { data, isLoading } = useQuery(
-      trpc.analytics.getTopWatchedGenres.queryOptions(),
-   );
+   const { data, isLoading } = useQuery({
+      ...trpc.analytics.getTopWatchedGenres.queryOptions(),
+      refetchInterval: 15 * 60 * 1000,
+   });
 
    const chartData = data?.data ?? [];
 

@@ -8,9 +8,10 @@ import { ChartWrapper, CHART_TOOLTIP_STYLE } from "~/components/analytics/chart-
 
 export const VideoQualityChart = () => {
    const trpc = useTRPC();
-   const { data, isLoading } = useQuery(
-      trpc.analytics.getVideoQualityStats.queryOptions(),
-   );
+   const { data, isLoading } = useQuery({
+      ...trpc.analytics.getVideoQualityStats.queryOptions(),
+      refetchInterval: 30 * 60 * 1000,
+   });
 
    const chartData = data?.data ?? [];
 

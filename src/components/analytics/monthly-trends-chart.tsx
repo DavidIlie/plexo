@@ -12,9 +12,10 @@ interface Props {
 
 export const MonthlyTrendsChart: React.FC<Props> = ({ timeRange = 365 }) => {
    const trpc = useTRPC();
-   const { data, isLoading } = useQuery(
-      trpc.tautulli.getPlaysByDate.queryOptions({ timeRange }),
-   );
+   const { data, isLoading } = useQuery({
+      ...trpc.tautulli.getPlaysByDate.queryOptions({ timeRange }),
+      refetchInterval: 15 * 60 * 1000,
+   });
 
    const rawData = data?.data;
    const chartData =

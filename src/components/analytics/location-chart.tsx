@@ -8,9 +8,10 @@ import { Skeleton } from "~/components/ui/skeleton";
 
 export const LocationChart = () => {
    const trpc = useTRPC();
-   const { data, isLoading } = useQuery(
-      trpc.analytics.getLocationStats.queryOptions(),
-   );
+   const { data, isLoading } = useQuery({
+      ...trpc.analytics.getLocationStats.queryOptions(),
+      refetchInterval: 15 * 60 * 1000,
+   });
 
    if (data?.data === null) return null;
 

@@ -8,9 +8,10 @@ import { ChartWrapper, CHART_TOOLTIP_STYLE } from "~/components/analytics/chart-
 
 export const DeviceChart = () => {
    const trpc = useTRPC();
-   const { data, isLoading } = useQuery(
-      trpc.analytics.getDeviceStats.queryOptions(),
-   );
+   const { data, isLoading } = useQuery({
+      ...trpc.analytics.getDeviceStats.queryOptions(),
+      refetchInterval: 15 * 60 * 1000,
+   });
 
    if (data?.data === null) return null;
 

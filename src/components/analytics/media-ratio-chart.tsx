@@ -10,9 +10,10 @@ const COLORS = ["var(--chart-1)", "var(--chart-2)"];
 
 export const MediaRatioChart = () => {
    const trpc = useTRPC();
-   const { data, isLoading } = useQuery(
-      trpc.analytics.getMediaTypeRatio.queryOptions(),
-   );
+   const { data, isLoading } = useQuery({
+      ...trpc.analytics.getMediaTypeRatio.queryOptions(),
+      refetchInterval: 15 * 60 * 1000,
+   });
 
    const chartData = data?.data ?? [];
    const total = chartData.reduce((sum, d) => sum + d.value, 0);

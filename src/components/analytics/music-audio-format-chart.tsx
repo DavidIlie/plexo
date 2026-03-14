@@ -8,9 +8,10 @@ import { ChartWrapper, CHART_TOOLTIP_STYLE } from "~/components/analytics/chart-
 
 export const MusicAudioFormatChart = () => {
    const trpc = useTRPC();
-   const { data, isLoading } = useQuery(
-      trpc.analytics.getMusicAudioFormatStats.queryOptions(),
-   );
+   const { data, isLoading } = useQuery({
+      ...trpc.analytics.getMusicAudioFormatStats.queryOptions(),
+      refetchInterval: 30 * 60 * 1000,
+   });
 
    if (data?.data === null) return null;
 

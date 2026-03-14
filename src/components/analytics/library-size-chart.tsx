@@ -19,9 +19,10 @@ const GB = 1024 * 1024 * 1024;
 
 export const LibrarySizeChart = () => {
    const trpc = useTRPC();
-   const { data, isLoading } = useQuery(
-      trpc.analytics.getLibrarySizeStats.queryOptions(),
-   );
+   const { data, isLoading } = useQuery({
+      ...trpc.analytics.getLibrarySizeStats.queryOptions(),
+      refetchInterval: 60 * 60 * 1000,
+   });
 
    const rawData = data?.data ?? [];
 
