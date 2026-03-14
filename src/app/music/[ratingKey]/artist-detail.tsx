@@ -8,32 +8,54 @@ import { ArrowLeft, ChevronDown, ChevronRight, Clock } from "lucide-react";
 import { useTRPC } from "~/trpc/react";
 import { PlexImage } from "~/components/plex-image";
 import { Skeleton } from "~/components/ui/skeleton";
-import { cn } from "~/lib/utils";
+import {
+   Dialog,
+   DialogContent,
+   DialogHeader,
+   DialogTitle,
+   DialogDescription,
+} from "~/components/ui/dialog";
 import type { PlexMediaItem } from "~/types/plex";
 
 const SUMMARY_LIMIT = 300;
 
-const ArtistSummary = ({ text }: { text: string }) => {
-   const [expanded, setExpanded] = useState(false);
+const ArtistSummary = ({ text, artistName }: { text: string; artistName: string }) => {
+   const [open, setOpen] = useState(false);
    const needsTruncation = text.length > SUMMARY_LIMIT;
-   const displayed = !expanded && needsTruncation
+   const preview = needsTruncation
       ? text.slice(0, SUMMARY_LIMIT).trimEnd() + "..."
       : text;
 
    return (
-      <div>
+      <>
          <p className="text-sm leading-relaxed text-muted-foreground">
-            {displayed}
+            {preview}
+            {needsTruncation && (
+               <>
+                  {" "}
+                  <button
+                     onClick={() => setOpen(true)}
+                     className="text-primary hover:underline"
+                  >
+                     Read more
+                  </button>
+               </>
+            )}
          </p>
-         {needsTruncation && (
-            <button
-               onClick={() => setExpanded(!expanded)}
-               className="mt-1 text-xs text-primary hover:underline"
-            >
-               {expanded ? "Show less" : "Read more"}
-            </button>
-         )}
-      </div>
+         <Dialog open={open} onOpenChange={setOpen}>
+            <DialogContent className="max-h-[80vh] overflow-y-auto sm:max-w-xl">
+               <DialogHeader>
+                  <DialogTitle>About {artistName}</DialogTitle>
+                  <DialogDescription className="sr-only">
+                     Biography of {artistName}
+                  </DialogDescription>
+               </DialogHeader>
+               <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-line">
+                  {text}
+               </p>
+            </DialogContent>
+         </Dialog>
+      </>
    );
 };
 
@@ -167,7 +189,7 @@ export const ArtistDetail = ({ ratingKey }: { ratingKey: string }) => {
                   </div>
                )}
                {artist.summary && (
-                  <ArtistSummary text={artist.summary} />
+                  <ArtistSummary text={artist.summary} artistName={artist.title} />
                )}
             </div>
          </div>
