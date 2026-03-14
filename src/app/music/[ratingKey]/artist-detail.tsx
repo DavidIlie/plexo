@@ -268,6 +268,69 @@ const AlbumQualityProfile = ({ tracks }: { tracks: PlexMediaItem[] }) => {
    );
 };
 
+const AlbumCardQuality = ({ albumKey }: { albumKey: string }) => {
+   const trpc = useTRPC();
+   const { data } = useQuery(
+      trpc.plex.getChildren.queryOptions({ ratingKey: albumKey }),
+   );
+
+   const tracks = data?.data ?? [];
+
+   const profile = useMemo(() => {
+      if (tracks.length === 0) return null;
+      const codecs = new Set<string>();
+      let sampleRate = 0;
+      let bitDepth = 0;
+
+      for (const track of tracks) {
+         const media = track.Media?.[0];
+         const part = media?.Part?.[0];
+         const stream = part?.Stream?.find((s) => s.streamType === 2);
+         const codec = (media?.audioCodec ?? stream?.codec)?.toUpperCase();
+         if (codec) codecs.add(codec);
+         if (stream?.samplingRate && stream.samplingRate > sampleRate) {
+            sampleRate = stream.samplingRate;
+         }
+         if (stream?.bitDepth && stream.bitDepth > bitDepth) {
+            bitDepth = stream.bitDepth;
+         }
+      }
+
+      if (codecs.size === 0) return null;
+
+      return {
+         codecs: Array.from(codecs),
+         sampleRate: sampleRate > 0 ? formatSampleRate(sampleRate) : null,
+         bitDepth: bitDepth > 0 ? `${bitDepth}-bit` : null,
+      };
+   }, [tracks]);
+
+   if (!profile) return null;
+
+   return (
+      <div className="flex flex-wrap items-center gap-1">
+         {profile.codecs.map((c) => (
+            <span
+               key={c}
+               className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary/80"
+            >
+               {c}
+            </span>
+         ))}
+         {profile.sampleRate && (
+            <span className="text-[10px] text-muted-foreground">
+               {profile.sampleRate}
+            </span>
+         )}
+         {profile.bitDepth && (
+            <span className="text-[10px] text-muted-foreground">
+               {profile.bitDepth}
+            </span>
+         )}
+      </div>
+   );
+};
+
 const AlbumTracks = ({ albumKey }: { albumKey: string }) => {
    const trpc = useTRPC();
    const { data, isLoading } = useQuery({
@@ -347,6 +410,7 @@ const AlbumCard = ({ album }: { album: PlexMediaItem }) => {
                      .filter(Boolean)
                      .join(" · ")}
                </p>
+               <AlbumCardQuality albumKey={album.ratingKey} />
             </div>
             {(album.viewCount ?? 0) > 0 && (
                <span className="flex items-center gap-1 text-xs text-muted-foreground">
