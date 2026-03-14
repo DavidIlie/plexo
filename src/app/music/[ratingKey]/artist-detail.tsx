@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { useTRPC } from "~/trpc/react";
+import { useIntersectionObserver } from "~/hooks/use-intersection-observer";
 import { PlexImage } from "~/components/plex-image";
 import { Skeleton } from "~/components/ui/skeleton";
 import {
@@ -364,11 +365,11 @@ const AlbumCard = ({ album }: { album: PlexMediaItem }) => {
    );
 };
 
-const ALBUMS_PER_PAGE = 20;
+const ALBUMS_PAGE_SIZE = 20;
 
 export const ArtistDetail = ({ ratingKey }: { ratingKey: string }) => {
    const trpc = useTRPC();
-   const [albumsShown, setAlbumsShown] = useState(ALBUMS_PER_PAGE);
+   const [albumsShown, setAlbumsShown] = useState(ALBUMS_PAGE_SIZE);
 
    const { data: artistData } = useQuery(
       trpc.plex.getMetadata.queryOptions({ ratingKey }),
@@ -389,6 +390,13 @@ export const ArtistDetail = ({ ratingKey }: { ratingKey: string }) => {
    }, [albums]);
 
    const visibleAlbums = albums.slice(0, albumsShown);
+   const hasMoreAlbums = albumsShown < albums.length;
+
+   const loadMoreAlbums = useCallback(() => {
+      setAlbumsShown((n) => n + ALBUMS_PAGE_SIZE);
+   }, []);
+
+   const albumSentinelRef = useIntersectionObserver(loadMoreAlbums, hasMoreAlbums);
 
    if (!artist) return null;
 
@@ -456,13 +464,13 @@ export const ArtistDetail = ({ ratingKey }: { ratingKey: string }) => {
                   {visibleAlbums.map((album) => (
                      <AlbumCard key={album.ratingKey} album={album} />
                   ))}
-                  {albumsShown < albums.length && (
-                     <button
-                        onClick={() => setAlbumsShown((n) => n + ALBUMS_PER_PAGE)}
-                        className="w-full rounded-md border border-border/50 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/30 hover:text-foreground"
-                     >
-                        Show more ({albums.length - albumsShown} remaining)
-                     </button>
+                  <div ref={albumSentinelRef} className="h-1" />
+                  {hasMoreAlbums && (
+                     <div className="flex justify-center py-2">
+                        <span className="text-xs text-muted-foreground">
+                           Loading more albums...
+                        </span>
+                     </div>
                   )}
                </div>
             )}
