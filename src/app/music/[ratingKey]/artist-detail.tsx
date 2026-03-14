@@ -144,7 +144,7 @@ const TrackPlayPopover = ({ ratingKey, viewCount }: { ratingKey: string; viewCou
    const trpc = useTRPC();
    const [open, setOpen] = useState(false);
 
-   const { data } = useQuery({
+   const { data, isLoading } = useQuery({
       ...trpc.tautulli.getItemHistory.queryOptions({ ratingKey }),
       enabled: open,
    });
@@ -163,8 +163,11 @@ const TrackPlayPopover = ({ ratingKey, viewCount }: { ratingKey: string; viewCou
             <p className="mb-2 text-xs font-medium">
                {viewCount} play{viewCount !== 1 ? "s" : ""}
             </p>
-            {plays.length === 0 && open && (
+            {isLoading && open && (
                <p className="text-xs text-muted-foreground">Loading...</p>
+            )}
+            {!isLoading && plays.length === 0 && open && (
+               <p className="text-xs text-muted-foreground">No recent history found</p>
             )}
             {plays.length > 0 && (
                <div className="space-y-1.5">
