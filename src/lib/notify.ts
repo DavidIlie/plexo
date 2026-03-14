@@ -34,7 +34,10 @@ const buildEmailHtml = (payload: RecommendationPayload): string => {
       <p style="margin: 0; font-size: 13px; color: #a3a3a3;"><a href="${tmdbUrl(payload)}" style="color: #a3a3a3;">${typeLabel} · ${payload.year}</a></p>
     </div>
   </div>
-  ${payload.message ? `<div style="background: #262626; padding: 12px 16px; border-radius: 8px; border-left: 3px solid #f59e0b;"><p style="margin: 0; font-size: 14px; color: #d4d4d4;">"${payload.message}"</p></div>` : ""}
+  ${payload.message ? `<div style="background: #262626; padding: 12px 16px; border-radius: 8px; border-left: 3px solid #f59e0b; margin-bottom: 16px;"><p style="margin: 0; font-size: 14px; color: #d4d4d4;">"${payload.message}"</p></div>` : ""}
+  <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #333;">
+    <p style="margin: 0; font-size: 12px; color: #737373;">Sent from <a href="${env.APP_URL}" style="color: #f59e0b; text-decoration: none;">Plexo</a></p>
+  </div>
 </div>`.trim();
 };
 
@@ -93,7 +96,7 @@ const sendViaDiscord = async (payload: RecommendationPayload) => {
                   : `**${payload.senderName}** recommends this ${typeLabel.toLowerCase()}`,
                color: 0xf59e0b,
                thumbnail: posterUrl ? { url: posterUrl } : undefined,
-               footer: { text: `${typeLabel} · via Plexo` },
+               footer: { text: `${typeLabel} · Plexo (${env.APP_URL})` },
             },
          ],
       }),
