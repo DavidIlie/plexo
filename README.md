@@ -1,22 +1,45 @@
 # Plexo
 
-Personal media dashboard for your Plex library. Track your movies, TV shows, watch history, and viewing patterns — all in one dark-themed, self-hosted interface.
+Personal media dashboard for your Plex library. Track your movies, TV shows, watch history, and viewing patterns — all in one self-hosted interface.
 
-Built with Next.js 16, tRPC, Tailwind CSS v4, and Recharts.
+**[Live Demo](https://plexo.davidhome.ro)**
+
+Built with Next.js 16, tRPC, Tailwind CSS v4, Recharts, and Framer Motion.
+
+![Dashboard](public/screenshots/dashboard.png)
 
 ## Features
 
-- **Dashboard** — stat cards (total movies, shows, watched, hours), continue watching (on-deck), recently watched, inline charts
-- **Movies** — full library grid with genre/watched/unwatched filters and search
-- **TV Shows** — library grid with episode progress bars and completion status filters
-- **Analytics** — 6 chart visualizations: genre distribution, most watched genres, watch time by day/hour, monthly trends, movies vs TV ratio
-- **Image proxy** — Plex poster images served through a server-side proxy (keeps your token off the client)
-- **Smart caching** — tiered TTLs: library metadata (1hr), media details (30min), analytics (15min), activity (5min), with manual refresh
+- **Dashboard** — library stats, highlights (most watched, most rewatched, longest movie, top device, location), genre breakdown and viewing time charts, up next, recently watched with platform/duration per play
+- **Movies** — full library grid with genre/watched/unwatched filters and search, click any movie for details (summary, cast, ratings, watch history)
+- **TV Shows** — library grid with episode progress bars and completion filters, per-season episode breakdown with missing episode detection
+- **Analytics** — 8 chart visualizations with configurable time range (7d/30d/MTD/90d/year), period navigation with left/right arrows
+- **Global Search** — <kbd>Cmd+K</kbd> command palette searching movies and TV shows, filter by genre or director
+- **Admin Panel** — <kbd>Cmd+L</kbd> to view cache status, purge caches (protected by secret)
+- **Smart Caching** — tiered TTLs (library 1hr, metadata 30min, analytics 15min, activity 5min), server-side image cache (24hr)
+- **Privacy Controls** — `SHOW_DEVICES` and `SHOW_LOCATIONS` env vars to control what data is exposed
 - **Docker** — multi-stage build, pushes to GHCR via GitHub Actions
+- **Analytics** — optional Plausible integration with self-hosted instance support
 
-## Screenshots
+## How It Works
 
-_Coming soon — run locally to see your own data._
+Plexo pulls data from two sources on your home network:
+
+1. **Plex Media Server** — library contents, metadata, watch status, on-deck items. The `PLEX_TOKEN` determines whose watch data is shown (each Plex user has their own token). All requests go through a server-side API client that adds the token, so it never reaches the browser.
+
+2. **Tautulli** — watch history, play statistics, device/platform info, IP geolocation. Tautulli monitors your Plex server and provides detailed analytics that Plex itself doesn't expose.
+
+Data flow:
+```
+Browser → Next.js tRPC → In-memory cache → Plex/Tautulli APIs
+                              ↓
+                    Cache hit? Return cached data
+                    Cache miss? Fetch from API, cache with TTL, return
+```
+
+All API calls are server-side only (`"server-only"` imports). The browser never talks to Plex or Tautulli directly. Poster images are proxied through `/api/plex-image` to keep the Plex token off the client and cached server-side for 24 hours.
+
+tRPC procedures return `{ data, lastUpdatedAt }` so the UI always knows how fresh the data is. TanStack Query handles client-side caching with 5-minute stale time and 30-minute auto-refresh.
 
 ## Setup
 
@@ -24,42 +47,28 @@ _Coming soon — run locally to see your own data._
 
 #### Plex Token
 
-Your Plex token determines **which user's** watch data you see. The token is tied to a specific Plex account — whoever owns the token, their watched/unwatched status is what Plexo displays.
-
-**To get your token:**
+Your Plex token determines **which user's** watch data you see.
 
 1. Sign in to Plex Web (`app.plex.tv`) or your server's web UI
 2. Open any media item and click **Get Info** (or **View XML**)
 3. In the URL bar you'll see `X-Plex-Token=xxxxxxxxxxxx` — that's your token
-4. Alternatively: browser dev tools → Network tab → load any Plex page → look for `X-Plex-Token` in any request to your server
+4. Alternatively: browser dev tools → Network tab → look for `X-Plex-Token` in any request
 
-**For a managed/home user:**
-
-If you have Plex Home with multiple users and want to see a specific user's watch data (not the admin's):
-
-1. Sign in to Plex Web **as that user** (switch user from the top-right menu)
-2. Grab the token from the network tab as described above — each user has their own token
-3. Use that user's token as `PLEX_TOKEN`
-
-> The server admin token shows the admin's watch status. A managed user's token shows that user's watch status. The library content (movies, shows) is the same regardless — only watch progress differs.
+**For a managed/home user:** Sign in as that user (switch from top-right menu), then grab their token from the network tab. Each user has their own token. Library content is the same — only watch progress differs.
 
 #### Tautulli API Key
 
-1. Open your Tautulli web UI
-2. Go to **Settings** → **Web Interface**
-3. Your API key is shown under **API Key** — copy it
-4. If you don't have one, click **Generate** to create a new key
+1. Open your Tautulli web UI → **Settings** → **Web Interface**
+2. Copy the **API Key** (or click **Generate** to create one)
 
 #### Tautulli User ID (optional)
 
-By default, Tautulli shows stats for **all users** on your server. To scope it to a single user (matching your Plex token):
+To scope Tautulli stats to a single user:
 
-1. In Tautulli, go to **Users**
-2. Click on the user you want
-3. The URL will be something like `tautulli.yourdomain.com/user?user_id=12345678` — that number is the user ID
-4. Set `TAUTULLI_USER_ID=12345678` in your `.env`
+1. In Tautulli, go to **Users** → click the user
+2. The URL shows `user_id=12345678` — set that as `TAUTULLI_USER_ID`
 
-Leave `TAUTULLI_USER_ID` empty to see combined stats for all users.
+Leave empty to see stats for all users.
 
 ### 2. Clone and configure
 
@@ -69,16 +78,7 @@ cd plexo
 cp .env.example .env
 ```
 
-Edit `.env` with your values:
-
-```env
-PLEX_URL=https://plex.yourdomain.com
-PLEX_TOKEN=your-plex-token
-TAUTULLI_URL=https://tautulli.yourdomain.com
-TAUTULLI_API_KEY=your-tautulli-api-key
-TAUTULLI_USER_ID=           # optional, leave empty for all users
-REFRESH_SECRET=some-secret  # protects the cache refresh endpoint
-```
+Edit `.env` — see `.env.example` for all available options.
 
 ### 3. Run locally
 
@@ -93,35 +93,45 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ```bash
 docker build -t plexo .
-docker run -p 3000:3000 \
-  -e PLEX_URL=https://plex.yourdomain.com \
-  -e PLEX_TOKEN=your-plex-token \
-  -e TAUTULLI_URL=https://tautulli.yourdomain.com \
-  -e TAUTULLI_API_KEY=your-tautulli-api-key \
-  -e REFRESH_SECRET=some-secret \
-  plexo
+docker run -p 3000:3000 --env-file .env plexo
 ```
 
-Or pull the pre-built image from GHCR:
+Or pull from GHCR:
 
 ```bash
 docker pull ghcr.io/davidilie/plexo:latest
 ```
 
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `PLEX_URL` | Yes | Plex server URL |
+| `PLEX_TOKEN` | Yes | Plex authentication token (determines which user's data) |
+| `TAUTULLI_URL` | Yes | Tautulli instance URL |
+| `TAUTULLI_API_KEY` | Yes | Tautulli API key |
+| `TAUTULLI_USER_ID` | No | Scope Tautulli stats to one user |
+| `REFRESH_SECRET` | Yes | Secret for cache admin panel (Cmd+L) |
+| `DISPLAY_NAME` | No | Name shown on dashboard (default: "David") |
+| `APP_URL` | No | Base URL for metadata/OG images (default: localhost:3000) |
+| `SHOW_DEVICES` | No | Show device analytics (default: true) |
+| `SHOW_LOCATIONS` | No | Show location analytics via geoip (default: false) |
+| `PLAUSIBLE_ENABLED` | No | Enable Plausible analytics (default: false) |
+| `PLAUSIBLE_DOMAIN` | No | Domain for Plausible tracking |
+| `PLAUSIBLE_SCRIPT_URL` | No | Self-hosted Plausible script URL |
+| `PLAUSIBLE_API_URL` | No | Self-hosted Plausible event API URL |
+
 ## Caching
 
-Plexo uses an in-memory cache with tiered TTLs to minimize API calls:
+| Tier | TTL | What |
+|------|-----|------|
+| Library | 1 hour | Sections, genres |
+| Metadata | 30 min | Movie/show listings |
+| Analytics | 15 min | Computed aggregations |
+| Activity | 5 min | On-deck, history |
+| Images | 24 hours | Plex poster images |
 
-| Data Type | TTL | Examples |
-|-----------|-----|---------|
-| Library | 1 hour | Library sections, genre lists |
-| Metadata | 30 min | Movie/show listings with watch status |
-| Analytics | 15 min | Genre distribution, watch patterns, trends |
-| Activity | 5 min | On-deck, watch history, home stats |
-
-Press <kbd>Mod+L</kbd> in the UI to open the refresh dialog — enter your `REFRESH_SECRET` to clear all caches.
-
-You can also call it directly:
+<kbd>Cmd+L</kbd> opens the admin panel to view cache entries and purge all. Also available via API:
 
 ```bash
 curl -X POST https://plexo.yourdomain.com/api/refresh \
@@ -130,19 +140,22 @@ curl -X POST https://plexo.yourdomain.com/api/refresh \
 
 ## Tech Stack
 
-| Tool | Version |
+| Tool | Purpose |
 |------|---------|
-| Next.js | 16 |
-| React | 19 |
-| TypeScript | 5.7+ |
-| Tailwind CSS | v4 |
-| shadcn/ui | latest |
-| tRPC | 11 |
-| TanStack Query | 5 |
-| Recharts | 3 |
-| lucide-react | latest |
-| date-fns | 4 |
+| Next.js 16 | App Router, RSC, standalone output |
+| React 19 | UI |
+| TypeScript 5.7+ | Strict mode |
+| Tailwind CSS v4 | Styling (OKLCH color system) |
+| shadcn/ui | Component library |
+| tRPC 11 | Type-safe API layer |
+| TanStack Query 5 | Data fetching + caching |
+| Recharts 3 | Chart visualizations |
+| Framer Motion | Animations |
+| nuqs | URL state management |
+| date-fns 4 | Date formatting |
+| @takumi-rs/image-response | Dynamic OG images |
+| next-plausible | Analytics (optional) |
 
 ## License
 
-MIT
+[MIT](LICENSE)
