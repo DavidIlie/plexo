@@ -212,6 +212,10 @@ curl -X POST https://plexo.yourdomain.com/api/refresh \
 | @takumi-rs/image-response | Dynamic OG images |
 | next-plausible | Analytics (optional) |
 
+## Support
+
+If you find Plexo useful, consider [supporting my work on Zerocut](https://zerocut.gg/david).
+
 ## License
 
 [MIT](LICENSE)

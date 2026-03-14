@@ -114,7 +114,13 @@ export const recommendRouter = createTRPCRouter({
             });
          }
 
-         if (input.turnstileToken) {
+         if (env.TURNSTILE_SECRET_KEY) {
+            if (!input.turnstileToken) {
+               throw new TRPCError({
+                  code: "BAD_REQUEST",
+                  message: "Captcha verification required",
+               });
+            }
             const valid = await verifyTurnstile(input.turnstileToken);
             if (!valid) {
                throw new TRPCError({

@@ -31,6 +31,15 @@ export const Footer = () => {
                </span>
                <span className="text-border">·</span>
                <Link
+                  href="https://zerocut.gg/david"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline-offset-2 hover:text-foreground hover:underline"
+               >
+                  Support
+               </Link>
+               <span className="text-border">·</span>
+               <Link
                   href="https://github.com/davidilie/plexo"
                   target="_blank"
                   rel="noopener noreferrer"
