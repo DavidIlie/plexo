@@ -8,6 +8,17 @@ import { PlexImage } from "~/components/plex-image";
 import { MediaDetailDialog } from "~/components/media/media-detail-dialog";
 import type { PlexMediaItem, PlexOnDeckItem } from "~/types/plex";
 
+const formatDuration = (ms: number) => {
+   const totalSeconds = Math.floor(ms / 1000);
+   const hours = Math.floor(totalSeconds / 3600);
+   const minutes = Math.floor((totalSeconds % 3600) / 60);
+   const seconds = totalSeconds % 60;
+   if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+   }
+   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+};
+
 export const OnDeck = () => {
    const trpc = useTRPC();
    const { data } = useSuspenseQuery(trpc.plex.getOnDeck.queryOptions());
@@ -39,19 +50,25 @@ export const OnDeck = () => {
                      />
                      <div className="absolute inset-0 bg-foreground/0 transition-colors duration-300 group-hover:bg-foreground/10" />
                      {item.viewOffset != null && item.duration != null && item.duration > 0 && (
-                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-muted/60">
-                           <div
-                              className="h-full bg-primary"
-                              style={{
-                                 width: `${Math.min(
-                                    100,
-                                    Math.round(
-                                       (item.viewOffset / item.duration) * 100,
-                                    ),
-                                 )}%`,
-                              }}
-                           />
-                        </div>
+                        <>
+                           <div className="pointer-events-none absolute bottom-0 left-0 right-0 flex items-end justify-between px-1.5 pb-2.5 text-[10px] font-medium text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+                              <span>{formatDuration(item.viewOffset)}</span>
+                              <span>{formatDuration(item.duration)}</span>
+                           </div>
+                           <div className="absolute bottom-0 left-0 right-0 h-1 bg-muted/60">
+                              <div
+                                 className="h-full bg-primary"
+                                 style={{
+                                    width: `${Math.min(
+                                       100,
+                                       Math.round(
+                                          (item.viewOffset / item.duration) * 100,
+                                       ),
+                                    )}%`,
+                                 }}
+                              />
+                           </div>
+                        </>
                      )}
                   </div>
                   <p className="mt-1.5 truncate text-sm">
