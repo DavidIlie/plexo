@@ -12,6 +12,7 @@ import {
    TrendingUp,
    Monitor,
    MapPin,
+   Music,
 } from "lucide-react";
 
 import { useTRPC } from "~/trpc/react";
@@ -143,6 +144,14 @@ export const Highlights = () => {
                label="Daily Average"
                value={`${h.avgPlaysPerDay} plays/day`}
             />
+            {h.topArtist && (
+               <Highlight
+                  icon={Music}
+                  label="Top Artist"
+                  value={h.topArtist.title}
+                  detail={`${h.topArtist.plays} plays`}
+               />
+            )}
             {h.topDevice && (
                <Highlight
                   icon={Monitor}

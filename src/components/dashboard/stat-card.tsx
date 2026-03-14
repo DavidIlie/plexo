@@ -1,9 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Film, Tv, Eye, Clock, Music, type LucideIcon } from "lucide-react";
+import { Film, Tv, Eye, Clock, Music, Disc3, type LucideIcon } from "lucide-react";
 
-const icons: Record<string, LucideIcon> = { Film, Tv, Eye, Clock, Music };
+const icons: Record<string, LucideIcon> = { Film, Tv, Eye, Clock, Music, Disc3 };
 
 interface StatCardProps {
    icon: string;

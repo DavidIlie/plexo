@@ -16,7 +16,13 @@ import { RefreshButton } from "~/components/refresh-button";
 
 export const generateMetadata = async (): Promise<Metadata> => {
    const { data } = await caller.analytics.getDashboardStats();
-   const desc = `${data.totalMovies} movies, ${data.totalShows} shows, ${data.hoursWatched.toLocaleString()} hours watched`;
+   const parts = [
+      `${data.totalMovies} movies`,
+      `${data.totalShows} shows`,
+   ];
+   if (data.totalArtists > 0) parts.push(`${data.totalArtists} artists`);
+   parts.push(`${data.hoursWatched.toLocaleString()} hours watched`);
+   const desc = parts.join(", ");
    return {
       title: `${data.displayName}'s Library | Plexo`,
       description: desc,
@@ -45,19 +51,30 @@ const DashboardStats = async () => {
             </h1>
             <RefreshButton />
          </div>
-         <div className={`grid grid-cols-2 gap-3 ${data.totalArtists > 0 ? "lg:grid-cols-5" : "lg:grid-cols-4"}`}>
+         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <StatCard icon="Film" label="Movies" value={data.totalMovies} index={0} />
             <StatCard icon="Tv" label="Shows" value={data.totalShows} index={1} />
-            {data.totalArtists > 0 && (
-               <StatCard icon="Music" label="Artists" value={data.totalArtists} index={2} />
-            )}
-            <StatCard icon="Eye" label="Watched" value={data.watchedItems} index={data.totalArtists > 0 ? 3 : 2} />
+            <StatCard icon="Eye" label="Watched" value={data.watchedItems} index={2} />
             <StatCard
                icon="Clock"
                label="Hours Watched"
                value={data.hoursWatched.toLocaleString()}
-               index={data.totalArtists > 0 ? 4 : 3}
+               index={3}
             />
+            {data.totalArtists > 0 && (
+               <>
+                  <StatCard icon="Music" label="Artists" value={data.totalArtists} index={4} />
+                  <StatCard icon="Disc3" label="Tracks" value={data.totalTracks} index={5} />
+                  {data.musicHoursListened > 0 && (
+                     <StatCard
+                        icon="Clock"
+                        label="Hours Listened"
+                        value={data.musicHoursListened.toLocaleString()}
+                        index={6}
+                     />
+                  )}
+               </>
+            )}
          </div>
       </div>
    );

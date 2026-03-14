@@ -53,25 +53,36 @@ export const analyticsRouter = createTRPCRouter({
                }
             }
 
+            let totalTracks = 0;
             if (musicSection) {
                const artists = await getArtists(musicSection.key);
                totalArtists = artists.totalSize;
+               for (const artist of artists.items) {
+                  totalTracks += artist.leafCount ?? 0;
+               }
             }
 
             const history = await getHistory(5000);
             let totalSeconds = 0;
+            let musicSeconds = 0;
             for (const item of history.data) {
                totalSeconds += item.play_duration || 0;
+               if (item.media_type === "track") {
+                  musicSeconds += item.play_duration || 0;
+               }
             }
             const totalHoursWatched = Math.round(totalSeconds / 3600);
+            const musicHoursListened = Math.round(musicSeconds / 3600);
 
             return {
                displayName: env.DISPLAY_NAME,
                totalMovies,
                totalShows,
                totalArtists,
+               totalTracks,
                watchedItems: watchedMovies + watchedShows,
                hoursWatched: totalHoursWatched,
+               musicHoursListened,
             };
          },
          CacheTTL.ANALYTICS,
@@ -373,6 +384,29 @@ export const analyticsRouter = createTRPCRouter({
                }
             }
 
+            let topArtist: { title: string; plays: number } | null = null;
+            if (env.SHOW_MUSIC) {
+               const artistPlays = new Map<string, { title: string; plays: number }>();
+               for (const item of history.data) {
+                  if (item.media_type === "track") {
+                     const name = item.grandparent_title || item.title;
+                     const existing = artistPlays.get(name);
+                     if (existing) {
+                        existing.plays++;
+                     } else {
+                        artistPlays.set(name, { title: name, plays: 1 });
+                     }
+                  }
+               }
+               let maxPlays = 0;
+               for (const entry of artistPlays.values()) {
+                  if (entry.plays > maxPlays) {
+                     maxPlays = entry.plays;
+                     topArtist = entry;
+                  }
+               }
+            }
+
             return {
                mostWatched,
                mostRewatched,
@@ -386,6 +420,7 @@ export const analyticsRouter = createTRPCRouter({
                      : 0,
                topDevice,
                topLocation,
+               topArtist,
             };
          },
          CacheTTL.ANALYTICS,
