@@ -289,9 +289,9 @@ export const RecommendDialog = () => {
                            setSelected(null);
                            setPhase("search");
                         }}
-                        className="text-muted-foreground hover:text-foreground"
+                        className="shrink-0 text-xs text-muted-foreground hover:text-foreground"
                      >
-                        <X className="h-4 w-4" />
+                        Change
                      </button>
                   </div>
 
