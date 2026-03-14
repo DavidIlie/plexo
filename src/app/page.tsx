@@ -15,9 +15,21 @@ import { Skeleton } from "~/components/ui/skeleton";
 
 export const generateMetadata = async (): Promise<Metadata> => {
    const { data } = await caller.analytics.getDashboardStats();
+   const desc = `${data.totalMovies} movies, ${data.totalShows} shows, ${data.hoursWatched.toLocaleString()} hours watched`;
    return {
       title: `${data.displayName}'s Library | Plexo`,
-      description: `${data.totalMovies} movies, ${data.totalShows} shows, ${data.hoursWatched.toLocaleString()} hours watched`,
+      description: desc,
+      openGraph: {
+         title: `${data.displayName}'s Library`,
+         description: desc,
+         images: [{ url: "/og?page=dashboard", width: 1200, height: 630 }],
+      },
+      twitter: {
+         card: "summary_large_image",
+         title: `${data.displayName}'s Library`,
+         description: desc,
+         images: ["/og?page=dashboard"],
+      },
    };
 };
 
