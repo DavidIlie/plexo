@@ -15,7 +15,7 @@ const COLOR_MAP: Record<string, string> = {
 
 export const MediaRatioChart = () => {
    const trpc = useTRPC();
-   const { data, isLoading } = useQuery({
+   const { data, isLoading, isFetching } = useQuery({
       ...trpc.analytics.getMediaTypeRatio.queryOptions(),
       refetchInterval: 15 * 60 * 1000,
    });
@@ -36,6 +36,8 @@ export const MediaRatioChart = () => {
       <ChartWrapper
          title={title}
          isLoading={isLoading}
+         isFetching={isFetching}
+         lastUpdatedAt={data?.lastUpdatedAt}
          headerRight={
             hasMusic ? (
                <button

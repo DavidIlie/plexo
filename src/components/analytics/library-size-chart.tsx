@@ -19,7 +19,7 @@ const GB = 1024 * 1024 * 1024;
 
 export const LibrarySizeChart = () => {
    const trpc = useTRPC();
-   const { data, isLoading } = useQuery({
+   const { data, isLoading, isFetching } = useQuery({
       ...trpc.analytics.getLibrarySizeStats.queryOptions(),
       refetchInterval: 60 * 60 * 1000,
    });
@@ -49,6 +49,8 @@ export const LibrarySizeChart = () => {
          title="Library Size"
          description="Storage usage per library"
          isLoading={isLoading}
+         isFetching={isFetching}
+         lastUpdatedAt={data?.lastUpdatedAt}
       >
          <BarChart data={chartData}>
             <XAxis dataKey="name" stroke="var(--muted-foreground)" />

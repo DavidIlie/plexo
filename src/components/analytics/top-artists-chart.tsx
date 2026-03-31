@@ -8,7 +8,7 @@ import { ChartWrapper, CHART_TOOLTIP_STYLE } from "~/components/analytics/chart-
 
 export const TopArtistsChart = () => {
    const trpc = useTRPC();
-   const { data, isLoading } = useQuery({
+   const { data, isLoading, isFetching } = useQuery({
       ...trpc.analytics.getTopArtists.queryOptions(),
       refetchInterval: 15 * 60 * 1000,
    });
@@ -24,6 +24,8 @@ export const TopArtistsChart = () => {
          title="Most Played Artists"
          description="Artists with the most plays from your history"
          isLoading={isLoading}
+         isFetching={isFetching}
+         lastUpdatedAt={data?.lastUpdatedAt}
       >
          <BarChart data={chartData} layout="vertical">
             <XAxis type="number" stroke="var(--muted-foreground)" />

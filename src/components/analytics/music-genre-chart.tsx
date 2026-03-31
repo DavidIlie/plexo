@@ -19,7 +19,7 @@ const COLORS = [
 
 export const MusicGenreChart = () => {
    const trpc = useTRPC();
-   const { data, isLoading } = useQuery({
+   const { data, isLoading, isFetching } = useQuery({
       ...trpc.analytics.getMusicGenreDistribution.queryOptions(),
       refetchInterval: 30 * 60 * 1000,
    });
@@ -35,6 +35,8 @@ export const MusicGenreChart = () => {
          title="Music by Genre"
          description="Top genres across your music library"
          isLoading={isLoading}
+         isFetching={isFetching}
+         lastUpdatedAt={data?.lastUpdatedAt}
       >
          <PieChart>
             <Pie

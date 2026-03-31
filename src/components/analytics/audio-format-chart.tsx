@@ -8,7 +8,7 @@ import { ChartWrapper, CHART_TOOLTIP_STYLE } from "~/components/analytics/chart-
 
 export const AudioFormatChart = () => {
    const trpc = useTRPC();
-   const { data, isLoading } = useQuery({
+   const { data, isLoading, isFetching } = useQuery({
       ...trpc.analytics.getAudioFormatStats.queryOptions(),
       refetchInterval: 30 * 60 * 1000,
    });
@@ -22,6 +22,8 @@ export const AudioFormatChart = () => {
          title="Audio Format"
          description="Audio codec distribution across your movie library"
          isLoading={isLoading}
+         isFetching={isFetching}
+         lastUpdatedAt={data?.lastUpdatedAt}
       >
          <BarChart data={chartData} layout="vertical">
             <XAxis type="number" stroke="var(--muted-foreground)" />

@@ -2,7 +2,9 @@
 
 import type { CSSProperties, ReactNode } from "react";
 import { motion } from "framer-motion";
+import { RefreshCw } from "lucide-react";
 import { ResponsiveContainer } from "recharts";
+import { formatDistanceToNow } from "date-fns";
 
 import { Skeleton } from "~/components/ui/skeleton";
 
@@ -18,6 +20,8 @@ interface ChartWrapperProps {
    title: string;
    description?: string;
    isLoading: boolean;
+   isFetching?: boolean;
+   lastUpdatedAt?: string;
    height?: number;
    children: ReactNode;
    headerRight?: ReactNode;
@@ -27,10 +31,14 @@ export const ChartWrapper = ({
    title,
    description,
    isLoading,
+   isFetching = false,
+   lastUpdatedAt,
    height = 280,
    children,
    headerRight,
 }: ChartWrapperProps) => {
+   const isRefetching = isFetching && !isLoading;
+
    if (isLoading) {
       return (
          <div className="rounded-lg border border-border/50 bg-card/50 p-4">
@@ -56,15 +64,29 @@ export const ChartWrapper = ({
          className="rounded-lg border border-border/50 bg-card/50 p-4"
       >
          <div className="mb-1 flex items-center justify-between">
-            <p className="text-sm font-medium">{title}</p>
+            <div className="flex items-center gap-2">
+               <p className="text-sm font-medium">{title}</p>
+               {isRefetching && (
+                  <RefreshCw className="h-3 w-3 animate-spin text-muted-foreground" />
+               )}
+            </div>
             {headerRight}
          </div>
          {description && (
             <p className="mb-3 text-xs text-muted-foreground">{description}</p>
          )}
-         <ResponsiveContainer width="100%" height={height}>
-            {children}
-         </ResponsiveContainer>
+         <div className={isRefetching ? "opacity-60 transition-opacity duration-300" : ""}>
+            <ResponsiveContainer width="100%" height={height}>
+               {children}
+            </ResponsiveContainer>
+         </div>
+         {lastUpdatedAt && (
+            <p className="mt-2 text-right text-[10px] text-muted-foreground/60">
+               {isRefetching
+                  ? `Refreshing\u2026 last updated ${formatDistanceToNow(new Date(lastUpdatedAt), { addSuffix: true })}`
+                  : `Updated ${formatDistanceToNow(new Date(lastUpdatedAt), { addSuffix: true })}`}
+            </p>
+         )}
       </motion.div>
    );
 };

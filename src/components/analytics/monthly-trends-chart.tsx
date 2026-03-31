@@ -12,7 +12,7 @@ interface Props {
 
 export const MonthlyTrendsChart: React.FC<Props> = ({ timeRange = 365 }) => {
    const trpc = useTRPC();
-   const { data, isLoading } = useQuery({
+   const { data, isLoading, isFetching } = useQuery({
       ...trpc.tautulli.getPlaysByDate.queryOptions({ timeRange }),
       refetchInterval: 15 * 60 * 1000,
    });
@@ -31,7 +31,7 @@ export const MonthlyTrendsChart: React.FC<Props> = ({ timeRange = 365 }) => {
    const colors = ["var(--chart-1)", "var(--chart-2)", "var(--chart-4)"];
 
    return (
-      <ChartWrapper title="Watch Trends" description={`Daily plays over last ${timeRange} days`} isLoading={isLoading}>
+      <ChartWrapper title="Watch Trends" description={`Daily plays over last ${timeRange} days`} isLoading={isLoading} isFetching={isFetching} lastUpdatedAt={data?.lastUpdatedAt}>
          <AreaChart data={chartData}>
             <XAxis
                dataKey="date"

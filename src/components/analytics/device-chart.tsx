@@ -8,7 +8,7 @@ import { ChartWrapper, CHART_TOOLTIP_STYLE } from "~/components/analytics/chart-
 
 export const DeviceChart = () => {
    const trpc = useTRPC();
-   const { data, isLoading } = useQuery({
+   const { data, isLoading, isFetching } = useQuery({
       ...trpc.analytics.getDeviceStats.queryOptions(),
       refetchInterval: 15 * 60 * 1000,
    });
@@ -18,7 +18,7 @@ export const DeviceChart = () => {
    const chartData = (data?.data ?? []).slice(0, 8);
 
    return (
-      <ChartWrapper title="Devices" isLoading={isLoading}>
+      <ChartWrapper title="Devices" isLoading={isLoading} isFetching={isFetching} lastUpdatedAt={data?.lastUpdatedAt}>
          <BarChart data={chartData} layout="vertical">
             <XAxis type="number" stroke="var(--muted-foreground)" />
             <YAxis

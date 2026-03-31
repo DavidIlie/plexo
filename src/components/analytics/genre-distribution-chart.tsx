@@ -19,7 +19,7 @@ const COLORS = [
 
 export const GenreDistributionChart = () => {
    const trpc = useTRPC();
-   const { data, isLoading } = useQuery({
+   const { data, isLoading, isFetching } = useQuery({
       ...trpc.analytics.getGenreDistribution.queryOptions(),
       refetchInterval: 30 * 60 * 1000,
    });
@@ -27,7 +27,7 @@ export const GenreDistributionChart = () => {
    const chartData = (data?.data ?? []).slice(0, 8);
 
    return (
-      <ChartWrapper title="Library by Genre" description="Top genres across all movies and TV shows" isLoading={isLoading}>
+      <ChartWrapper title="Library by Genre" description="Top genres across all movies and TV shows" isLoading={isLoading} isFetching={isFetching} lastUpdatedAt={data?.lastUpdatedAt}>
          <PieChart>
             <Pie
                data={chartData}

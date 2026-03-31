@@ -12,7 +12,7 @@ interface Props {
 
 export const WatchTimeByDayChart: React.FC<Props> = ({ timeRange = 30 }) => {
    const trpc = useTRPC();
-   const { data, isLoading } = useQuery({
+   const { data, isLoading, isFetching } = useQuery({
       ...trpc.tautulli.getPlaysByDayOfWeek.queryOptions({ timeRange }),
       refetchInterval: 15 * 60 * 1000,
    });
@@ -28,7 +28,7 @@ export const WatchTimeByDayChart: React.FC<Props> = ({ timeRange = 30 }) => {
       })) ?? [];
 
    return (
-      <ChartWrapper title="Watch Time by Day" description={`Plays by day of week, last ${timeRange} days`} isLoading={isLoading}>
+      <ChartWrapper title="Watch Time by Day" description={`Plays by day of week, last ${timeRange} days`} isLoading={isLoading} isFetching={isFetching} lastUpdatedAt={data?.lastUpdatedAt}>
          <BarChart data={chartData}>
             <XAxis
                dataKey="day"
