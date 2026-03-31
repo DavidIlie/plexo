@@ -40,6 +40,7 @@ export interface TautulliHistoryItem {
    media_index: number;
    parent_media_index: number;
    transcode_decision: string;
+   guid: string;
 }
 
 export interface TautulliHistoryData {

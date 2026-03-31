@@ -4,6 +4,7 @@ import { env } from "~/env";
 import type {
    TautulliResponse,
    TautulliHistoryData,
+   TautulliHistoryItem,
    TautulliHomeStatItem,
    TautulliPlaysByDate,
    TautulliPlaysByDayOfWeek,
@@ -38,6 +39,14 @@ const tautulliFetch = async <T>(
    return json.response.data;
 };
 
+const isPopulatedHistoryItem = (item: TautulliHistoryItem): boolean => {
+   // Filter out deleted Plex entries (empty guid) and unknown airings
+   if (!item.guid && item.title === "Unknown Airing") return false;
+   // Filter out live TV recordings that are no longer available
+   if (item.guid?.startsWith("tv.plex.xmltv://") && !item.thumb) return false;
+   return true;
+};
+
 export const getHistory = async (
    length = 10,
    start = 0,
@@ -45,7 +54,13 @@ export const getHistory = async (
 ): Promise<TautulliHistoryData> => {
    const params: Record<string, string | number> = { length, start };
    if (mediaType) params.media_type = mediaType;
-   return tautulliFetch<TautulliHistoryData>("get_history", params);
+   const result = await tautulliFetch<TautulliHistoryData>("get_history", params);
+   const filtered = result.data.filter(isPopulatedHistoryItem);
+   return {
+      ...result,
+      data: filtered,
+      recordsFiltered: result.recordsFiltered - (result.data.length - filtered.length),
+   };
 };
 
 export const getHomeStats = async (): Promise<TautulliHomeStatItem[]> => {
