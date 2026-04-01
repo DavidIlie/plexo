@@ -11,6 +11,7 @@ export const AudioFormatChart = () => {
    const { data, isLoading, isFetching } = useQuery({
       ...trpc.analytics.getAudioFormatStats.queryOptions(),
       refetchInterval: 30 * 60 * 1000,
+      gcTime: Infinity,
    });
 
    const chartData = data?.data ?? [];

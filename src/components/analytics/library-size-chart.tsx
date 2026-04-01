@@ -22,6 +22,7 @@ export const LibrarySizeChart = () => {
    const { data, isLoading, isFetching } = useQuery({
       ...trpc.analytics.getLibrarySizeStats.queryOptions(),
       refetchInterval: 60 * 60 * 1000,
+      gcTime: Infinity,
    });
 
    const rawData = data?.data ?? [];

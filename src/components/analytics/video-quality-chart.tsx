@@ -11,6 +11,7 @@ export const VideoQualityChart = () => {
    const { data, isLoading, isFetching } = useQuery({
       ...trpc.analytics.getVideoQualityStats.queryOptions(),
       refetchInterval: 30 * 60 * 1000,
+      gcTime: Infinity,
    });
 
    const chartData = data?.data ?? [];

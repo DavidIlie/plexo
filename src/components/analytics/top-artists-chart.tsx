@@ -11,6 +11,7 @@ export const TopArtistsChart = () => {
    const { data, isLoading, isFetching } = useQuery({
       ...trpc.analytics.getTopArtists.queryOptions(),
       refetchInterval: 15 * 60 * 1000,
+      gcTime: Infinity,
    });
 
    if (data?.data === null) return null;

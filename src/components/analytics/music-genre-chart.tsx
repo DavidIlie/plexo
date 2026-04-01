@@ -22,6 +22,7 @@ export const MusicGenreChart = () => {
    const { data, isLoading, isFetching } = useQuery({
       ...trpc.analytics.getMusicGenreDistribution.queryOptions(),
       refetchInterval: 30 * 60 * 1000,
+      gcTime: Infinity,
    });
 
    if (data?.data === null) return null;

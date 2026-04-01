@@ -22,6 +22,7 @@ export const WatchTimeByHourChart: React.FC<Props> = ({ timeRange = 30 }) => {
    const { data, isLoading, isFetching } = useQuery({
       ...trpc.tautulli.getPlaysByHourOfDay.queryOptions({ timeRange }),
       refetchInterval: 15 * 60 * 1000,
+      gcTime: Infinity,
    });
 
    const rawData = data?.data;

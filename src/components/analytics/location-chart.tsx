@@ -12,6 +12,7 @@ export const LocationChart = () => {
    const { data, isLoading, isFetching } = useQuery({
       ...trpc.analytics.getLocationStats.queryOptions(),
       refetchInterval: 15 * 60 * 1000,
+      gcTime: Infinity,
    });
 
    if (data?.data === null) return null;

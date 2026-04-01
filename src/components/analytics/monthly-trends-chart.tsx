@@ -15,6 +15,7 @@ export const MonthlyTrendsChart: React.FC<Props> = ({ timeRange = 365 }) => {
    const { data, isLoading, isFetching } = useQuery({
       ...trpc.tautulli.getPlaysByDate.queryOptions({ timeRange }),
       refetchInterval: 15 * 60 * 1000,
+      gcTime: Infinity,
    });
 
    const rawData = data?.data;

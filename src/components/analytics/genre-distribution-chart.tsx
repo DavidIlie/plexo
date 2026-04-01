@@ -22,6 +22,7 @@ export const GenreDistributionChart = () => {
    const { data, isLoading, isFetching } = useQuery({
       ...trpc.analytics.getGenreDistribution.queryOptions(),
       refetchInterval: 30 * 60 * 1000,
+      gcTime: Infinity,
    });
 
    const chartData = (data?.data ?? []).slice(0, 8);

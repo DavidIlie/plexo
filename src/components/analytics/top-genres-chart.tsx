@@ -11,6 +11,7 @@ export const TopGenresChart = () => {
    const { data, isLoading, isFetching } = useQuery({
       ...trpc.analytics.getTopWatchedGenres.queryOptions(),
       refetchInterval: 15 * 60 * 1000,
+      gcTime: Infinity,
    });
 
    const chartData = data?.data ?? [];
