@@ -7,12 +7,14 @@ interface AppConfig {
    turnstileSiteKey?: string;
    overseerrEnabled: boolean;
    musicEnabled: boolean;
+   locationsEnabled: boolean;
 }
 
 const AppConfigContext = createContext<AppConfig>({
    recommendEnabled: false,
    overseerrEnabled: false,
    musicEnabled: false,
+   locationsEnabled: false,
 });
 
 export const useAppConfig = () => useContext(AppConfigContext);

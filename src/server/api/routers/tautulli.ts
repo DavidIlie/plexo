@@ -8,7 +8,9 @@ import {
    getPlaysByDayOfWeek,
    getPlaysByHourOfDay,
    getMostWatched,
+   getGeoipLookup,
 } from "~/lib/tautulli";
+import { env } from "~/env";
 
 export const tautulliRouter = createTRPCRouter({
    getHistory: publicProcedure
@@ -175,5 +177,29 @@ export const tautulliRouter = createTRPCRouter({
             data: result.data,
             lastUpdatedAt: result.fetchedAt.toISOString(),
          };
+      }),
+
+   resolveLocations: publicProcedure
+      .input(z.object({ ipAddresses: z.array(z.string()) }))
+      .query(async ({ input }) => {
+         if (!env.SHOW_LOCATIONS) return { data: {} as Record<string, string> };
+
+         const unique = [...new Set(input.ipAddresses.filter(
+            (ip) => ip && ip !== "127.0.0.1" && ip !== "::1",
+         ))];
+
+         const results = await Promise.all(
+            unique.map(async (ip) => {
+               const geo = await getCachedOrFetch(
+                  `geo:${ip}`,
+                  () => getGeoipLookup(ip),
+                  CacheTTL.LIBRARY,
+               );
+               const parts = [geo.data.city, geo.data.country].filter(Boolean);
+               return [ip, parts.join(", ")] as const;
+            }),
+         );
+
+         return { data: Object.fromEntries(results) };
       }),
 });

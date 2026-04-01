@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
-import { ArrowRight, Film, Tv, Music } from "lucide-react";
+import { ArrowRight, Film, Tv, Music, MapPin } from "lucide-react";
 
 import { useTRPC } from "~/trpc/react";
 import { useAppConfig } from "~/components/app-config-provider";
@@ -28,7 +28,7 @@ const mediaTypeIcon = (type: string) => {
 export const RecentlyWatched = () => {
    const trpc = useTRPC();
    const router = useRouter();
-   const { musicEnabled } = useAppConfig();
+   const { musicEnabled, locationsEnabled } = useAppConfig();
    const { data } = useSuspenseQuery({
       ...trpc.tautulli.getHistory.queryOptions({ length: 10 }),
       refetchInterval: 5 * 60 * 1000,
@@ -36,6 +36,19 @@ export const RecentlyWatched = () => {
    const [selectedItem, setSelectedItem] = useState<PlexMediaItem | null>(null);
 
    const items = data?.data.data ?? [];
+
+   const ipAddresses = useMemo(
+      () => items.map((item) => item.ip_address),
+      [items],
+   );
+
+   const { data: locationData } = useQuery({
+      ...trpc.tautulli.resolveLocations.queryOptions({ ipAddresses }),
+      enabled: locationsEnabled && ipAddresses.length > 0,
+      staleTime: 60 * 60 * 1000,
+   });
+
+   const locations = locationData?.data ?? {};
 
    if (items.length === 0) return null;
 
@@ -117,6 +130,15 @@ export const RecentlyWatched = () => {
                               <>
                                  <span className="text-border">·</span>
                                  <span>{item.player}</span>
+                              </>
+                           )}
+                           {locationsEnabled && locations[item.ip_address] && (
+                              <>
+                                 <span className="text-border">·</span>
+                                 <span className="flex items-center gap-0.5">
+                                    <MapPin className="h-2.5 w-2.5" />
+                                    {locations[item.ip_address]}
+                                 </span>
                               </>
                            )}
                         </div>
