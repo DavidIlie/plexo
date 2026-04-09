@@ -1,7 +1,5 @@
 "use client";
 
-import { Suspense } from "react";
-
 import { GenreDistributionChart } from "~/components/analytics/genre-distribution-chart";
 import { TopGenresChart } from "~/components/analytics/top-genres-chart";
 import { WatchTimeByDayChart } from "~/components/analytics/watch-time-by-day-chart";
@@ -18,7 +16,6 @@ import { MusicGenreChart } from "~/components/analytics/music-genre-chart";
 import { TopArtistsChart } from "~/components/analytics/top-artists-chart";
 import { PeriodSelector, usePeriodDays } from "~/components/analytics/period-selector";
 import { RefreshButton } from "~/components/refresh-button";
-import { Skeleton } from "~/components/ui/skeleton";
 
 const AnalyticsCharts = () => {
    const days = usePeriodDays();
@@ -58,14 +55,6 @@ const AnalyticsCharts = () => {
       </div>
    );
 };
-
-export const ChartsFallback = () => (
-   <div className="grid gap-4 md:grid-cols-2">
-      {Array.from({ length: 6 }).map((_, i) => (
-         <Skeleton key={i} className="h-[320px] rounded-lg" />
-      ))}
-   </div>
-);
 
 export const AnalyticsContent = () => {
    return (

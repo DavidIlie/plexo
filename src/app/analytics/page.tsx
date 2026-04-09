@@ -1,30 +1,66 @@
-import { Suspense } from "react";
+import { trpc, getQueryClient, HydrateClient } from "~/trpc/server";
+import { AnalyticsContent } from "./analytics-content";
+import { analyticsSearchParamsCache, periodToDays } from "./search-params";
 
-import { Skeleton } from "~/components/ui/skeleton";
-import { AnalyticsContent, ChartsFallback } from "./analytics-content";
+interface Props {
+   searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
 
-const AnalyticsPage = () => {
+const AnalyticsPage = async ({ searchParams }: Props) => {
+   const { period } = await analyticsSearchParamsCache.parse(searchParams);
+   const days = periodToDays(period);
+   const queryClient = getQueryClient();
+
+   // Prefetch all chart data server-side so the client has data immediately
+   void queryClient.prefetchQuery(
+      trpc.tautulli.getPlaysByDate.queryOptions({ timeRange: days }),
+   );
+   void queryClient.prefetchQuery(
+      trpc.analytics.getMediaTypeRatio.queryOptions(),
+   );
+   void queryClient.prefetchQuery(
+      trpc.analytics.getGenreDistribution.queryOptions(),
+   );
+   void queryClient.prefetchQuery(
+      trpc.analytics.getTopWatchedGenres.queryOptions(),
+   );
+   void queryClient.prefetchQuery(
+      trpc.tautulli.getPlaysByDayOfWeek.queryOptions({ timeRange: days }),
+   );
+   void queryClient.prefetchQuery(
+      trpc.tautulli.getPlaysByHourOfDay.queryOptions({ timeRange: days }),
+   );
+   void queryClient.prefetchQuery(
+      trpc.analytics.getDeviceStats.queryOptions(),
+   );
+   void queryClient.prefetchQuery(
+      trpc.analytics.getLocationStats.queryOptions(),
+   );
+   void queryClient.prefetchQuery(
+      trpc.analytics.getVideoQualityStats.queryOptions(),
+   );
+   void queryClient.prefetchQuery(
+      trpc.analytics.getAudioFormatStats.queryOptions(),
+   );
+   void queryClient.prefetchQuery(
+      trpc.analytics.getMusicAudioFormatStats.queryOptions(),
+   );
+   void queryClient.prefetchQuery(
+      trpc.analytics.getLibrarySizeStats.queryOptions(),
+   );
+   void queryClient.prefetchQuery(
+      trpc.analytics.getMusicGenreDistribution.queryOptions(),
+   );
+   void queryClient.prefetchQuery(
+      trpc.analytics.getTopArtists.queryOptions(),
+   );
+
    return (
-      <div className="space-y-6">
-         <Suspense
-            fallback={
-               <>
-                  <div className="flex items-center justify-between">
-                     <div>
-                        <h1 className="text-lg font-semibold">Analytics</h1>
-                        <p className="text-sm text-muted-foreground">
-                           Watch patterns and library insights
-                        </p>
-                     </div>
-                     <Skeleton className="h-8 w-[140px]" />
-                  </div>
-                  <ChartsFallback />
-               </>
-            }
-         >
+      <HydrateClient>
+         <div className="space-y-6">
             <AnalyticsContent />
-         </Suspense>
-      </div>
+         </div>
+      </HydrateClient>
    );
 };
 export default AnalyticsPage;

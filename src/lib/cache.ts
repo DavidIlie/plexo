@@ -82,23 +82,17 @@ export const getCachedOrFetch = async <T>(
    const existing = cache.get(key) as CacheEntry<T> | undefined;
 
    if (existing) {
-      const now = Date.now();
-
       // Fresh hit — return immediately
-      if (existing.expiresAt.getTime() > now) {
+      if (existing.expiresAt.getTime() > Date.now()) {
          return { data: existing.data, fetchedAt: existing.fetchedAt };
       }
 
-      // Stale-while-revalidate: within 20% grace window of original TTL
-      const graceMs = existing.ttlMs * 0.2;
-      if (now < existing.expiresAt.getTime() + graceMs) {
-         // Return stale data immediately, trigger background revalidation
-         void doFetch(key, fetcher, ttlMs);
-         return { data: existing.data, fetchedAt: existing.fetchedAt };
-      }
+      // Stale — return old data immediately, revalidate in background
+      void doFetch(key, fetcher, ttlMs);
+      return { data: existing.data, fetchedAt: existing.fetchedAt };
    }
 
-   // Hard miss — coalesced fetch
+   // No cached data at all — must wait for fetch
    return doFetch(key, fetcher, ttlMs);
 };
 
