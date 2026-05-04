@@ -14,6 +14,7 @@ import { PlexImage } from "~/components/plex-image";
 import { MediaDetailDialog } from "~/components/media/media-detail-dialog";
 import { Skeleton } from "~/components/ui/skeleton";
 import { Input } from "~/components/ui/input";
+import { formatHistoryTitle } from "~/lib/utils";
 import {
    Select,
    SelectContent,
@@ -187,7 +188,7 @@ const ActivityPage = () => {
                               <div className="flex items-center gap-2">
                                  {mediaTypeIcon(item.media_type)}
                                  <p className="truncate text-sm font-medium">
-                                    {item.full_title}
+                                    {formatHistoryTitle(item)}
                                  </p>
                               </div>
                               <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">

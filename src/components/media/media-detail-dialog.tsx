@@ -297,7 +297,11 @@ const WatchHistorySection: React.FC<{ ratingKey: string }> = ({
                   >
                      <div className="min-w-0 flex-1">
                         <p className="truncate">
-                           {play.full_title}
+                           {play.media_type === "episode" &&
+                           play.parent_media_index != null &&
+                           play.media_index != null
+                              ? `S${play.parent_media_index}E${play.media_index} · ${play.title}`
+                              : play.full_title}
                         </p>
                         <div className="flex items-center gap-2 text-muted-foreground">
                            <span>

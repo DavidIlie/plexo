@@ -11,6 +11,7 @@ import { useTRPC } from "~/trpc/react";
 import { useAppConfig } from "~/components/app-config-provider";
 import { PlexImage } from "~/components/plex-image";
 import { MediaDetailDialog } from "~/components/media/media-detail-dialog";
+import { formatHistoryTitle } from "~/lib/utils";
 import type { PlexMediaItem } from "~/types/plex";
 
 const formatDuration = (seconds: number) => {
@@ -105,7 +106,7 @@ export const RecentlyWatched = () => {
                         className="shrink-0 rounded object-cover"
                      />
                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm">{item.full_title}</p>
+                        <p className="truncate text-sm">{formatHistoryTitle(item)}</p>
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
                            <span className="flex items-center gap-1">
                               {mediaTypeIcon(item.media_type)}
