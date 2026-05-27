@@ -35,14 +35,12 @@ export const GET = async (req: NextRequest) => {
    const path = req.nextUrl.searchParams.get("path");
    const w = req.nextUrl.searchParams.get("w") ?? "300";
    const h = req.nextUrl.searchParams.get("h") ?? "450";
-   const qRaw = Number(req.nextUrl.searchParams.get("q") ?? "8");
-   const q = Number.isFinite(qRaw) ? Math.min(12, Math.max(1, Math.round(qRaw))) : 8;
 
    if (!path) {
       return NextResponse.json({ error: "Missing path" }, { status: 400 });
    }
 
-   const cacheKey = `${path}:${w}:${h}:${q}`;
+   const cacheKey = `${path}:${w}:${h}:${env.IMAGE_OPTIMIZE_QUALITY}:${env.IMAGE_OPTIMIZE ? "opt" : "raw"}`;
    const cached = imageCache.get(cacheKey);
 
    if (cached && Date.now() - cached.cachedAt < IMAGE_CACHE_TTL) {
@@ -67,8 +65,10 @@ export const GET = async (req: NextRequest) => {
    }
 
    const fetchPromise = (async () => {
+      const scaledW = Math.round(Number(w) * env.IMAGE_UPSTREAM_SCALE);
+      const scaledH = Math.round(Number(h) * env.IMAGE_UPSTREAM_SCALE);
       const url = new URL(
-         `/photo/:/transcode?width=${w}&height=${h}&minSize=1&upscale=1&quality=${q}&url=${encodeURIComponent(path)}`,
+         `/photo/:/transcode?width=${scaledW}&height=${scaledH}&minSize=1&upscale=1&url=${encodeURIComponent(path)}`,
          env.PLEX_URL,
       );
 
@@ -92,6 +92,10 @@ export const GET = async (req: NextRequest) => {
       if (env.IMAGE_OPTIMIZE) {
          try {
             const optimized = await sharp(Buffer.from(rawBuffer))
+               .resize(Number(w), Number(h), {
+                  fit: "cover",
+                  withoutEnlargement: true,
+               })
                .webp({ quality: env.IMAGE_OPTIMIZE_QUALITY, effort: 4 })
                .toBuffer();
             const ab = new ArrayBuffer(optimized.byteLength);

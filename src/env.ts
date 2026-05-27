@@ -56,7 +56,8 @@ export const env = createEnv({
          .enum(["true", "false"])
          .default("true")
          .transform((v) => v === "true"),
-      IMAGE_OPTIMIZE_QUALITY: z.coerce.number().int().min(1).max(100).default(70),
+      IMAGE_OPTIMIZE_QUALITY: z.coerce.number().int().min(1).max(100).default(85),
+      IMAGE_UPSTREAM_SCALE: z.coerce.number().min(1).max(4).default(2),
       NODE_ENV: z
          .enum(["development", "test", "production"])
          .default("development"),

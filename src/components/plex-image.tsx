@@ -11,7 +11,6 @@ interface PlexImageProps {
    height?: number;
    className?: string;
    priority?: boolean;
-   quality?: number;
 }
 
 export const PlexImage: React.FC<PlexImageProps> = ({
@@ -21,7 +20,6 @@ export const PlexImage: React.FC<PlexImageProps> = ({
    height = 450,
    className,
    priority = false,
-   quality = 8,
 }) => {
    const [loaded, setLoaded] = useState(false);
 
@@ -48,7 +46,7 @@ export const PlexImage: React.FC<PlexImageProps> = ({
             <div className="plex-image-shimmer absolute inset-0" />
          </div>
          <Image
-            src={`/api/plex-image?path=${encodeURIComponent(path)}&w=${width}&h=${height}&q=${quality}`}
+            src={`/api/plex-image?path=${encodeURIComponent(path)}&w=${width}&h=${height}`}
             alt={alt}
             width={width}
             height={height}
