@@ -15,6 +15,7 @@ import {
 } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
 import { Badge } from "~/components/ui/badge";
+import { Skeleton } from "~/components/ui/skeleton";
 import { PlexImage } from "~/components/plex-image";
 import { MediaDetailDialog } from "~/components/media/media-detail-dialog";
 import { useDebounce } from "~/hooks/use-debounce";
@@ -69,26 +70,31 @@ export const SearchDialog = () => {
       (s) => s.type === "artist",
    )?.key;
 
-   const { data: moviesData } = useQuery({
+   const { data: moviesData, isLoading: moviesLoading } = useQuery({
       ...trpc.plex.getMovies.queryOptions({
          sectionId: movieSectionId ?? "1",
       }),
       enabled: open && !!movieSectionId,
    });
 
-   const { data: showsData } = useQuery({
+   const { data: showsData, isLoading: showsLoading } = useQuery({
       ...trpc.plex.getShows.queryOptions({
          sectionId: showSectionId ?? "2",
       }),
       enabled: open && !!showSectionId,
    });
 
-   const { data: artistsData } = useQuery({
+   const { data: artistsData, isLoading: artistsLoading } = useQuery({
       ...trpc.plex.getArtists.queryOptions({
          sectionId: musicSectionId ?? "1",
       }),
       enabled: open && musicEnabled && !!musicSectionId,
    });
+
+   const itemsLoading =
+      moviesLoading ||
+      showsLoading ||
+      (musicEnabled && artistsLoading);
 
    const allItems = useMemo(() => {
       const movies = moviesData?.data.items ?? [];
@@ -271,32 +277,46 @@ export const SearchDialog = () => {
                            Genres
                         </p>
                         <div className="flex flex-wrap gap-1">
-                           {allGenres.slice(0, 15).map((g) => (
-                              <button
-                                 key={g}
-                                 onClick={() => setGenreFilter(g)}
-                                 className="rounded-full border border-border/50 px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"
-                              >
-                                 {g}
-                              </button>
-                           ))}
+                           {itemsLoading && allGenres.length === 0
+                              ? Array.from({ length: 12 }).map((_, i) => (
+                                   <Skeleton
+                                      key={i}
+                                      className="h-[22px] w-16 rounded-full"
+                                   />
+                                ))
+                              : allGenres.slice(0, 15).map((g) => (
+                                   <button
+                                      key={g}
+                                      onClick={() => setGenreFilter(g)}
+                                      className="rounded-full border border-border/50 px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"
+                                   >
+                                      {g}
+                                   </button>
+                                ))}
                         </div>
                      </div>
-                     {allDirectors.length > 0 && (
+                     {(allDirectors.length > 0 || itemsLoading) && (
                         <div>
                            <p className="mb-1.5 text-xs text-muted-foreground">
                               Directors
                            </p>
                            <div className="flex flex-wrap gap-1">
-                              {allDirectors.slice(0, 12).map((d) => (
-                                 <button
-                                    key={d}
-                                    onClick={() => setDirectorFilter(d)}
-                                    className="rounded-full border border-border/50 px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"
-                                 >
-                                    {d}
-                                 </button>
-                              ))}
+                              {itemsLoading && allDirectors.length === 0
+                                 ? Array.from({ length: 8 }).map((_, i) => (
+                                      <Skeleton
+                                         key={i}
+                                         className="h-[22px] w-20 rounded-full"
+                                      />
+                                   ))
+                                 : allDirectors.slice(0, 12).map((d) => (
+                                      <button
+                                         key={d}
+                                         onClick={() => setDirectorFilter(d)}
+                                         className="rounded-full border border-border/50 px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"
+                                      >
+                                         {d}
+                                      </button>
+                                   ))}
                            </div>
                         </div>
                      )}
@@ -305,7 +325,23 @@ export const SearchDialog = () => {
 
                {(debouncedQuery || hasActiveFilters) && (
                   <div className="max-h-[50vh] overflow-y-auto px-2 py-1">
-                     {filtered.length === 0 && (
+                     {itemsLoading && filtered.length === 0 && (
+                        <div className="space-y-1 py-1">
+                           {Array.from({ length: 6 }).map((_, i) => (
+                              <div
+                                 key={i}
+                                 className="flex items-center gap-3 rounded-md px-2 py-1.5"
+                              >
+                                 <Skeleton className="h-12 w-8 shrink-0 rounded" />
+                                 <div className="min-w-0 flex-1 space-y-1.5">
+                                    <Skeleton className="h-3.5 w-2/3" />
+                                    <Skeleton className="h-3 w-1/3" />
+                                 </div>
+                              </div>
+                           ))}
+                        </div>
+                     )}
+                     {!itemsLoading && filtered.length === 0 && (
                         <p className="py-8 text-center text-sm text-muted-foreground">
                            No results
                         </p>

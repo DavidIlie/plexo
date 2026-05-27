@@ -33,6 +33,7 @@ import {
 } from "~/components/ui/accordion";
 import { PlexImage } from "~/components/plex-image";
 import { Separator } from "~/components/ui/separator";
+import { Skeleton } from "~/components/ui/skeleton";
 import { cn } from "~/lib/utils";
 import type { PlexMediaItem, PlexMedia } from "~/types/plex";
 
@@ -47,7 +48,7 @@ const EpisodeGrid: React.FC<{ seasonKey: string; seasonTitle: string }> = ({
 }) => {
    const trpc = useTRPC();
    const [expanded, setExpanded] = useState(false);
-   const { data: episodesData } = useQuery({
+   const { data: episodesData, isLoading } = useQuery({
       ...trpc.plex.getChildren.queryOptions({ ratingKey: seasonKey }),
       enabled: expanded,
    });
@@ -63,6 +64,25 @@ const EpisodeGrid: React.FC<{ seasonKey: string; seasonTitle: string }> = ({
             <span>Show episodes</span>
             <ChevronDown className="h-3 w-3" />
          </button>
+      );
+   }
+
+   if (isLoading) {
+      return (
+         <div className="space-y-2">
+            <button
+               onClick={() => setExpanded(false)}
+               className="flex w-full items-center justify-between rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted/30 hover:text-foreground"
+            >
+               <span>Hide episodes</span>
+               <ChevronUp className="h-3 w-3" />
+            </button>
+            <div className="space-y-1">
+               {Array.from({ length: 8 }).map((_, i) => (
+                  <Skeleton key={i} className="h-6 w-full" />
+               ))}
+            </div>
+         </div>
       );
    }
 
@@ -187,9 +207,25 @@ const EpisodeGrid: React.FC<{ seasonKey: string; seasonTitle: string }> = ({
 
 const SeasonBreakdown: React.FC<{ ratingKey: string }> = ({ ratingKey }) => {
    const trpc = useTRPC();
-   const { data: seasonsData } = useQuery({
+   const { data: seasonsData, isLoading } = useQuery({
       ...trpc.plex.getChildren.queryOptions({ ratingKey }),
    });
+
+   if (isLoading) {
+      return (
+         <div className="space-y-3">
+            <div className="flex items-center justify-between gap-2">
+               <p className="shrink-0 text-xs font-medium text-muted-foreground">Seasons</p>
+               <Skeleton className="h-3 w-20" />
+            </div>
+            <div className="space-y-2">
+               {Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="h-16 w-full rounded-lg" />
+               ))}
+            </div>
+         </div>
+      );
+   }
 
    const seasons = seasonsData?.data ?? [];
 
@@ -268,9 +304,27 @@ const WatchHistorySection: React.FC<{ ratingKey: string }> = ({
    ratingKey,
 }) => {
    const trpc = useTRPC();
-   const { data } = useQuery({
+   const { data, isLoading } = useQuery({
       ...trpc.tautulli.getItemHistory.queryOptions({ ratingKey }),
    });
+
+   if (isLoading) {
+      return (
+         <>
+            <Separator />
+            <div>
+               <p className="mb-2 text-xs font-medium text-muted-foreground">
+                  Watch History
+               </p>
+               <div className="space-y-1">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                     <Skeleton key={i} className="h-9 w-full rounded-md" />
+                  ))}
+               </div>
+            </div>
+         </>
+      );
+   }
 
    const plays = data?.data ?? [];
 
@@ -448,26 +502,39 @@ const MediaInfoSection: React.FC<{ media: PlexMedia[] }> = ({ media }) => {
 
 const ShowMediaProfile: React.FC<{ ratingKey: string }> = ({ ratingKey }) => {
    const trpc = useTRPC();
-   // Fetch seasons, then first season's first episode for quality info
-   const { data: seasonsData } = useQuery(
+   const { data: seasonsData, isLoading: seasonsLoading } = useQuery(
       trpc.plex.getChildren.queryOptions({ ratingKey }),
    );
    const firstSeason = (seasonsData?.data ?? []).find(
       (s) => s.index !== undefined && s.index > 0,
    );
-   const { data: episodesData } = useQuery({
+   const { data: episodesData, isLoading: episodesLoading } = useQuery({
       ...trpc.plex.getChildren.queryOptions({
          ratingKey: firstSeason?.ratingKey ?? "",
       }),
       enabled: !!firstSeason,
    });
    const firstEpisode = (episodesData?.data ?? [])[0];
-   const { data: episodeDetail } = useQuery({
+   const { data: episodeDetail, isLoading: detailLoading } = useQuery({
       ...trpc.plex.getMetadata.queryOptions({
          ratingKey: firstEpisode?.ratingKey ?? "",
       }),
       enabled: !!firstEpisode,
    });
+
+   const stillLoading =
+      seasonsLoading ||
+      (!!firstSeason && episodesLoading) ||
+      (!!firstEpisode && detailLoading);
+
+   if (stillLoading) {
+      return (
+         <div>
+            <Skeleton className="mb-2 h-3 w-24" />
+            <Skeleton className="h-8 w-full" />
+         </div>
+      );
+   }
 
    const media = episodeDetail?.data?.Media;
    if (!media?.length) return null;
@@ -488,16 +555,61 @@ export const MediaDetailDialog: React.FC<MediaDetailDialogProps> = ({
    onOpenChange,
 }) => {
    const trpc = useTRPC();
-   const { data: metadata } = useQuery({
+   const { data: metadata, isLoading: metadataLoading } = useQuery({
       ...trpc.plex.getMetadata.queryOptions({
          ratingKey: item?.ratingKey ?? "",
       }),
       enabled: open && !!item,
    });
 
-   const detail = metadata?.data ?? item;
+   const fetched = metadata?.data;
+   const detail = fetched ?? item;
+   const showSkeleton = metadataLoading && !fetched;
 
-   if (!detail) return null;
+   if (!detail || showSkeleton) {
+      return (
+         <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="max-h-[85vh] overflow-y-scroll overscroll-contain p-0 sm:max-w-lg">
+               <DialogHeader className="sr-only">
+                  <DialogTitle>{detail?.title ?? "Loading"}</DialogTitle>
+               </DialogHeader>
+               <Skeleton className="h-32 w-full rounded-none" />
+               <div className="space-y-4 px-6 pb-6">
+                  <Skeleton className="h-6 w-2/3" />
+                  <div className="flex gap-1.5">
+                     <Skeleton className="h-5 w-12" />
+                     <Skeleton className="h-5 w-16" />
+                     <Skeleton className="h-5 w-20" />
+                  </div>
+                  <div className="flex gap-1">
+                     {Array.from({ length: 3 }).map((_, i) => (
+                        <Skeleton key={i} className="h-5 w-14 rounded-full" />
+                     ))}
+                  </div>
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                     {Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i} className="space-y-1">
+                           <Skeleton className="h-3 w-16" />
+                           <Skeleton className="h-4 w-20" />
+                        </div>
+                     ))}
+                  </div>
+                  <div className="space-y-2">
+                     <Skeleton className="h-3 w-10" />
+                     <div className="flex flex-wrap gap-2">
+                        {Array.from({ length: 6 }).map((_, i) => (
+                           <Skeleton key={i} className="h-7 w-20 rounded-full" />
+                        ))}
+                     </div>
+                  </div>
+               </div>
+            </DialogContent>
+         </Dialog>
+      );
+   }
 
    const isWatched =
       detail.type === "movie"

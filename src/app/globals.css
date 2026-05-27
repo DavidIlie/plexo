@@ -115,6 +115,25 @@
    }
 }
 
+@keyframes plex-shimmer {
+   0% {
+      transform: translateX(-100%);
+   }
+   100% {
+      transform: translateX(100%);
+   }
+}
+
+.plex-image-shimmer {
+   background: linear-gradient(
+      90deg,
+      transparent 0%,
+      color-mix(in oklch, var(--muted-foreground) 18%, transparent) 50%,
+      transparent 100%
+   );
+   animation: plex-shimmer 1.6s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
    *,
    *::before,

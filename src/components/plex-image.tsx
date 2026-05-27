@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import { cn } from "~/lib/utils";
 
@@ -10,15 +11,8 @@ interface PlexImageProps {
    height?: number;
    className?: string;
    priority?: boolean;
+   quality?: number;
 }
-
-const shimmer = (w: number, h: number) =>
-   `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g"><stop stop-color="#1a1a1a" offset="0%"/><stop stop-color="#262626" offset="50%"/><stop stop-color="#1a1a1a" offset="100%"/></linearGradient></defs><rect width="${w}" height="${h}" fill="url(#g)"/></svg>`;
-
-const toBase64 = (str: string) =>
-   typeof window === "undefined"
-      ? Buffer.from(str).toString("base64")
-      : btoa(str);
 
 export const PlexImage: React.FC<PlexImageProps> = ({
    path,
@@ -27,7 +21,10 @@ export const PlexImage: React.FC<PlexImageProps> = ({
    height = 450,
    className,
    priority = false,
+   quality = 8,
 }) => {
+   const [loaded, setLoaded] = useState(false);
+
    if (!path) {
       return (
          <div
@@ -40,16 +37,30 @@ export const PlexImage: React.FC<PlexImageProps> = ({
    }
 
    return (
-      <Image
-         src={`/api/plex-image?path=${encodeURIComponent(path)}&w=${width}&h=${height}`}
-         alt={alt}
-         width={width}
-         height={height}
-         className={className}
-         priority={priority}
-         unoptimized
-         placeholder="blur"
-         blurDataURL={`data:image/svg+xml;base64,${toBase64(shimmer(width, height))}`}
-      />
+      <div className={cn("relative overflow-hidden", className)}>
+         <div
+            aria-hidden
+            className={cn(
+               "absolute inset-0 bg-muted transition-opacity duration-500",
+               loaded ? "opacity-0" : "opacity-100",
+            )}
+         >
+            <div className="plex-image-shimmer absolute inset-0" />
+         </div>
+         <Image
+            src={`/api/plex-image?path=${encodeURIComponent(path)}&w=${width}&h=${height}&q=${quality}`}
+            alt={alt}
+            width={width}
+            height={height}
+            className={cn(
+               "h-full w-full object-cover transition-opacity duration-500",
+               loaded ? "opacity-100" : "opacity-0",
+            )}
+            priority={priority}
+            unoptimized
+            onLoad={() => setLoaded(true)}
+            onError={() => setLoaded(true)}
+         />
+      </div>
    );
 };

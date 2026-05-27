@@ -1,9 +1,12 @@
-import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
-import { caller } from "~/trpc/server";
-import { Skeleton } from "~/components/ui/skeleton";
+import {
+   caller,
+   trpc,
+   getQueryClient,
+   HydrateClient,
+} from "~/trpc/server";
 import { ArtistDetail } from "./artist-detail";
 
 interface ArtistPageProps {
@@ -37,17 +40,18 @@ const ArtistPage = async ({ params }: ArtistPageProps) => {
    const { data: artist } = await caller.plex.getMetadata({ ratingKey });
    if (!artist) notFound();
 
+   const queryClient = getQueryClient();
+   void queryClient.prefetchQuery(
+      trpc.plex.getMetadata.queryOptions({ ratingKey }),
+   );
+   void queryClient.prefetchQuery(
+      trpc.plex.getChildren.queryOptions({ ratingKey }),
+   );
+
    return (
-      <Suspense
-         fallback={
-            <div className="space-y-6">
-               <Skeleton className="h-48 w-full rounded-lg" />
-               <Skeleton className="h-64 w-full rounded-lg" />
-            </div>
-         }
-      >
+      <HydrateClient>
          <ArtistDetail ratingKey={ratingKey} />
-      </Suspense>
+      </HydrateClient>
    );
 };
 export default ArtistPage;
