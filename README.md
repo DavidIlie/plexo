@@ -140,6 +140,9 @@ docker pull ghcr.io/davidilie/plexo:latest
 | `OVERSEERR_URL` | No | Overseerr instance URL (enables request creation + dashboard wishlist) |
 | `OVERSEERR_API_KEY` | No | Overseerr API key |
 | `RECOMMEND_AUTO_REQUEST` | No | Auto-create Overseerr request on recommendation (default: false) |
+| `IMAGE_OPTIMIZE` | No | Re-encode Plex images to WebP via sharp (default: true). Set `false` to serve the upstream Plex bytes unchanged. |
+| `IMAGE_OPTIMIZE_QUALITY` | No | WebP quality 1-100 when `IMAGE_OPTIMIZE=true` (default: 85). Higher = sharper + larger. |
+| `IMAGE_UPSTREAM_SCALE` | No | Multiplier for the resolution pulled from Plex before sharp downsamples (default: 2). 2× super-sampling yields sharper posters; set to 1 to save CPU/bandwidth. |
 
 ## Recommendations Setup
 
