@@ -11,6 +11,7 @@ import { useTRPC } from "~/trpc/react";
 import { useAppConfig } from "~/components/app-config-provider";
 import { PlexImage } from "~/components/plex-image";
 import { MediaDetailDialog } from "~/components/media/media-detail-dialog";
+import { PlatformBadge } from "~/components/ui/platform-badge";
 import { formatHistoryTitle } from "~/lib/utils";
 import type { PlexMediaItem } from "~/types/plex";
 
@@ -124,7 +125,7 @@ export const RecentlyWatched = () => {
                            {item.platform && (
                               <>
                                  <span className="text-border">·</span>
-                                 <span>{item.platform}</span>
+                                 <PlatformBadge platform={item.platform} variant="compact" />
                               </>
                            )}
                            {item.player && item.player !== item.platform && (
