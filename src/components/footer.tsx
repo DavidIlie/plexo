@@ -2,6 +2,8 @@ import Link from "next/link";
 import Image from "next/image";
 
 export const Footer = () => {
+   const version = process.env.NEXT_PUBLIC_VERSION ?? "dev";
+
    return (
       <footer className="mt-16 border-t border-border/50">
          <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-6 pb-20 md:pb-6">
@@ -29,6 +31,8 @@ export const Footer = () => {
                      David Ilie
                   </Link>
                </span>
+               <span className="text-border">·</span>
+               <span title="Current version">{version}</span>
                <span className="text-border">·</span>
                <Link
                   href="https://zerocut.gg/david"

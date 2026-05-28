@@ -12,7 +12,7 @@ COPY pnpm-lock.yaml ./
 RUN pnpm fetch
 
 FROM node:${NODE_VERSION}-alpine AS builder
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache git libc6-compat
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
@@ -33,7 +33,9 @@ RUN --mount=type=cache,target=/pnpm/store,id=pnpm-store \
 
 # Persist Next.js compiler cache between CI builds using BuildKit cache mounts
 RUN --mount=type=cache,target=/home/node/app/.next/cache,id=next-cache \
-    SKIP_ENV_VALIDATION=true pnpm build
+    NEXT_PUBLIC_VERSION="$(git rev-parse --short=12 HEAD 2>/dev/null || printf dev)" \
+    SKIP_ENV_VALIDATION=true \
+    pnpm build
 
 FROM node:${NODE_VERSION}-alpine AS runner
 

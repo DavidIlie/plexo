@@ -62,8 +62,12 @@ export const env = createEnv({
          .enum(["development", "test", "production"])
          .default("development"),
    },
-   client: {},
+   client: {
+      NEXT_PUBLIC_VERSION: z.string().default("dev"),
+   },
    skipValidation: !!process.env.SKIP_ENV_VALIDATION,
    emptyStringAsUndefined: true,
-   experimental__runtimeEnv: {},
+   experimental__runtimeEnv: {
+      NEXT_PUBLIC_VERSION: process.env.NEXT_PUBLIC_VERSION,
+   },
 });

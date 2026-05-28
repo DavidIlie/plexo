@@ -1,0 +1,17 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+.next
+.playwright-mcp
+.pnpm-store
+.vercel
+build
+coverage
+node_modules
+npm-debug.log*
+out
+pnpm-debug.log*
+tsconfig.tsbuildinfo
+yarn-debug.log*
+yarn-error.log*

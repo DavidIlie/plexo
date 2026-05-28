@@ -117,6 +117,7 @@ docker pull ghcr.io/davidilie/plexo:latest
 | `REFRESH_SECRET` | Yes | Secret for cache admin panel (Cmd+L) |
 | `DISPLAY_NAME` | No | Name shown on dashboard (default: "David") |
 | `APP_URL` | No | Base URL for metadata/OG images (default: localhost:3000) |
+| `NEXT_PUBLIC_VERSION` | No | Footer version label (default: `dev`; Docker builds set this to the Git commit hash) |
 | `SHOW_DEVICES` | No | Show device analytics (default: true) |
 | `SHOW_LOCATIONS` | No | Show location analytics via geoip (default: false) |
 | `SHOW_MUSIC` | No | Show music library (artists, albums, tracks) (default: false) |
