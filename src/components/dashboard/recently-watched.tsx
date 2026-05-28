@@ -11,7 +11,7 @@ import { useTRPC } from "~/trpc/react";
 import { useAppConfig } from "~/components/app-config-provider";
 import { PlexImage } from "~/components/plex-image";
 import { MediaDetailDialog } from "~/components/media/media-detail-dialog";
-import { PlatformBadge } from "~/components/ui/platform-badge";
+import { PlatformBadge, getPlatformMeta } from "~/components/media/platform-icon";
 import { formatHistoryTitle } from "~/lib/utils";
 import type { PlexMediaItem } from "~/types/plex";
 
@@ -125,15 +125,17 @@ export const RecentlyWatched = () => {
                            {item.platform && (
                               <>
                                  <span className="text-border">·</span>
-                                 <PlatformBadge platform={item.platform} variant="compact" />
+                                 <PlatformBadge platform={item.platform} />
                               </>
                            )}
-                           {item.player && item.player !== item.platform && (
-                              <>
-                                 <span className="text-border">·</span>
-                                 <span>{item.player}</span>
-                              </>
-                           )}
+                           {item.player &&
+                              item.player.toLowerCase() !==
+                                 getPlatformMeta(item.platform).label.toLowerCase() && (
+                                 <>
+                                    <span className="text-border">·</span>
+                                    <span>{item.player}</span>
+                                 </>
+                              )}
                            {locationsEnabled && locations[item.ip_address] && (
                               <>
                                  <span className="text-border">·</span>

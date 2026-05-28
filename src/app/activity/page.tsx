@@ -12,7 +12,7 @@ import { useDebounce } from "~/hooks/use-debounce";
 import { useIntersectionObserver } from "~/hooks/use-intersection-observer";
 import { PlexImage } from "~/components/plex-image";
 import { MediaDetailDialog } from "~/components/media/media-detail-dialog";
-import { PlatformBadge } from "~/components/ui/platform-badge";
+import { PlatformBadge } from "~/components/media/platform-icon";
 import { Skeleton } from "~/components/ui/skeleton";
 import { Input } from "~/components/ui/input";
 import { formatHistoryTitle } from "~/lib/utils";
@@ -215,7 +215,7 @@ const ActivityPage = () => {
                                  {item.platform && (
                                     <>
                                        <span className="text-border">·</span>
-                                       <PlatformBadge platform={item.platform} variant="compact" />
+                                       <PlatformBadge platform={item.platform} />
                                     </>
                                  )}
                               </div>
