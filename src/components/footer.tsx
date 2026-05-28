@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { FooterVersionStatus } from "~/components/footer-version-status";
 
 export const Footer = () => {
    const version = process.env.NEXT_PUBLIC_VERSION ?? "dev";
@@ -51,6 +52,7 @@ export const Footer = () => {
                      {version}
                   </span>
                )}
+               <FooterVersionStatus currentVersion={version} />
                <span className="text-border">·</span>
                <Link
                   href="https://zerocut.gg/david"
