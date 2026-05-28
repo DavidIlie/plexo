@@ -3,6 +3,10 @@ import Image from "next/image";
 
 export const Footer = () => {
    const version = process.env.NEXT_PUBLIC_VERSION ?? "dev";
+   const versionHref =
+      version === "dev"
+         ? undefined
+         : `https://github.com/davidilie/plexo/tree/${version}`;
 
    return (
       <footer className="mt-16 border-t border-border/50">
@@ -32,7 +36,21 @@ export const Footer = () => {
                   </Link>
                </span>
                <span className="text-border">·</span>
-               <span title="Current version">{version}</span>
+               {versionHref ? (
+                  <Link
+                     href={versionHref}
+                     target="_blank"
+                     rel="noopener noreferrer"
+                     title="Current version"
+                     className="font-mono underline-offset-2 hover:text-foreground hover:underline"
+                  >
+                     {version}
+                  </Link>
+               ) : (
+                  <span title="Current version" className="font-mono">
+                     {version}
+                  </span>
+               )}
                <span className="text-border">·</span>
                <Link
                   href="https://zerocut.gg/david"
