@@ -173,20 +173,18 @@ export const getChildren = async (ratingKey: string): Promise<PlexMediaItem[]> =
    return data.MediaContainer.Metadata ?? [];
 };
 
-// NOT cached: the catch path returns [] on failure, and caching a transient
-// empty array under any TTL would poison the cache.
+// Throws on error (rather than swallowing to []) so the caller can distinguish a
+// real failure from a legitimately empty watchlist and avoid caching errors.
 export const getWatchlist = async (): Promise<PlexMediaItem[]> => {
-   try {
-      const data = await fetch(
-         `https://metadata.provider.plex.tv/library/sections/watchlist/all?X-Plex-Token=${env.PLEX_TOKEN}`,
-         { headers: { Accept: "application/json" } },
-      );
-      if (!data.ok) return [];
-      const json = (await data.json()) as PlexMediaContainer<PlexMediaItem>;
-      return json.MediaContainer.Metadata ?? [];
-   } catch {
-      return [];
+   const data = await fetch(
+      `https://metadata.provider.plex.tv/library/sections/watchlist/all?X-Plex-Token=${env.PLEX_TOKEN}`,
+      { headers: { Accept: "application/json" } },
+   );
+   if (!data.ok) {
+      throw new Error(`Plex watchlist error: ${data.status} ${data.statusText}`);
    }
+   const json = (await data.json()) as PlexMediaContainer<PlexMediaItem>;
+   return json.MediaContainer.Metadata ?? [];
 };
 
 export const getSectionTotalSize = async (

@@ -70,12 +70,23 @@ const getWishlistCached = async () => {
       CACHE_TAGS.overseerr,
    );
 
-   const [overseerrItems, plexItems] = await Promise.all([
-      env.OVERSEERR_URL && env.OVERSEERR_API_KEY
-         ? getWishlist().catch(() => [])
-         : Promise.resolve([]),
-      getPlexWatchlist().catch(() => []),
+   const overseerrEnabled = Boolean(env.OVERSEERR_URL && env.OVERSEERR_API_KEY);
+   const [overseerrRes, plexRes] = await Promise.allSettled([
+      overseerrEnabled ? getWishlist() : Promise.resolve([]),
+      getPlexWatchlist(),
    ]);
+
+   // Cache a legitimately empty wishlist (valid result), but skip the write when
+   // every source we actually tried failed — otherwise a transient outage gets
+   // cached as an empty list for the full TTL.
+   const tried = overseerrEnabled ? [overseerrRes, plexRes] : [plexRes];
+   if (tried.every((r) => r.status === "rejected")) {
+      throw new Error("all wishlist sources failed — skipping cache write");
+   }
+
+   const overseerrItems =
+      overseerrRes.status === "fulfilled" ? overseerrRes.value : [];
+   const plexItems = plexRes.status === "fulfilled" ? plexRes.value : [];
 
    const plexWishlistItems = plexItems.map((item) => ({
       id: `plex-${item.ratingKey}`,
@@ -116,13 +127,6 @@ const getWishlistCached = async () => {
       if (!seen.has(key)) {
          merged.push(item);
       }
-   }
-
-   // Don't cache an empty result: both sources swallow errors to [], so an empty
-   // merge is indistinguishable from a transient outage. Throwing skips the cache
-   // write; the resolver returns [] and the next request retries.
-   if (merged.length === 0) {
-      throw new Error("empty wishlist — skipping cache write");
    }
 
    return merged;
