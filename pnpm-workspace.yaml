@@ -1,4 +1,9 @@
-# We track Next.js canary, so deps are often published <24h before a build.
-# pnpm's default supply-chain minimum-release-age check rejects those in a clean
-# store (CI/Docker); disable it (deps are still pinned by pnpm-lock.yaml).
-minimumReleaseAge: 0
+# Keep pnpm's supply-chain cooldown (reject deps published <24h ago) for the
+# whole tree EXCEPT the Next.js canary packages we intentionally track — those
+# are routinely <24h old and would otherwise fail clean-store installs (CI).
+# Everything is still pinned by pnpm-lock.yaml.
+minimumReleaseAge: 1440
+minimumReleaseAgeExclude:
+  - next
+  - "@next/*"
+  - eslint-config-next
