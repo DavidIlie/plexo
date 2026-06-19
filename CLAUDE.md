@@ -1,6 +1,6 @@
 # Plexo
 
-Personal Plex media dashboard built with Next.js 16.
+Personal Plex media dashboard built with Next.js 16.3 (canary, Cache Components).
 
 ## Rules
 
@@ -11,12 +11,13 @@ Personal Plex media dashboard built with Next.js 16.
 
 ## Tech Stack
 
-- **Next.js 16** with App Router, standalone output
+- **Next.js 16.3 canary** with App Router, standalone output, **Cache Components** (`cacheComponents: true` — PPR, `use cache`, App Shell prefetching)
 - **React 19**, **TypeScript 5.7+** (strict)
+- **ESLint flat config** (`eslint.config.mjs`; `next lint` removed in 16 — use `pnpm lint` = `eslint .`)
 - **Tailwind CSS v4** with `@tailwindcss/postcss`, dark-first amber theme (OKLCH)
 - **shadcn/ui** — components in `src/components/ui/`, config in `components.json`
 - **tRPC 11** — routers in `src/server/api/routers/`, client wiring in `src/trpc/`
-- **TanStack Query 5** — `staleTime: 5min`, `refetchInterval: 30min`
+- **TanStack Query 5** — `staleTime: 60s` (server cache is authoritative), `refetchInterval: 30min`
 - **Recharts 3** — chart colors use CSS vars `--chart-1` through `--chart-5`
 - **lucide-react** for icons
 - **date-fns 4** for date formatting
@@ -30,26 +31,26 @@ src/
 ├── app/              # Next.js pages and API routes
 ├── server/api/       # tRPC context, root router, routers (plex, tautulli, analytics)
 ├── trpc/             # Client wiring (react.tsx, server.tsx, query-client.ts)
-├── lib/              # Utilities (cache.ts, plex.ts, tautulli.ts, utils.ts)
+├── lib/              # Utilities (plex.ts, tautulli.ts, cache-tags.ts, utils.ts)
+├── server/cache/     # Shared 'use cache: remote' aggregation fns (stats.ts)
 ├── types/            # Plex and Tautulli response types
 ├── hooks/            # React hooks (use-debounce)
 └── components/       # UI components (ui/, dashboard/, media/, analytics/)
+cache-handlers/       # Redis + in-memory CacheHandler impls (.mjs, runtime-loaded)
 ```
 
 ## Key Patterns
 
 - **Path alias**: `~/` maps to `./src/`
-- **Env validation**: `src/env.ts` using `@t3-oss/env-nextjs` — vars: `PLEX_URL`, `PLEX_TOKEN`, `TAUTULLI_URL`, `TAUTULLI_API_KEY`, optional `TAUTULLI_USER_ID`
+- **Env validation**: `src/env.ts` using `@t3-oss/env-nextjs` — vars: `PLEX_URL`, `PLEX_TOKEN`, `TAUTULLI_URL`, `TAUTULLI_API_KEY`, optional `TAUTULLI_USER_ID`; cache toggle `CACHE_DRIVER` (`memory`|`redis`, default `memory`) + optional `REDIS_URL`
 - **User scoping**: `PLEX_TOKEN` determines which user's watch data (the token owner). `TAUTULLI_USER_ID` optionally filters Tautulli stats to one user (injected into every tautulliFetch call).
-- **Cache**: In-memory TTL cache in `src/lib/cache.ts` with tiered TTLs via `CacheTTL`:
-  - `LIBRARY` (1hr) — sections, genres (rarely change)
-  - `METADATA` (30min) — movie/show listings
-  - `ANALYTICS` (15min) — computed aggregations
-  - `ACTIVITY` (5min) — on-deck, history, home stats
-  - `POST /api/refresh` clears all
+- **Server cache**: `'use cache: remote'` on the lib fetchers (`src/lib/{plex,tautulli}.ts`) and aggregation wrappers (`src/server/cache/`, router cached fns). Durations via `cacheLife` profiles in `next.config.ts`: `library` (1h), `metadata` (30m), `analytics` (15m), `activity` (5m). Tags in `src/lib/cache-tags.ts` (domain roots + scoped builders).
+- **Cache backend**: chosen at **runtime** in `cache-handlers/remote-handler.mjs` — Redis (`CACHE_DRIVER=redis` + `REDIS_URL`) or in-memory fallback. Always registered in `next.config` (`cacheHandlers.remote`) so `redis` is traced into standalone and the backend flips via env with no rebuild (config is frozen at build in standalone).
+- **Invalidation**: `POST /api/refresh` → `revalidateTag` per domain root (or `?scope=<root>`; `?hard=1` for immediate expiry). `GET` reports the active handler + roots + rate limits.
 - **Image proxy**: `/api/plex-image?path=...&w=300&h=450` — streams from Plex with token server-side
-- **tRPC procedures** all return `{ data: T; lastUpdatedAt: string }` for freshness display
-- **Server prefetch**: Use `caller` for direct RSC calls, `trpc.X.queryOptions()` + `queryClient.prefetchQuery()` for hydration
+- **tRPC procedures** all return `{ data: T; lastUpdatedAt: string }`. `lastUpdatedAt` is **served-at** (stamped in the resolver with `new Date()`, never inside a cache scope) — not data age.
+- **RSC rendering (Cache Components)**: pages are static **App Shells**; runtime/dynamic data lives in `<Suspense>` (use a `connection()` child for prefetch-based sections) so it streams in. The RSC `caller`/`trpc` context is header-free; `generateMetadata` calls cached fns directly. Forbidden: `export const dynamic`/`runtime`/`fetchCache` (incompatible with `cacheComponents`), and `new Date()`/`Math.random()` in any prerender path or cache scope (`new Date(<ts>)` with an arg is fine).
+- **Migration notes**: `docs/migration/cache-components-blueprint.md`
 
 ## Common Recharts Patterns
 
