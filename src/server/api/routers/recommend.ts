@@ -70,23 +70,15 @@ const getWishlistCached = async () => {
       CACHE_TAGS.overseerr,
    );
 
-   const overseerrEnabled = Boolean(env.OVERSEERR_URL && env.OVERSEERR_API_KEY);
-   const [overseerrRes, plexRes] = await Promise.allSettled([
-      overseerrEnabled ? getWishlist() : Promise.resolve([]),
-      getPlexWatchlist(),
+   // Both sources are best-effort (-> []). The result is cached under the short
+   // `activity` profile, so a transient empty self-heals on the next SWR
+   // revalidation rather than poisoning the cache for long.
+   const [overseerrItems, plexItems] = await Promise.all([
+      env.OVERSEERR_URL && env.OVERSEERR_API_KEY
+         ? getWishlist().catch(() => [])
+         : Promise.resolve([]),
+      getPlexWatchlist().catch(() => []),
    ]);
-
-   // Cache a legitimately empty wishlist (valid result), but skip the write when
-   // every source we actually tried failed — otherwise a transient outage gets
-   // cached as an empty list for the full TTL.
-   const tried = overseerrEnabled ? [overseerrRes, plexRes] : [plexRes];
-   if (tried.every((r) => r.status === "rejected")) {
-      throw new Error("all wishlist sources failed — skipping cache write");
-   }
-
-   const overseerrItems =
-      overseerrRes.status === "fulfilled" ? overseerrRes.value : [];
-   const plexItems = plexRes.status === "fulfilled" ? plexRes.value : [];
 
    const plexWishlistItems = plexItems.map((item) => ({
       id: `plex-${item.ratingKey}`,
@@ -262,13 +254,8 @@ export const recommendRouter = createTRPCRouter({
       }),
 
    getWishlist: publicProcedure.query(async () => {
-      try {
-         const data = await getWishlistCached();
-         return { data, lastUpdatedAt: new Date().toISOString() };
-      } catch {
-         // Empty/failed wishlist is not cached; return [] and retry next request.
-         return { data: [], lastUpdatedAt: new Date().toISOString() };
-      }
+      const data = await getWishlistCached();
+      return { data, lastUpdatedAt: new Date().toISOString() };
    }),
 
    testNotification: publicProcedure

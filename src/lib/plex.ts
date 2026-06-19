@@ -173,18 +173,21 @@ export const getChildren = async (ratingKey: string): Promise<PlexMediaItem[]> =
    return data.MediaContainer.Metadata ?? [];
 };
 
-// Throws on error (rather than swallowing to []) so the caller can distinguish a
-// real failure from a legitimately empty watchlist and avoid caching errors.
+// Best-effort: the plex.tv watchlist endpoint commonly errors (token scope,
+// network), so swallow to []. The caller caches the merged wishlist under the
+// short `activity` profile, so a transient empty self-heals via SWR.
 export const getWatchlist = async (): Promise<PlexMediaItem[]> => {
-   const data = await fetch(
-      `https://metadata.provider.plex.tv/library/sections/watchlist/all?X-Plex-Token=${env.PLEX_TOKEN}`,
-      { headers: { Accept: "application/json" } },
-   );
-   if (!data.ok) {
-      throw new Error(`Plex watchlist error: ${data.status} ${data.statusText}`);
+   try {
+      const data = await fetch(
+         `https://metadata.provider.plex.tv/library/sections/watchlist/all?X-Plex-Token=${env.PLEX_TOKEN}`,
+         { headers: { Accept: "application/json" } },
+      );
+      if (!data.ok) return [];
+      const json = (await data.json()) as PlexMediaContainer<PlexMediaItem>;
+      return json.MediaContainer.Metadata ?? [];
+   } catch {
+      return [];
    }
-   const json = (await data.json()) as PlexMediaContainer<PlexMediaItem>;
-   return json.MediaContainer.Metadata ?? [];
 };
 
 export const getSectionTotalSize = async (
