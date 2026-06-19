@@ -16,6 +16,11 @@ if (process.env.CACHE_DRIVER === "redis" && !process.env.REDIS_URL) {
 const nextConfig: NextConfig = {
    output: "standalone",
    cacheComponents: true,
+   // Client navigation prefetch stack: prefetch only the App Shell (static
+   // parts) on <Link> hover/viewport, then stream the dynamic holes. varyParams,
+   // optimisticRouting and prefetchInlining already default on with
+   // cacheComponents; appShells additionally requires cachedNavigations.
+   partialPrefetching: true,
    compiler: {
       removeConsole:
          process.env.NODE_ENV === "production"
@@ -41,6 +46,8 @@ const nextConfig: NextConfig = {
       : {}),
    experimental: {
       optimizePackageImports: ["lucide-react", "date-fns", "recharts"],
+      appShells: true,
+      cachedNavigations: true,
    },
    images: {
       formats: ["image/avif", "image/webp"],
