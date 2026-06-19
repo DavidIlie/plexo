@@ -1,6 +1,9 @@
 import "server-only";
 
+import { cacheLife, cacheTag } from "next/cache";
+
 import { env } from "~/env";
+import { CACHE_TAGS } from "~/lib/cache-tags";
 import type {
    PlexMediaContainer,
    PlexMediaItem,
@@ -26,6 +29,10 @@ const plexFetch = async <T>(path: string): Promise<T> => {
 };
 
 export const getLibrarySections = async (): Promise<PlexLibrarySection[]> => {
+   "use cache: remote";
+   cacheLife("library");
+   cacheTag(CACHE_TAGS.plex, CACHE_TAGS.plexSections);
+
    const data =
       await plexFetch<PlexMediaContainer<PlexLibrarySection>>(
          "/library/sections",
@@ -38,6 +45,10 @@ export const getMovies = async (
    start = 0,
    size = 500,
 ): Promise<{ items: PlexMediaItem[]; totalSize: number }> => {
+   "use cache: remote";
+   cacheLife("metadata");
+   cacheTag(CACHE_TAGS.plex, CACHE_TAGS.section(sectionId));
+
    const data = await plexFetch<PlexMediaContainer<PlexMediaItem>>(
       `/library/sections/${sectionId}/all?type=1&X-Plex-Container-Start=${start}&X-Plex-Container-Size=${size}`,
    );
@@ -52,6 +63,10 @@ export const getShows = async (
    start = 0,
    size = 500,
 ): Promise<{ items: PlexMediaItem[]; totalSize: number }> => {
+   "use cache: remote";
+   cacheLife("metadata");
+   cacheTag(CACHE_TAGS.plex, CACHE_TAGS.section(sectionId));
+
    const data = await plexFetch<PlexMediaContainer<PlexMediaItem>>(
       `/library/sections/${sectionId}/all?type=2&X-Plex-Container-Start=${start}&X-Plex-Container-Size=${size}`,
    );
@@ -66,6 +81,10 @@ export const getArtists = async (
    start = 0,
    size = 500,
 ): Promise<{ items: PlexMediaItem[]; totalSize: number }> => {
+   "use cache: remote";
+   cacheLife("metadata");
+   cacheTag(CACHE_TAGS.plex, CACHE_TAGS.section(sectionId));
+
    const data = await plexFetch<PlexMediaContainer<PlexMediaItem>>(
       `/library/sections/${sectionId}/all?type=8&X-Plex-Container-Start=${start}&X-Plex-Container-Size=${size}`,
    );
@@ -76,6 +95,10 @@ export const getArtists = async (
 };
 
 export const getAlbumCount = async (sectionId: string): Promise<number> => {
+   "use cache: remote";
+   cacheLife("library");
+   cacheTag(CACHE_TAGS.plex, CACHE_TAGS.section(sectionId));
+
    const data = await plexFetch<PlexMediaContainer<PlexMediaItem>>(
       `/library/sections/${sectionId}/all?type=9&X-Plex-Container-Start=0&X-Plex-Container-Size=1`,
    );
@@ -83,6 +106,10 @@ export const getAlbumCount = async (sectionId: string): Promise<number> => {
 };
 
 export const getTrackCount = async (sectionId: string): Promise<number> => {
+   "use cache: remote";
+   cacheLife("library");
+   cacheTag(CACHE_TAGS.plex, CACHE_TAGS.section(sectionId));
+
    const data = await plexFetch<PlexMediaContainer<PlexMediaItem>>(
       `/library/sections/${sectionId}/all?type=10&X-Plex-Container-Start=0&X-Plex-Container-Size=1`,
    );
@@ -90,6 +117,10 @@ export const getTrackCount = async (sectionId: string): Promise<number> => {
 };
 
 export const getOnDeck = async (): Promise<PlexOnDeckItem[]> => {
+   "use cache: remote";
+   cacheLife("activity");
+   cacheTag(CACHE_TAGS.plex, CACHE_TAGS.plexOnDeck);
+
    const data =
       await plexFetch<PlexMediaContainer<PlexOnDeckItem>>("/library/onDeck");
    return data.MediaContainer.Metadata ?? [];
@@ -99,6 +130,14 @@ export const getRecentlyAdded = async (
    sectionId: string,
    count = 20,
 ): Promise<PlexMediaItem[]> => {
+   "use cache: remote";
+   cacheLife("activity");
+   cacheTag(
+      CACHE_TAGS.plex,
+      CACHE_TAGS.plexRecentlyAdded,
+      CACHE_TAGS.section(sectionId),
+   );
+
    const data = await plexFetch<PlexMediaContainer<PlexMediaItem>>(
       `/library/sections/${sectionId}/recentlyAdded?X-Plex-Container-Size=${count}`,
    );
@@ -106,6 +145,10 @@ export const getRecentlyAdded = async (
 };
 
 export const getMetadata = async (ratingKey: string): Promise<PlexMediaItem | null> => {
+   "use cache: remote";
+   cacheLife("metadata");
+   cacheTag(CACHE_TAGS.plex, CACHE_TAGS.plexItem(ratingKey));
+
    const data = await plexFetch<PlexMediaContainer<PlexMediaItem>>(
       `/library/metadata/${ratingKey}`,
    );
@@ -113,12 +156,18 @@ export const getMetadata = async (ratingKey: string): Promise<PlexMediaItem | nu
 };
 
 export const getChildren = async (ratingKey: string): Promise<PlexMediaItem[]> => {
+   "use cache: remote";
+   cacheLife("metadata");
+   cacheTag(CACHE_TAGS.plex, CACHE_TAGS.plexItem(ratingKey));
+
    const data = await plexFetch<PlexMediaContainer<PlexMediaItem>>(
       `/library/metadata/${ratingKey}/children`,
    );
    return data.MediaContainer.Metadata ?? [];
 };
 
+// NOT cached: the catch path returns [] on failure, and caching a transient
+// empty array under any TTL would poison the cache.
 export const getWatchlist = async (): Promise<PlexMediaItem[]> => {
    try {
       const data = await fetch(
@@ -137,6 +186,10 @@ export const getSectionTotalSize = async (
    sectionId: string,
    type: number,
 ): Promise<number> => {
+   "use cache: remote";
+   cacheLife("library");
+   cacheTag(CACHE_TAGS.plex, CACHE_TAGS.section(sectionId));
+
    let totalSize = 0;
    let start = 0;
    const batchSize = 500;
@@ -160,6 +213,10 @@ export const getSectionItems = async (
    type: number,
    size = 500,
 ): Promise<PlexMediaItem[]> => {
+   "use cache: remote";
+   cacheLife("library");
+   cacheTag(CACHE_TAGS.plex, CACHE_TAGS.section(sectionId));
+
    const items: PlexMediaItem[] = [];
    let start = 0;
    while (true) {
@@ -175,6 +232,10 @@ export const getSectionItems = async (
 };
 
 export const getGenres = async (sectionId: string): Promise<PlexGenre[]> => {
+   "use cache: remote";
+   cacheLife("library");
+   cacheTag(CACHE_TAGS.plex, CACHE_TAGS.genres(sectionId));
+
    const data = await plexFetch<PlexMediaContainer<PlexGenre>>(
       `/library/sections/${sectionId}/genre`,
    );

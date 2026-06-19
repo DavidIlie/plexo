@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
-import { getCachedOrFetch, CacheTTL } from "~/lib/cache";
 import {
    getLibrarySections,
    getMovies,
@@ -13,17 +12,13 @@ import {
    getChildren,
 } from "~/lib/plex";
 
+// All lib fetchers below are 'use cache: remote' (keyed on their args), so the
+// router procedures are thin: call the cached fetcher and stamp the served-at
+// time. The static import lib functions own caching, tags, and revalidation.
 export const plexRouter = createTRPCRouter({
    getLibrarySections: publicProcedure.query(async () => {
-      const result = await getCachedOrFetch(
-         "plex:sections",
-         getLibrarySections,
-         CacheTTL.LIBRARY,
-      );
-      return {
-         data: result.data,
-         lastUpdatedAt: result.fetchedAt.toISOString(),
-      };
+      const data = await getLibrarySections();
+      return { data, lastUpdatedAt: new Date().toISOString() };
    }),
 
    getMovies: publicProcedure
@@ -35,15 +30,8 @@ export const plexRouter = createTRPCRouter({
          }),
       )
       .query(async ({ input }) => {
-         const result = await getCachedOrFetch(
-            `plex:movies:${input.sectionId}:${input.start}:${input.size}`,
-            () => getMovies(input.sectionId, input.start, input.size),
-            CacheTTL.METADATA,
-         );
-         return {
-            data: result.data,
-            lastUpdatedAt: result.fetchedAt.toISOString(),
-         };
+         const data = await getMovies(input.sectionId, input.start, input.size);
+         return { data, lastUpdatedAt: new Date().toISOString() };
       }),
 
    getShows: publicProcedure
@@ -55,15 +43,8 @@ export const plexRouter = createTRPCRouter({
          }),
       )
       .query(async ({ input }) => {
-         const result = await getCachedOrFetch(
-            `plex:shows:${input.sectionId}:${input.start}:${input.size}`,
-            () => getShows(input.sectionId, input.start, input.size),
-            CacheTTL.METADATA,
-         );
-         return {
-            data: result.data,
-            lastUpdatedAt: result.fetchedAt.toISOString(),
-         };
+         const data = await getShows(input.sectionId, input.start, input.size);
+         return { data, lastUpdatedAt: new Date().toISOString() };
       }),
 
    getArtists: publicProcedure
@@ -75,15 +56,8 @@ export const plexRouter = createTRPCRouter({
          }),
       )
       .query(async ({ input }) => {
-         const result = await getCachedOrFetch(
-            `plex:artists:${input.sectionId}:${input.start}:${input.size}`,
-            () => getArtists(input.sectionId, input.start, input.size),
-            CacheTTL.METADATA,
-         );
-         return {
-            data: result.data,
-            lastUpdatedAt: result.fetchedAt.toISOString(),
-         };
+         const data = await getArtists(input.sectionId, input.start, input.size);
+         return { data, lastUpdatedAt: new Date().toISOString() };
       }),
 
    browseMovies: publicProcedure
@@ -96,19 +70,10 @@ export const plexRouter = createTRPCRouter({
       )
       .query(async ({ input }) => {
          const start = input.cursor ?? 0;
-         const result = await getCachedOrFetch(
-            `plex:movies:${input.sectionId}:${start}:${input.limit}`,
-            () => getMovies(input.sectionId, start, input.limit),
-            CacheTTL.METADATA,
-         );
-         const nextCursor = start + input.limit < result.data.totalSize
-            ? start + input.limit
-            : undefined;
-         return {
-            items: result.data.items,
-            totalSize: result.data.totalSize,
-            nextCursor,
-         };
+         const data = await getMovies(input.sectionId, start, input.limit);
+         const nextCursor =
+            start + input.limit < data.totalSize ? start + input.limit : undefined;
+         return { items: data.items, totalSize: data.totalSize, nextCursor };
       }),
 
    browseShows: publicProcedure
@@ -121,19 +86,10 @@ export const plexRouter = createTRPCRouter({
       )
       .query(async ({ input }) => {
          const start = input.cursor ?? 0;
-         const result = await getCachedOrFetch(
-            `plex:shows:${input.sectionId}:${start}:${input.limit}`,
-            () => getShows(input.sectionId, start, input.limit),
-            CacheTTL.METADATA,
-         );
-         const nextCursor = start + input.limit < result.data.totalSize
-            ? start + input.limit
-            : undefined;
-         return {
-            items: result.data.items,
-            totalSize: result.data.totalSize,
-            nextCursor,
-         };
+         const data = await getShows(input.sectionId, start, input.limit);
+         const nextCursor =
+            start + input.limit < data.totalSize ? start + input.limit : undefined;
+         return { items: data.items, totalSize: data.totalSize, nextCursor };
       }),
 
    browseArtists: publicProcedure
@@ -146,31 +102,15 @@ export const plexRouter = createTRPCRouter({
       )
       .query(async ({ input }) => {
          const start = input.cursor ?? 0;
-         const result = await getCachedOrFetch(
-            `plex:artists:${input.sectionId}:${start}:${input.limit}`,
-            () => getArtists(input.sectionId, start, input.limit),
-            CacheTTL.METADATA,
-         );
-         const nextCursor = start + input.limit < result.data.totalSize
-            ? start + input.limit
-            : undefined;
-         return {
-            items: result.data.items,
-            totalSize: result.data.totalSize,
-            nextCursor,
-         };
+         const data = await getArtists(input.sectionId, start, input.limit);
+         const nextCursor =
+            start + input.limit < data.totalSize ? start + input.limit : undefined;
+         return { items: data.items, totalSize: data.totalSize, nextCursor };
       }),
 
    getOnDeck: publicProcedure.query(async () => {
-      const result = await getCachedOrFetch(
-         "plex:onDeck",
-         getOnDeck,
-         CacheTTL.ACTIVITY,
-      );
-      return {
-         data: result.data,
-         lastUpdatedAt: result.fetchedAt.toISOString(),
-      };
+      const data = await getOnDeck();
+      return { data, lastUpdatedAt: new Date().toISOString() };
    }),
 
    getRecentlyAdded: publicProcedure
@@ -181,56 +121,28 @@ export const plexRouter = createTRPCRouter({
          }),
       )
       .query(async ({ input }) => {
-         const result = await getCachedOrFetch(
-            `plex:recentlyAdded:${input.sectionId}:${input.count}`,
-            () => getRecentlyAdded(input.sectionId, input.count),
-            CacheTTL.ACTIVITY,
-         );
-         return {
-            data: result.data,
-            lastUpdatedAt: result.fetchedAt.toISOString(),
-         };
+         const data = await getRecentlyAdded(input.sectionId, input.count);
+         return { data, lastUpdatedAt: new Date().toISOString() };
       }),
 
    getGenres: publicProcedure
       .input(z.object({ sectionId: z.string() }))
       .query(async ({ input }) => {
-         const result = await getCachedOrFetch(
-            `plex:genres:${input.sectionId}`,
-            () => getGenres(input.sectionId),
-            CacheTTL.LIBRARY,
-         );
-         return {
-            data: result.data,
-            lastUpdatedAt: result.fetchedAt.toISOString(),
-         };
+         const data = await getGenres(input.sectionId);
+         return { data, lastUpdatedAt: new Date().toISOString() };
       }),
 
    getMetadata: publicProcedure
       .input(z.object({ ratingKey: z.string() }))
       .query(async ({ input }) => {
-         const result = await getCachedOrFetch(
-            `plex:metadata:${input.ratingKey}`,
-            () => getMetadata(input.ratingKey),
-            CacheTTL.METADATA,
-         );
-         return {
-            data: result.data,
-            lastUpdatedAt: result.fetchedAt.toISOString(),
-         };
+         const data = await getMetadata(input.ratingKey);
+         return { data, lastUpdatedAt: new Date().toISOString() };
       }),
 
    getChildren: publicProcedure
       .input(z.object({ ratingKey: z.string() }))
       .query(async ({ input }) => {
-         const result = await getCachedOrFetch(
-            `plex:children:${input.ratingKey}`,
-            () => getChildren(input.ratingKey),
-            CacheTTL.METADATA,
-         );
-         return {
-            data: result.data,
-            lastUpdatedAt: result.fetchedAt.toISOString(),
-         };
+         const data = await getChildren(input.ratingKey);
+         return { data, lastUpdatedAt: new Date().toISOString() };
       }),
 });
