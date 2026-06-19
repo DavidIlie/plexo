@@ -1,18 +1,5 @@
 import type { NextConfig } from "next";
 
-// Cache backend selection (see src/env.ts CACHE_DRIVER). Read from process.env
-// directly because next.config runs outside the validated env module. Redis is
-// only wired when explicitly selected AND a URL is provided; otherwise Next
-// falls back to its built-in in-memory LRU for `use cache: remote`.
-const useRedis =
-   process.env.CACHE_DRIVER === "redis" && Boolean(process.env.REDIS_URL);
-
-if (process.env.CACHE_DRIVER === "redis" && !process.env.REDIS_URL) {
-   console.warn(
-      "[cache] CACHE_DRIVER=redis but REDIS_URL is unset — falling back to the in-memory cache handler.",
-   );
-}
-
 const nextConfig: NextConfig = {
    output: "standalone",
    cacheComponents: true,
@@ -35,15 +22,13 @@ const nextConfig: NextConfig = {
       analytics: { stale: 300, revalidate: 900, expire: 1800 },
       activity: { stale: 300, revalidate: 300, expire: 600 },
    },
-   // Env-gated at the config layer: when Redis is not selected we register NO
-   // remote handler and Next uses its built-in in-memory LRU.
-   ...(useRedis
-      ? {
-           cacheHandlers: {
-              remote: require.resolve("./cache-handlers/remote-handler.mjs"),
-           },
-        }
-      : {}),
+   // Always register the remote handler so `redis` is traced into the standalone
+   // output and the backend can be toggled purely via runtime env (CACHE_DRIVER
+   // / REDIS_URL). The handler module picks redis vs in-memory at load time —
+   // config is frozen at build in standalone, so the choice can't live here.
+   cacheHandlers: {
+      remote: require.resolve("./cache-handlers/remote-handler.mjs"),
+   },
    experimental: {
       optimizePackageImports: ["lucide-react", "date-fns", "recharts"],
       appShells: true,

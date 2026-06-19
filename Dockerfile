@@ -50,6 +50,13 @@ COPY --from=builder /home/node/app/package.json ./package.json
 COPY --from=builder --chown=node:node /home/node/app/.next/standalone ./
 COPY --from=builder --chown=node:node /home/node/app/.next/static ./.next/static
 
+# The cache handler is loaded at runtime via require.resolve from next.config,
+# so Next traces cache-handlers/*.mjs and the `redis` client into .next/standalone
+# automatically. This explicit copy is a safety net in case tracing changes;
+# redis stays in the standalone node_modules. Toggle the backend with the
+# CACHE_DRIVER / REDIS_URL runtime env vars — no rebuild required.
+COPY --from=builder --chown=node:node /home/node/app/cache-handlers ./cache-handlers
+
 EXPOSE 3000
 
 ENV PORT 3000

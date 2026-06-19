@@ -1,13 +1,18 @@
 // @ts-check
 import { createRedisRemoteHandler } from "./redis-impl.mjs";
+import { createMemoryHandler } from "./memory-impl.mjs";
 
-// This module is only `require.resolve`'d by next.config.ts when the cache
-// driver is "redis" AND REDIS_URL is set, so the URL is guaranteed present
-// here. There is no fallback import of Next internals: when Redis is not
-// selected the config never references this file and Next uses its built-in
-// in-memory LRU for `use cache: remote`.
-const handler = createRedisRemoteHandler(
-   /** @type {string} */ (process.env.REDIS_URL),
-);
+// Backend is chosen at RUNTIME (this module is loaded by the Next server, and in
+// standalone mode next.config is frozen at build time — so the toggle must live
+// here, not in the config). Set CACHE_DRIVER=redis + REDIS_URL to use Redis;
+// otherwise fall back to the in-memory handler. Both impls are statically
+// imported so `redis` is always traced into the standalone output and the
+// backend can be flipped purely via environment on a prebuilt image.
+const useRedis =
+   process.env.CACHE_DRIVER === "redis" && Boolean(process.env.REDIS_URL);
+
+const handler = useRedis
+   ? createRedisRemoteHandler(/** @type {string} */ (process.env.REDIS_URL))
+   : createMemoryHandler();
 
 export default handler;
