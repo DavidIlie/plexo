@@ -29,7 +29,7 @@ const plexFetch = async <T>(path: string): Promise<T> => {
 };
 
 export const getLibrarySections = async (): Promise<PlexLibrarySection[]> => {
-   "use cache: remote";
+   "use cache";
    cacheLife("library");
    cacheTag(CACHE_TAGS.plex, CACHE_TAGS.plexSections);
 
@@ -52,7 +52,7 @@ export const getMovies = async (
    start = 0,
    size = 500,
 ): Promise<{ items: PlexMediaItem[]; totalSize: number }> => {
-   "use cache: remote";
+   "use cache";
    cacheLife("metadata");
    cacheTag(CACHE_TAGS.plex, CACHE_TAGS.section(sectionId));
 
@@ -70,7 +70,7 @@ export const getShows = async (
    start = 0,
    size = 500,
 ): Promise<{ items: PlexMediaItem[]; totalSize: number }> => {
-   "use cache: remote";
+   "use cache";
    cacheLife("metadata");
    cacheTag(CACHE_TAGS.plex, CACHE_TAGS.section(sectionId));
 
@@ -88,7 +88,7 @@ export const getArtists = async (
    start = 0,
    size = 500,
 ): Promise<{ items: PlexMediaItem[]; totalSize: number }> => {
-   "use cache: remote";
+   "use cache";
    cacheLife("metadata");
    cacheTag(CACHE_TAGS.plex, CACHE_TAGS.section(sectionId));
 
@@ -102,7 +102,7 @@ export const getArtists = async (
 };
 
 export const getAlbumCount = async (sectionId: string): Promise<number> => {
-   "use cache: remote";
+   "use cache";
    cacheLife("library");
    cacheTag(CACHE_TAGS.plex, CACHE_TAGS.section(sectionId));
 
@@ -113,7 +113,7 @@ export const getAlbumCount = async (sectionId: string): Promise<number> => {
 };
 
 export const getTrackCount = async (sectionId: string): Promise<number> => {
-   "use cache: remote";
+   "use cache";
    cacheLife("library");
    cacheTag(CACHE_TAGS.plex, CACHE_TAGS.section(sectionId));
 
@@ -124,7 +124,7 @@ export const getTrackCount = async (sectionId: string): Promise<number> => {
 };
 
 export const getOnDeck = async (): Promise<PlexOnDeckItem[]> => {
-   "use cache: remote";
+   "use cache";
    cacheLife("activity");
    cacheTag(CACHE_TAGS.plex, CACHE_TAGS.plexOnDeck);
 
@@ -137,7 +137,7 @@ export const getRecentlyAdded = async (
    sectionId: string,
    count = 20,
 ): Promise<PlexMediaItem[]> => {
-   "use cache: remote";
+   "use cache";
    cacheLife("activity");
    cacheTag(
       CACHE_TAGS.plex,
@@ -152,7 +152,7 @@ export const getRecentlyAdded = async (
 };
 
 export const getMetadata = async (ratingKey: string): Promise<PlexMediaItem | null> => {
-   "use cache: remote";
+   "use cache";
    cacheLife("metadata");
    cacheTag(CACHE_TAGS.plex, CACHE_TAGS.plexItem(ratingKey));
 
@@ -163,7 +163,7 @@ export const getMetadata = async (ratingKey: string): Promise<PlexMediaItem | nu
 };
 
 export const getChildren = async (ratingKey: string): Promise<PlexMediaItem[]> => {
-   "use cache: remote";
+   "use cache";
    cacheLife("metadata");
    cacheTag(CACHE_TAGS.plex, CACHE_TAGS.plexItem(ratingKey));
 
@@ -194,7 +194,7 @@ export const getSectionTotalSize = async (
    sectionId: string,
    type: number,
 ): Promise<number> => {
-   "use cache: remote";
+   "use cache";
    cacheLife("library");
    cacheTag(CACHE_TAGS.plex, CACHE_TAGS.section(sectionId));
 
@@ -221,7 +221,7 @@ export const getSectionItems = async (
    type: number,
    size = 500,
 ): Promise<PlexMediaItem[]> => {
-   "use cache: remote";
+   "use cache";
    cacheLife("library");
    cacheTag(CACHE_TAGS.plex, CACHE_TAGS.section(sectionId));
 
@@ -240,7 +240,7 @@ export const getSectionItems = async (
 };
 
 export const getGenres = async (sectionId: string): Promise<PlexGenre[]> => {
-   "use cache: remote";
+   "use cache";
    cacheLife("library");
    cacheTag(CACHE_TAGS.plex, CACHE_TAGS.genres(sectionId));
 

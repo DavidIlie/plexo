@@ -19,7 +19,7 @@ import {
 import { env } from "~/env";
 
 export const getGenreDistributionCached = async () => {
-   "use cache: remote";
+   "use cache";
    cacheLife("metadata");
    cacheTag(CACHE_TAGS.analytics, CACHE_TAGS.analyticsScope("genreDistribution"), CACHE_TAGS.plex);
 
@@ -49,7 +49,7 @@ export const getGenreDistributionCached = async () => {
 };
 
 export const getTopWatchedGenresCached = async () => {
-   "use cache: remote";
+   "use cache";
    cacheLife("analytics");
    cacheTag(CACHE_TAGS.analytics, CACHE_TAGS.analyticsScope("topWatchedGenres"), CACHE_TAGS.plex, CACHE_TAGS.tautulli);
 
@@ -96,7 +96,7 @@ export const getTopWatchedGenresCached = async () => {
 };
 
 export const getMediaTypeRatioCached = async () => {
-   "use cache: remote";
+   "use cache";
    cacheLife("analytics");
    cacheTag(CACHE_TAGS.analytics, CACHE_TAGS.analyticsScope("mediaTypeRatio"), CACHE_TAGS.tautulli);
 
@@ -127,7 +127,7 @@ export const getMediaTypeRatioCached = async () => {
 };
 
 export const getHighlightsCached = async () => {
-   "use cache: remote";
+   "use cache";
    cacheLife("analytics");
    cacheTag(CACHE_TAGS.analytics, CACHE_TAGS.analyticsScope("highlights"), CACHE_TAGS.plex, CACHE_TAGS.tautulli);
 
@@ -269,7 +269,7 @@ export const getHighlightsCached = async () => {
 };
 
 export const getDeviceStatsCached = async () => {
-   "use cache: remote";
+   "use cache";
    cacheLife("analytics");
    cacheTag(CACHE_TAGS.analytics, CACHE_TAGS.analyticsScope("deviceStats"), CACHE_TAGS.tautulli);
 
@@ -293,7 +293,7 @@ export const getDeviceStatsCached = async () => {
 };
 
 export const getVideoQualityStatsCached = async () => {
-   "use cache: remote";
+   "use cache";
    cacheLife("metadata");
    cacheTag(CACHE_TAGS.analytics, CACHE_TAGS.analyticsScope("videoQualityStats"), CACHE_TAGS.plex, CACHE_TAGS.tautulli);
 
@@ -323,7 +323,7 @@ export const getVideoQualityStatsCached = async () => {
 };
 
 export const getAudioFormatStatsCached = async () => {
-   "use cache: remote";
+   "use cache";
    cacheLife("metadata");
    cacheTag(CACHE_TAGS.analytics, CACHE_TAGS.analyticsScope("audioFormatStats"), CACHE_TAGS.plex, CACHE_TAGS.tautulli);
 
@@ -358,7 +358,7 @@ export const getAudioFormatStatsCached = async () => {
 };
 
 export const getMusicAudioFormatStatsCached = async () => {
-   "use cache: remote";
+   "use cache";
    cacheLife("metadata");
    cacheTag(CACHE_TAGS.analytics, CACHE_TAGS.analyticsScope("musicAudioFormatStats"), CACHE_TAGS.plex);
 
@@ -398,7 +398,7 @@ export const getMusicAudioFormatStatsCached = async () => {
 };
 
 export const getMusicGenreDistributionCached = async () => {
-   "use cache: remote";
+   "use cache";
    cacheLife("metadata");
    cacheTag(CACHE_TAGS.analytics, CACHE_TAGS.analyticsScope("musicGenreDistribution"), CACHE_TAGS.plex);
 
@@ -424,7 +424,7 @@ export const getMusicGenreDistributionCached = async () => {
 };
 
 export const getTopArtistsCached = async () => {
-   "use cache: remote";
+   "use cache";
    cacheLife("analytics");
    cacheTag(CACHE_TAGS.analytics, CACHE_TAGS.analyticsScope("topArtists"), CACHE_TAGS.tautulli);
 
@@ -445,7 +445,7 @@ export const getTopArtistsCached = async () => {
 };
 
 export const getLibrarySizeStatsCached = async () => {
-   "use cache: remote";
+   "use cache";
    cacheLife("library");
    cacheTag(CACHE_TAGS.analytics, CACHE_TAGS.analyticsScope("librarySizeStats"), CACHE_TAGS.plex, CACHE_TAGS.tautulli);
 
@@ -478,7 +478,7 @@ export const getLibrarySizeStatsCached = async () => {
 };
 
 export const getLocationStatsCached = async () => {
-   "use cache: remote";
+   "use cache";
    cacheLife("analytics");
    cacheTag(CACHE_TAGS.analytics, CACHE_TAGS.analyticsScope("locationStats"), CACHE_TAGS.tautulli, CACHE_TAGS.geo);
 

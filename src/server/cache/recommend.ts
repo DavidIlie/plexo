@@ -17,7 +17,7 @@ const normalizeTitle = (title: string) =>
    title.toLowerCase().replace(/[^a-z0-9]/g, "");
 
 export const getLibraryTitlesCached = async (): Promise<string[]> => {
-   "use cache: remote";
+   "use cache";
    cacheLife("metadata");
    cacheTag(
       CACHE_TAGS.recommend,
@@ -49,14 +49,14 @@ export const getLibraryTitlesCached = async (): Promise<string[]> => {
 };
 
 export const searchTmdbCached = async (query: string) => {
-   "use cache: remote";
+   "use cache";
    cacheLife("activity");
    cacheTag(CACHE_TAGS.tmdb, CACHE_TAGS.tmdbSearch);
    return searchMedia(query);
 };
 
 export const getWishlistCached = async () => {
-   "use cache: remote";
+   "use cache";
    cacheLife("activity");
    cacheTag(
       CACHE_TAGS.recommend,

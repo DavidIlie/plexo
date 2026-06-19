@@ -13,14 +13,14 @@ export const getHistoryWindow = async (
    start: number,
    mediaType: string | undefined,
 ) => {
-   "use cache: remote";
+   "use cache";
    cacheLife("activity");
    cacheTag(CACHE_TAGS.tautulli, CACHE_TAGS.tautulliHistory);
    return getHistory(length, start, mediaType);
 };
 
 export const getItemHistoryCached = async (ratingKey: string) => {
-   "use cache: remote";
+   "use cache";
    cacheLife("activity");
    cacheTag(CACHE_TAGS.tautulli, CACHE_TAGS.tautulliItem(ratingKey));
 

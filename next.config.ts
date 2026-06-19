@@ -26,9 +26,16 @@ const nextConfig: NextConfig = {
    // output and the backend can be toggled purely via runtime env (CACHE_DRIVER
    // / REDIS_URL). The handler module picks redis vs in-memory at load time —
    // config is frozen at build in standalone, so the choice can't live here.
-   cacheHandlers: {
-      remote: require.resolve("./cache-handlers/remote-handler.mjs"),
-   },
+   // Opt-in Redis cache: set CACHE_DRIVER=redis to use it; otherwise Next's
+   // built-in in-memory LRU is used.
+   ...(process.env.CACHE_DRIVER === "redis"
+      ? {
+           cacheHandlers: {
+              default: require.resolve("./cache-handlers/remote-handler.mjs"),
+              remote: require.resolve("./cache-handlers/remote-handler.mjs"),
+           },
+        }
+      : {}),
    experimental: {
       optimizePackageImports: ["lucide-react", "date-fns", "recharts"],
       appShells: true,

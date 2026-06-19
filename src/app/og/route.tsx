@@ -7,7 +7,7 @@ import { getLibrarySections, getMovies, getShows, getArtists, getMetadata, getCh
 import { getHistory } from "~/lib/tautulli";
 
 const getStats = async () => {
-   "use cache: remote";
+   "use cache";
    cacheLife("analytics");
    cacheTag(
       CACHE_TAGS.analytics,

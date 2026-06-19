@@ -34,7 +34,7 @@ export interface DashboardStats {
  * from the tRPC resolver (which adds `lastUpdatedAt`).
  */
 export const getDashboardStatsCached = async (): Promise<DashboardStats> => {
-   "use cache: remote";
+   "use cache";
    cacheLife("analytics");
    cacheTag(
       CACHE_TAGS.analytics,

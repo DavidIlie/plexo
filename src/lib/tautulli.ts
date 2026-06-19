@@ -71,7 +71,7 @@ export const getHistory = async (
 };
 
 export const getHomeStats = async (): Promise<TautulliHomeStatItem[]> => {
-   "use cache: remote";
+   "use cache";
    cacheLife("activity");
    cacheTag(CACHE_TAGS.tautulli, CACHE_TAGS.tautulliHomeStats);
 
@@ -82,7 +82,7 @@ export const getPlaysByDate = async (
    timeRange = 30,
    yAxis = "plays",
 ): Promise<TautulliPlaysByDate> => {
-   "use cache: remote";
+   "use cache";
    cacheLife("analytics");
    cacheTag(CACHE_TAGS.tautulli, CACHE_TAGS.tautulliPlaysByDate);
 
@@ -95,7 +95,7 @@ export const getPlaysByDate = async (
 export const getPlaysByDayOfWeek = async (
    timeRange = 30,
 ): Promise<TautulliPlaysByDayOfWeek> => {
-   "use cache: remote";
+   "use cache";
    cacheLife("analytics");
    cacheTag(CACHE_TAGS.tautulli, CACHE_TAGS.tautulliPlaysByDayOfWeek);
 
@@ -107,7 +107,7 @@ export const getPlaysByDayOfWeek = async (
 export const getPlaysByHourOfDay = async (
    timeRange = 30,
 ): Promise<TautulliPlaysByHourOfDay> => {
-   "use cache: remote";
+   "use cache";
    cacheLife("analytics");
    cacheTag(CACHE_TAGS.tautulli, CACHE_TAGS.tautulliPlaysByHourOfDay);
 
@@ -121,7 +121,7 @@ export const getMostWatched = async (
    timeRange = 30,
    limit = 10,
 ): Promise<TautulliHomeStatItem[]> => {
-   "use cache: remote";
+   "use cache";
    cacheLife("analytics");
    cacheTag(CACHE_TAGS.tautulli, CACHE_TAGS.tautulliMostWatched);
 
@@ -167,7 +167,7 @@ export const getLibraryMediaInfo = async (
    sectionId: string,
    length = 0,
 ): Promise<TautulliLibraryMediaInfo> => {
-   "use cache: remote";
+   "use cache";
    cacheLife("library");
    cacheTag(CACHE_TAGS.tautulli, CACHE_TAGS.section(sectionId));
 
@@ -180,7 +180,7 @@ export const getLibraryMediaInfo = async (
 export const getGeoipLookup = async (
    ipAddress: string,
 ): Promise<TautulliGeoData> => {
-   "use cache: remote";
+   "use cache";
    cacheLife("library");
    cacheTag(CACHE_TAGS.geo, CACHE_TAGS.geoIp(ipAddress));
 
