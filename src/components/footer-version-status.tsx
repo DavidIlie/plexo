@@ -67,8 +67,9 @@ export const FooterVersionStatus = ({
    );
 
    useEffect(() => {
+      // Initial state is already "unknown" for the "dev" case (see useState
+      // initializer), so no setState is needed here — just skip the check.
       if (currentVersion === "dev") {
-         setState("unknown");
          return;
       }
 
