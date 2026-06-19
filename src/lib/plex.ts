@@ -37,7 +37,14 @@ export const getLibrarySections = async (): Promise<PlexLibrarySection[]> => {
       await plexFetch<PlexMediaContainer<PlexLibrarySection>>(
          "/library/sections",
       );
-   return data.MediaContainer.Directory ?? [];
+   const sections = data.MediaContainer.Directory;
+   // Throw (rather than cache []) on a malformed 200 so a degraded Plex response
+   // can't poison every derived aggregation for the full `library` TTL. An
+   // explicitly empty list (`[]`) is a valid "no libraries" state and is kept.
+   if (!sections) {
+      throw new Error("Plex returned a malformed /library/sections response");
+   }
+   return sections;
 };
 
 export const getMovies = async (

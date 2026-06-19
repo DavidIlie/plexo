@@ -12,6 +12,11 @@ const REVALIDATED_SET = "plexo:revalidated-tags";
 // `use cache` "never expires" sentinel) must be stored without a TTL.
 const REDIS_MAX_TTL_SECONDS = 2 ** 31 - 1;
 
+// Tag revalidation markers only need to outlive the longest-lived cache entry
+// (max cacheLife `expire` is ~2h); 24h gives ample headroom and lets markers
+// self-expire so the revalidated-tags set can be pruned instead of leaking.
+const TAG_MARKER_TTL_SECONDS = 24 * 60 * 60;
+
 /**
  * Build a Next.js `cacheHandlers.remote` handler backed by Redis.
  * Implements the CacheHandler interface (get/set/refreshTags/getExpiration/
@@ -79,8 +84,17 @@ export function createRedisRemoteHandler(url) {
             // triggers a background revalidate (stale-while-revalidate). This
             // preserves the "never a blank skeleton on refetch" rule.
             if (Date.now() > e.timestamp + e.expire * 1000) return undefined;
-            // Tag freshness is NOT checked here — Next compares the entry's
-            // timestamp against getExpiration(tags).
+            // Cross-instance explicit-tag invalidation: Next only routes its
+            // implicit (_N_T_ path) tags through getExpiration(); explicit
+            // cacheTag() tags are checked in-process on the instance that called
+            // revalidateTag and never reach other instances. So check the
+            // entry's OWN tags here against localTags (synced from Redis in
+            // refreshTags() before each request) and hard-miss if any was
+            // revalidated after this entry was written.
+            for (const tag of e.tags) {
+               const revAt = localTags.get(tag);
+               if (revAt && revAt > e.timestamp) return undefined;
+            }
             return {
                value: base64ToStream(e.value),
                tags: e.tags,
@@ -130,16 +144,24 @@ export function createRedisRemoteHandler(url) {
          }
       },
 
-      // Called before each request; pull recent invalidations into localTags.
+      // Called before each request; pull recent invalidations into localTags and
+      // prune markers that have expired so the revalidated-tags set stays bounded.
       async refreshTags() {
          try {
             await ready;
             const tags = await client.sMembers(REVALIDATED_SET);
             if (!tags.length) return;
             const vals = await client.mGet(tags.map(TAG));
+            /** @type {string[]} */
+            const stale = [];
             tags.forEach((t, i) => {
                if (vals[i] != null) localTags.set(t, Number(vals[i]));
+               else {
+                  localTags.delete(t);
+                  stale.push(t);
+               }
             });
+            if (stale.length) await client.sRem(REVALIDATED_SET, stale);
          } catch (err) {
             console.error("[remote-cache] refreshTags error:", err);
          }
@@ -154,19 +176,19 @@ export function createRedisRemoteHandler(url) {
 
       /**
        * @param {string[]} tags
-       * @param {{ expire?: number } | undefined} durations
+       * @param {{ expire?: number } | undefined} _durations
        */
-      async updateTags(tags, durations) {
+      async updateTags(tags, _durations) {
          try {
             await ready;
             const now = Date.now();
             const m = client.multi();
             for (const t of tags) {
-               m.set(
-                  TAG(t),
-                  String(now),
-                  durations?.expire ? { EX: durations.expire } : {},
-               );
+               // Always give the marker a fixed TTL so it self-expires (avoids
+               // an unbounded keyspace). `_durations.expire` governs the cache
+               // entry's lifetime, not the marker's — and `EX: 0` (the hard
+               // `?hard=1` path) is invalid in Redis, so it must not be passed.
+               m.set(TAG(t), String(now), { EX: TAG_MARKER_TTL_SECONDS });
                m.sAdd(REVALIDATED_SET, t);
                localTags.set(t, now);
             }

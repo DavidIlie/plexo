@@ -10,8 +10,6 @@ import { appRouter } from "~/server/api/root";
 
 import { createQueryClient } from "./query-client";
 
-export const runtime = "nodejs";
-
 // RSC context for the `caller`/`trpc` proxies used during server render.
 // It deliberately does NOT read headers(): RSC only issues read queries (which
 // don't depend on request headers), and reading headers() here would force

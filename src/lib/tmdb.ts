@@ -18,7 +18,12 @@ export const searchMedia = async (
    url.searchParams.set("page", "1");
 
    const res = await fetch(url.toString());
-   if (!res.ok) return [];
+   // Throw on error so a transient TMDB outage isn't cached as "no results" for
+   // a valid query (searchMedia is wrapped in 'use cache: remote'). A legit
+   // empty result set is still returned (and cached) normally.
+   if (!res.ok) {
+      throw new Error(`TMDB search error: ${res.status} ${res.statusText}`);
+   }
 
    const data = (await res.json()) as TmdbSearchResponse;
 

@@ -33,7 +33,9 @@ const getStats = async () => {
       : 0;
 
    const history = await getHistory(1000);
-   const hoursWatched = Math.round(parseInt(history.total_duration) / 3600);
+   const hoursWatched = Math.round(
+      (Number(history.total_duration) || 0) / 3600,
+   );
 
    return { totalMovies, totalShows, totalArtists, hoursWatched };
 };

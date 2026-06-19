@@ -118,6 +118,13 @@ const getWishlistCached = async () => {
       }
    }
 
+   // Don't cache an empty result: both sources swallow errors to [], so an empty
+   // merge is indistinguishable from a transient outage. Throwing skips the cache
+   // write; the resolver returns [] and the next request retries.
+   if (merged.length === 0) {
+      throw new Error("empty wishlist — skipping cache write");
+   }
+
    return merged;
 };
 
@@ -251,8 +258,13 @@ export const recommendRouter = createTRPCRouter({
       }),
 
    getWishlist: publicProcedure.query(async () => {
-      const data = await getWishlistCached();
-      return { data, lastUpdatedAt: new Date().toISOString() };
+      try {
+         const data = await getWishlistCached();
+         return { data, lastUpdatedAt: new Date().toISOString() };
+      } catch {
+         // Empty/failed wishlist is not cached; return [] and retry next request.
+         return { data: [], lastUpdatedAt: new Date().toISOString() };
+      }
    }),
 
    testNotification: publicProcedure
