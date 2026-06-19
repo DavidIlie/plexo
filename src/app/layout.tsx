@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import PlausibleProvider from "next-plausible";
@@ -75,7 +76,16 @@ const RootLayout = ({
                >
                   <NuqsAdapter>
                      <TRPCReactProvider>
-                        <Navbar />
+                        {/* Navbar reads usePathname (runtime routing state), so
+                            it streams in via Suspense under Cache Components. The
+                            height-matched fallback avoids layout shift. */}
+                        <Suspense
+                           fallback={
+                              <div className="h-14 border-b border-border/50 bg-background/80 backdrop-blur-sm" />
+                           }
+                        >
+                           <Navbar />
+                        </Suspense>
                         <main className="mx-auto max-w-7xl px-4 py-6 pb-24 md:pb-6">
                            {children}
                         </main>

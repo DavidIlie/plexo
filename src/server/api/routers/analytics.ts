@@ -1,6 +1,14 @@
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import { getCachedOrFetch, CacheTTL } from "~/lib/cache";
-import { getLibrarySections, getMovies, getShows, getArtists, getAlbumCount, getTrackCount, getSectionTotalSize, getSectionItems } from "~/lib/plex";
+import { getDashboardStatsCached } from "~/server/cache/stats";
+import {
+   getLibrarySections,
+   getMovies,
+   getShows,
+   getArtists,
+   getSectionTotalSize,
+   getSectionItems,
+} from "~/lib/plex";
 import {
    getHistory,
    getPlaysByDate,
@@ -13,91 +21,8 @@ import { env } from "~/env";
 
 export const analyticsRouter = createTRPCRouter({
    getDashboardStats: publicProcedure.query(async () => {
-      const result = await getCachedOrFetch(
-         "analytics:dashboardStats",
-         async () => {
-            const sections = await getLibrarySections();
-            const movieSection = sections.find((s) => s.type === "movie");
-            const showSection = sections.find((s) => s.type === "show");
-
-            const musicSection = env.SHOW_MUSIC
-               ? sections.find((s) => s.type === "artist")
-               : undefined;
-
-            let totalMovies = 0;
-            let totalShows = 0;
-            let totalArtists = 0;
-            let watchedMovies = 0;
-            let watchedShows = 0;
-
-            if (movieSection) {
-               const movies = await getMovies(movieSection.key);
-               totalMovies = movies.totalSize;
-               for (const movie of movies.items) {
-                  if (movie.viewCount && movie.viewCount > 0) {
-                     watchedMovies++;
-                  }
-               }
-            }
-
-            if (showSection) {
-               const shows = await getShows(showSection.key);
-               totalShows = shows.totalSize;
-               for (const show of shows.items) {
-                  if (
-                     show.viewedLeafCount &&
-                     show.leafCount &&
-                     show.viewedLeafCount >= show.leafCount
-                  ) {
-                     watchedShows++;
-                  }
-               }
-            }
-
-            let totalAlbums = 0;
-            let totalTracks = 0;
-            if (musicSection) {
-               const [artists, albumCount, trackCount] = await Promise.all([
-                  getArtists(musicSection.key, 0, 1),
-                  getAlbumCount(musicSection.key),
-                  getTrackCount(musicSection.key),
-               ]);
-               totalArtists = artists.totalSize;
-               totalAlbums = albumCount;
-               totalTracks = trackCount;
-            }
-
-            const history = await getHistory(5000);
-            let totalSeconds = 0;
-            let musicSeconds = 0;
-            for (const item of history.data) {
-               totalSeconds += item.play_duration || 0;
-               if (item.media_type === "track") {
-                  musicSeconds += item.play_duration || 0;
-               }
-            }
-            const totalHoursWatched = Math.round(totalSeconds / 3600);
-            const musicHoursListened = Math.round(musicSeconds / 3600);
-
-            return {
-               displayName: env.DISPLAY_NAME,
-               totalMovies,
-               totalShows,
-               totalArtists,
-               totalAlbums,
-               totalTracks,
-               watchedItems: watchedMovies + watchedShows,
-               hoursWatched: totalHoursWatched,
-               musicHoursListened,
-            };
-         },
-         CacheTTL.ANALYTICS,
-      );
-
-      return {
-         data: result.data,
-         lastUpdatedAt: result.fetchedAt.toISOString(),
-      };
+      const data = await getDashboardStatsCached();
+      return { data, lastUpdatedAt: new Date().toISOString() };
    }),
 
    getGenreDistribution: publicProcedure.query(async () => {

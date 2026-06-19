@@ -15,6 +15,7 @@ if (process.env.CACHE_DRIVER === "redis" && !process.env.REDIS_URL) {
 
 const nextConfig: NextConfig = {
    output: "standalone",
+   cacheComponents: true,
    compiler: {
       removeConsole:
          process.env.NODE_ENV === "production"

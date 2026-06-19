@@ -1,9 +1,11 @@
 import { Suspense } from "react";
+import { connection } from "next/server";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import type { Metadata } from "next";
 
-import { trpc, caller, getQueryClient, HydrateClient } from "~/trpc/server";
+import { trpc, getQueryClient, HydrateClient } from "~/trpc/server";
+import { getDashboardStatsCached } from "~/server/cache/stats";
 import { StatCard } from "~/components/dashboard/stat-card";
 import { OnDeck } from "~/components/dashboard/on-deck";
 import { RecentlyWatched } from "~/components/dashboard/recently-watched";
@@ -17,7 +19,7 @@ import { Skeleton } from "~/components/ui/skeleton";
 import { RefreshButton } from "~/components/refresh-button";
 
 export const generateMetadata = async (): Promise<Metadata> => {
-   const { data } = await caller.analytics.getDashboardStats();
+   const data = await getDashboardStatsCached();
    const parts = [
       `${data.totalMovies} movies`,
       `${data.totalShows} shows`,
@@ -43,7 +45,7 @@ export const generateMetadata = async (): Promise<Metadata> => {
 };
 
 const DashboardStats = async () => {
-   const { data } = await caller.analytics.getDashboardStats();
+   const data = await getDashboardStatsCached();
 
    return (
       <div>
@@ -108,67 +110,73 @@ const SectionFallback = () => (
    </div>
 );
 
-const DashboardPage = async () => {
+const DashboardBody = async () => {
+   // Defer the live data sections to request time. Their server-side prefetches
+   // run getCachedOrFetch / stamp timestamps, which can't happen during the
+   // static prerender — connection() marks this subtree dynamic so it streams
+   // into the static shell as an App-Shell hole.
+   await connection();
+
    const queryClient = getQueryClient();
-   void queryClient.prefetchQuery(
-      trpc.analytics.getDashboardStats.queryOptions(),
-   );
    void queryClient.prefetchQuery(trpc.plex.getOnDeck.queryOptions());
    void queryClient.prefetchQuery(
       trpc.tautulli.getHistory.queryOptions({ length: 10 }),
    );
-   void queryClient.prefetchQuery(
-      trpc.analytics.getHighlights.queryOptions(),
-   );
-   void queryClient.prefetchQuery(
-      trpc.recommend.getWishlist.queryOptions(),
-   );
+   void queryClient.prefetchQuery(trpc.analytics.getHighlights.queryOptions());
+   void queryClient.prefetchQuery(trpc.recommend.getWishlist.queryOptions());
 
    return (
       <HydrateClient>
-         <div className="space-y-8">
-            <Suspense fallback={<StatsFallback />}>
-               <DashboardStats />
-            </Suspense>
+         <Suspense fallback={<SectionFallback />}>
+            <Highlights />
+         </Suspense>
 
-            <Suspense fallback={<SectionFallback />}>
-               <Highlights />
-            </Suspense>
+         <Suspense fallback={<SectionFallback />}>
+            <OnDeck />
+         </Suspense>
 
-            <Suspense fallback={<SectionFallback />}>
-               <OnDeck />
-            </Suspense>
+         <Suspense fallback={null}>
+            <Wishlist />
+         </Suspense>
 
-            <Suspense fallback={null}>
-               <Wishlist />
-            </Suspense>
-
-            <div>
-               <div className="mb-3 flex items-center justify-between">
-                  <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                     What I Watch
-                  </h2>
-                  <Link
-                     href="/analytics"
-                     className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-                  >
-                     All analytics
-                     <ArrowRight className="h-3 w-3" />
-                  </Link>
-               </div>
-               <div className="grid gap-4 lg:grid-cols-2">
-                  <GenreDistributionChart />
-                  <WatchTimeByHourChart />
-                  <MusicGenreChart />
-                  <TopArtistsChart />
-               </div>
+         <div>
+            <div className="mb-3 flex items-center justify-between">
+               <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  What I Watch
+               </h2>
+               <Link
+                  href="/analytics"
+                  className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+               >
+                  All analytics
+                  <ArrowRight className="h-3 w-3" />
+               </Link>
             </div>
-
-            <Suspense fallback={<Skeleton className="h-64" />}>
-               <RecentlyWatched />
-            </Suspense>
+            <div className="grid gap-4 lg:grid-cols-2">
+               <GenreDistributionChart />
+               <WatchTimeByHourChart />
+               <MusicGenreChart />
+               <TopArtistsChart />
+            </div>
          </div>
+
+         <Suspense fallback={<Skeleton className="h-64" />}>
+            <RecentlyWatched />
+         </Suspense>
       </HydrateClient>
+   );
+};
+
+const DashboardPage = () => {
+   return (
+      <div className="space-y-8">
+         <Suspense fallback={<StatsFallback />}>
+            <DashboardStats />
+         </Suspense>
+         <Suspense fallback={<SectionFallback />}>
+            <DashboardBody />
+         </Suspense>
+      </div>
    );
 };
 export default DashboardPage;

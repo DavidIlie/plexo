@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { caller } from "~/trpc/server";
+import { getDashboardStatsCached } from "~/server/cache/stats";
 
 export const generateMetadata = async (): Promise<Metadata> => {
-   const { data } = await caller.analytics.getDashboardStats();
+   const data = await getDashboardStatsCached();
    const count = data.totalArtists ?? 0;
    const desc = `Browse ${count} artists in the library`;
    return {

@@ -28,5 +28,3 @@ export const GET = async (req: NextRequest) => {
       rateLimits: getRateLimitStats(),
    });
 };
-
-export const dynamic = "force-dynamic";

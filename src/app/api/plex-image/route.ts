@@ -136,5 +136,3 @@ export const GET = async (req: NextRequest) => {
       imageInFlight.delete(cacheKey);
    }
 };
-
-export const dynamic = "force-dynamic";
