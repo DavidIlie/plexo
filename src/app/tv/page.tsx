@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { connection } from "next/server";
 
 import { getLibrarySections, getShows } from "~/lib/plex";
 import { ShowsBrowser } from "~/components/media/shows-browser";
@@ -13,6 +14,7 @@ const GridFallback = () => (
 );
 
 const ShowsShell = async () => {
+   await connection();
    const sections = await getLibrarySections();
    const sectionId = sections.find((s) => s.type === "show")?.key;
 

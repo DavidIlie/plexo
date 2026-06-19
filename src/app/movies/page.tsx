@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { connection } from "next/server";
 
 import { getLibrarySections, getMovies } from "~/lib/plex";
 import { MoviesBrowser } from "~/components/media/movies-browser";
@@ -13,6 +14,7 @@ const GridFallback = () => (
 );
 
 const MoviesShell = async () => {
+   await connection();
    const sections = await getLibrarySections();
    const sectionId = sections.find((s) => s.type === "movie")?.key;
 

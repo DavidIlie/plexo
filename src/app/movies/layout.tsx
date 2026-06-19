@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { getDashboardStatsCached } from "~/server/cache/stats";
 
 export const generateMetadata = async (): Promise<Metadata> => {
+   await connection();
    const data = await getDashboardStatsCached();
    const desc = `Browse ${data.totalMovies} movies in the library`;
    return {

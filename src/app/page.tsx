@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { connection } from "next/server";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -27,7 +28,12 @@ import { WatchTimeByHourChart } from "~/components/analytics/watch-time-by-hour-
 import { Skeleton } from "~/components/ui/skeleton";
 import { RefreshButton } from "~/components/refresh-button";
 
+// Data is per-deployment (each user's Plex/Tautulli), so it can't prerender at
+// build — the page renders at request time and caches via `use cache`.
+export const instant = false;
+
 export const generateMetadata = async (): Promise<Metadata> => {
+   await connection();
    const data = await getDashboardStatsCached();
    const parts = [
       `${data.totalMovies} movies`,
@@ -161,7 +167,8 @@ const TopArtists = async () => {
 
 const ChartFallback = () => <Skeleton className="h-[320px] w-full rounded-lg" />;
 
-const DashboardPage = () => {
+const DashboardPage = async () => {
+   await connection();
    return (
       <div className="space-y-8">
          <Suspense fallback={<StatsFallback />}>

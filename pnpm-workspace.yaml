@@ -1,0 +1,4 @@
+# We track Next.js canary, so deps are often published <24h before a build.
+# pnpm's default supply-chain minimum-release-age check rejects those in a clean
+# store (CI/Docker); disable it (deps are still pinned by pnpm-lock.yaml).
+minimumReleaseAge: 0

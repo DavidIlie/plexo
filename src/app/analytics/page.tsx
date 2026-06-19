@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { connection } from "next/server";
 
 import { env } from "~/env";
 import { Skeleton } from "~/components/ui/skeleton";
@@ -37,6 +38,10 @@ import {
    getPlaysByHourOfDay,
 } from "~/lib/tautulli";
 import { analyticsSearchParamsCache, periodToDays } from "./search-params";
+
+// Data is per-deployment (each user's Plex/Tautulli), so it can't prerender at
+// build — the page renders at request time and caches via `use cache`.
+export const instant = false;
 
 interface Props {
    searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -132,7 +137,8 @@ const PeriodChartsFallback = () => (
    </>
 );
 
-const AnalyticsPage = ({ searchParams }: Props) => {
+const AnalyticsPage = async ({ searchParams }: Props) => {
+   await connection();
    return (
       <div className="space-y-6">
          <div className="flex items-center justify-between">

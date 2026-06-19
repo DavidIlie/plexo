@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { connection } from "next/server";
 import { notFound } from "next/navigation";
 
 import { env } from "~/env";
@@ -15,6 +16,7 @@ const GridFallback = () => (
 );
 
 const MusicShell = async () => {
+   await connection();
    const sections = await getLibrarySections();
    const sectionId = sections.find((s) => s.type === "artist")?.key;
 

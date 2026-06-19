@@ -7,7 +7,7 @@ ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 RUN apk add --no-cache libc6-compat
 WORKDIR /home/node/app
-COPY pnpm-lock.yaml ./
+COPY pnpm-lock.yaml pnpm-workspace.yaml ./
 
 RUN pnpm fetch
 
@@ -20,7 +20,7 @@ WORKDIR /home/node/app
 ENV PNPM_STORE_PATH=/pnpm/store
 
 # Install deps using cached pnpm store first for better layer caching
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN --mount=type=cache,target=/pnpm/store,id=pnpm-store \
     corepack enable && pnpm install --frozen-lockfile --prefer-offline --ignore-scripts
 
