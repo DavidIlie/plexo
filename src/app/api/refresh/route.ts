@@ -1,30 +1,62 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
+
 import { env } from "~/env";
-import { invalidateAll, getCacheStats } from "~/lib/cache";
+import { ALL_ROOTS, scope } from "~/lib/cache-tags";
 import { getRateLimitStats } from "~/lib/rate-limit";
 
-export const POST = async (req: NextRequest) => {
-   const authHeader = req.headers.get("authorization");
-   const token = authHeader?.replace("Bearer ", "");
+const isAuthorized = (req: NextRequest): boolean => {
+   const token = req.headers.get("authorization")?.replace("Bearer ", "");
+   return token === env.REFRESH_SECRET;
+};
 
-   if (token !== env.REFRESH_SECRET) {
+// Invalidate cached `use cache: remote` data by tag. ?scope=<root> targets one
+// domain (plex/tautulli/analytics/...); omit it to refresh all roots. ?hard=1
+// expires entries immediately; otherwise a soft ("max") revalidation serves
+// stale data while it revalidates in the background.
+export const POST = async (req: NextRequest) => {
+   if (!isAuthorized(req)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
    }
 
-   invalidateAll();
-   return NextResponse.json({ success: true });
+   const scopeParam = req.nextUrl.searchParams.get("scope");
+   const hard = req.nextUrl.searchParams.get("hard") !== null;
+   const profile: string | { expire: number } = hard ? { expire: 0 } : "max";
+
+   let tags: readonly string[];
+   if (scopeParam) {
+      const root = scope(scopeParam);
+      if (!root) {
+         return NextResponse.json(
+            { error: `Unknown scope "${scopeParam}"`, validScopes: ALL_ROOTS },
+            { status: 400 },
+         );
+      }
+      tags = [root];
+   } else {
+      tags = ALL_ROOTS;
+   }
+
+   for (const tag of tags) {
+      revalidateTag(tag, profile);
+   }
+
+   return NextResponse.json({
+      success: true,
+      mode: hard ? "hard" : "soft",
+      revalidated: tags,
+   });
 };
 
 export const GET = async (req: NextRequest) => {
-   const authHeader = req.headers.get("authorization");
-   const token = authHeader?.replace("Bearer ", "");
-
-   if (token !== env.REFRESH_SECRET) {
+   if (!isAuthorized(req)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
    }
 
    return NextResponse.json({
-      ...getCacheStats(),
+      handler:
+         env.CACHE_DRIVER === "redis" && env.REDIS_URL ? "redis" : "memory",
+      roots: ALL_ROOTS,
       rateLimits: getRateLimitStats(),
    });
 };

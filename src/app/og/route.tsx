@@ -1,40 +1,41 @@
 import { ImageResponse } from "@takumi-rs/image-response";
 import { type NextRequest } from "next/server";
+import { cacheLife, cacheTag } from "next/cache";
 import { env } from "~/env";
-import { getCachedOrFetch, CacheTTL } from "~/lib/cache";
+import { CACHE_TAGS } from "~/lib/cache-tags";
 import { getLibrarySections, getMovies, getShows, getArtists, getMetadata, getChildren } from "~/lib/plex";
 import { getHistory } from "~/lib/tautulli";
 
 const getStats = async () => {
-   const { data } = await getCachedOrFetch(
-      "og:stats",
-      async () => {
-         const sections = await getLibrarySections();
-         const movieSection = sections.find((s) => s.type === "movie");
-         const showSection = sections.find((s) => s.type === "show");
-
-         const musicSection = sections.find((s) => s.type === "artist");
-
-         const totalMovies = movieSection
-            ? (await getMovies(movieSection.key)).totalSize
-            : 0;
-         const totalShows = showSection
-            ? (await getShows(showSection.key)).totalSize
-            : 0;
-         const totalArtists = musicSection
-            ? (await getArtists(musicSection.key)).totalSize
-            : 0;
-
-         const history = await getHistory(1000);
-         const hoursWatched = Math.round(
-            parseInt(history.total_duration) / 3600,
-         );
-
-         return { totalMovies, totalShows, totalArtists, hoursWatched };
-      },
-      CacheTTL.ANALYTICS,
+   "use cache: remote";
+   cacheLife("analytics");
+   cacheTag(
+      CACHE_TAGS.analytics,
+      CACHE_TAGS.analyticsScope("ogStats"),
+      CACHE_TAGS.plex,
+      CACHE_TAGS.tautulli,
    );
-   return data;
+
+   const sections = await getLibrarySections();
+   const movieSection = sections.find((s) => s.type === "movie");
+   const showSection = sections.find((s) => s.type === "show");
+
+   const musicSection = sections.find((s) => s.type === "artist");
+
+   const totalMovies = movieSection
+      ? (await getMovies(movieSection.key)).totalSize
+      : 0;
+   const totalShows = showSection
+      ? (await getShows(showSection.key)).totalSize
+      : 0;
+   const totalArtists = musicSection
+      ? (await getArtists(musicSection.key)).totalSize
+      : 0;
+
+   const history = await getHistory(1000);
+   const hoursWatched = Math.round(parseInt(history.total_duration) / 3600);
+
+   return { totalMovies, totalShows, totalArtists, hoursWatched };
 };
 
 const getArtistOG = async (ratingKey: string) => {

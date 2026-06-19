@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
    RefreshCw,
    Database,
-   Clock,
-   Trash2,
    Shield,
    Gauge,
    Bell,
@@ -15,7 +14,6 @@ import {
    Check,
    Loader2,
 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
 import { Turnstile } from "@marsidev/react-turnstile";
 
 import { useTRPC } from "~/trpc/react";
@@ -30,13 +28,6 @@ import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
 
-interface CacheEntry {
-   key: string;
-   fetchedAt: string;
-   expiresAt: string;
-   expired: boolean;
-}
-
 interface RateLimitEntry {
    key: string;
    count: number;
@@ -45,9 +36,8 @@ interface RateLimitEntry {
 }
 
 interface CacheStats {
-   totalEntries: number;
-   activeEntries: number;
-   entries: CacheEntry[];
+   handler: "redis" | "memory";
+   roots: string[];
    rateLimits: RateLimitEntry[];
 }
 
@@ -159,7 +149,8 @@ const NotificationTests = ({
 };
 
 export const RefreshDialog = () => {
-   const trpc = useTRPC();
+   const router = useRouter();
+   const queryClient = useQueryClient();
    const { turnstileSiteKey } = useAppConfig();
    const [open, setOpen] = useState(false);
    const [secret, setSecret] = useState("");
@@ -197,16 +188,6 @@ export const RefreshDialog = () => {
       }
    }, [open, authenticated]);
 
-   const fetchStats = async (token: string) => {
-      const res = await fetch("/api/refresh", {
-         headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-         const data = (await res.json()) as CacheStats;
-         setCacheStats(data);
-      }
-   };
-
    const handleAuth = async (e: React.FormEvent) => {
       e.preventDefault();
       if (!secret.trim()) return;
@@ -240,20 +221,20 @@ export const RefreshDialog = () => {
          });
          if (res.ok) {
             setStatus("success");
-            setCacheStats({ totalEntries: 0, activeEntries: 0, entries: [], rateLimits: [] });
-            setTimeout(() => window.location.reload(), 800);
+            // Re-render server components and refetch client queries in place —
+            // never a full reload, so charts keep their old (faded) data while
+            // fresh values stream in.
+            router.refresh();
+            await queryClient.invalidateQueries();
+            setTimeout(() => setStatus("idle"), 1500);
+         } else {
+            setStatus("error");
+            setErrorMessage("Failed to refresh");
          }
       } catch {
          setStatus("error");
          setErrorMessage("Failed to refresh");
       }
-   };
-
-   const tierFromKey = (key: string) => {
-      if (key.startsWith("plex:sections") || key.startsWith("plex:genres")) return "LIBRARY";
-      if (key.startsWith("analytics:")) return "ANALYTICS";
-      if (key.startsWith("plex:onDeck") || key.startsWith("tautulli:history") || key.startsWith("tautulli:homeStats")) return "ACTIVITY";
-      return "METADATA";
    };
 
    return (
@@ -290,13 +271,10 @@ export const RefreshDialog = () => {
                      <div className="rounded-md border border-border/50 p-3">
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                            <Database className="h-3 w-3" />
-                           Cached
+                           Cache backend
                         </div>
-                        <p className="mt-1 text-lg font-semibold tabular-nums">
-                           {cacheStats?.activeEntries ?? 0}
-                           <span className="text-sm font-normal text-muted-foreground">
-                              /{cacheStats?.totalEntries ?? 0}
-                           </span>
+                        <p className="mt-1 text-lg font-semibold capitalize tabular-nums">
+                           {cacheStats?.handler ?? "—"}
                         </p>
                      </div>
                      <div className="flex items-center justify-center">
@@ -304,57 +282,29 @@ export const RefreshDialog = () => {
                            variant="destructive"
                            size="sm"
                            onClick={handleRefresh}
-                           disabled={status === "loading" || status === "success"}
+                           disabled={status === "loading"}
                         >
                            {status === "loading" ? (
                               <RefreshCw className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                            ) : (
-                              <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                              <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
                            )}
-                           {status === "success" ? "Cleared" : "Purge All"}
+                           {status === "success" ? "Refreshed" : "Refresh all"}
                         </Button>
                      </div>
                   </div>
 
-                  {cacheStats && cacheStats.entries.length > 0 && (
-                     <>
-                        <Separator />
-                        <div className="space-y-1.5">
-                           <p className="text-xs font-medium text-muted-foreground">
-                              Cache entries
-                           </p>
-                           {cacheStats.entries.map((entry) => (
-                              <div
-                                 key={entry.key}
-                                 className="flex items-center justify-between rounded-md bg-muted/30 px-2.5 py-1.5"
-                              >
-                                 <div className="min-w-0 flex-1">
-                                    <p className="truncate font-mono text-xs">
-                                       {entry.key}
-                                    </p>
-                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                       <span className="rounded bg-muted px-1 py-0.5 font-mono text-[10px]">
-                                          {tierFromKey(entry.key)}
-                                       </span>
-                                       <Clock className="h-2.5 w-2.5" />
-                                       {formatDistanceToNow(new Date(entry.fetchedAt), { addSuffix: true })}
-                                    </div>
-                                 </div>
-                                 {entry.expired && (
-                                    <span className="ml-2 shrink-0 rounded bg-destructive/10 px-1.5 py-0.5 text-[10px] text-destructive">
-                                       expired
-                                    </span>
-                                 )}
-                              </div>
-                           ))}
-                        </div>
-                     </>
-                  )}
-
-                  {cacheStats && cacheStats.entries.length === 0 && (
-                     <p className="py-4 text-center text-sm text-muted-foreground">
-                        Cache is empty
-                     </p>
+                  {cacheStats && cacheStats.roots.length > 0 && (
+                     <div className="flex flex-wrap gap-1.5">
+                        {cacheStats.roots.map((root) => (
+                           <span
+                              key={root}
+                              className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground"
+                           >
+                              {root}
+                           </span>
+                        ))}
+                     </div>
                   )}
 
                   {cacheStats &&
