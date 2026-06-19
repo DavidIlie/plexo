@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { useTRPC } from "~/trpc/react";
 import { RefreshButton } from "~/components/refresh-button";
@@ -19,44 +19,50 @@ interface ArtistsBrowserProps {
    totalSize: number;
 }
 
+// Grid renders from plain state seeded with the server-fetched first page (warm
+// static shell); tRPC only appends subsequent pages on "load more".
 export const ArtistsBrowser = ({
    sectionId,
    initialItems,
    totalSize,
 }: ArtistsBrowserProps) => {
    const trpc = useTRPC();
+   const queryClient = useQueryClient();
    const router = useRouter();
    const [search, setSearch] = useState("");
    const [genre, setGenre] = useState("all");
    const debouncedSearch = useDebounce(search, 300);
 
-   const pageSize = initialItems.length || 60;
-   const firstNextCursor = pageSize < totalSize ? pageSize : undefined;
-
-   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
-      useInfiniteQuery({
-         ...trpc.plex.browseArtists.infiniteQueryOptions(
-            { sectionId },
-            {
-               initialCursor: 0,
-               getNextPageParam: (lastPage) => lastPage.nextCursor,
-            },
-         ),
-         initialData: {
-            pages: [
-               { items: initialItems, totalSize, nextCursor: firstNextCursor },
-            ],
-            pageParams: [0],
-         },
-         refetchInterval: 30 * 60 * 1000,
-      });
+   const [extraItems, setExtraItems] = useState<PlexMediaItem[]>([]);
+   const [cursor, setCursor] = useState<number | undefined>(
+      initialItems.length < totalSize ? initialItems.length : undefined,
+   );
+   const [loadingMore, setLoadingMore] = useState(false);
 
    const artists = useMemo(
-      () =>
-         (data?.pages.flatMap((p) => p.items) ?? initialItems).filter(
-            (a) => a.thumb,
-         ),
-      [data, initialItems],
+      () => [...initialItems, ...extraItems].filter((a) => a.thumb),
+      [initialItems, extraItems],
+   );
+
+   const hasNextPage = cursor !== undefined;
+
+   const loadMore = useCallback(async () => {
+      if (cursor === undefined || loadingMore) return;
+      setLoadingMore(true);
+      try {
+         const page = await queryClient.fetchQuery(
+            trpc.plex.browseArtists.queryOptions({ sectionId, cursor }),
+         );
+         setExtraItems((prev) => [...prev, ...page.items]);
+         setCursor(page.nextCursor ?? undefined);
+      } finally {
+         setLoadingMore(false);
+      }
+   }, [cursor, loadingMore, queryClient, trpc, sectionId]);
+
+   const sentinelRef = useIntersectionObserver(
+      () => void loadMore(),
+      hasNextPage,
    );
 
    const genres = useMemo(() => {
@@ -83,14 +89,6 @@ export const ArtistsBrowser = ({
          return true;
       });
    }, [artists, debouncedSearch, genre]);
-
-   const loadMore = useCallback(() => {
-      if (hasNextPage && !isFetchingNextPage) {
-         void fetchNextPage();
-      }
-   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
-
-   const sentinelRef = useIntersectionObserver(loadMore, !!hasNextPage);
 
    const hasFilters = !!debouncedSearch || genre !== "all";
 
@@ -126,7 +124,7 @@ export const ArtistsBrowser = ({
             ))}
          </div>
          <div ref={sentinelRef} className="h-1" />
-         {isFetchingNextPage && (
+         {loadingMore && (
             <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">
                {Array.from({ length: 6 }).map((_, i) => (
                   <Skeleton key={i} className="aspect-[2/3] w-full rounded-md" />

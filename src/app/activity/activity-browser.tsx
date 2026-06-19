@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow, format } from "date-fns";
 import { Film, Tv, Music, ArrowLeft, Search, X } from "lucide-react";
 import Link from "next/link";
@@ -25,6 +25,8 @@ import {
 } from "~/components/ui/select";
 import type { PlexMediaItem } from "~/types/plex";
 import type { TautulliHistoryItem } from "~/types/tautulli";
+
+const PAGE_LIMIT = 30;
 
 const formatDuration = (seconds: number) => {
    const mins = Math.round(seconds / 60);
@@ -52,76 +54,104 @@ interface ActivityBrowserProps {
    initialTotal: number;
 }
 
+// The unfiltered ("all") first page renders from plain state seeded by the
+// server, so the static shell paints with real activity. The media-type filter
+// is server-side (browseHistory), so switching type fetches a fresh page via
+// tRPC; "load more" appends. Search filters the loaded items client-side.
 export const ActivityBrowser = ({
    initialItems,
    initialTotal,
 }: ActivityBrowserProps) => {
    const trpc = useTRPC();
+   const queryClient = useQueryClient();
    const router = useRouter();
    const [mediaType, setMediaType] = useState("all");
    const [search, setSearch] = useState("");
    const debouncedSearch = useDebounce(search, 200);
    const [selectedItem, setSelectedItem] = useState<PlexMediaItem | null>(null);
 
-   const pageLimit = 30;
    const firstNextCursor =
       initialItems.length < initialTotal ? initialItems.length : undefined;
 
-   const {
-      data,
-      isLoading,
-      fetchNextPage,
-      hasNextPage,
-      isFetchingNextPage,
-   } = useInfiniteQuery({
-      ...trpc.tautulli.browseHistory.infiniteQueryOptions(
-         { ...(mediaType !== "all" ? { mediaType } : {}), limit: pageLimit },
-         {
-            initialCursor: 0,
-            getNextPageParam: (lastPage) => lastPage.nextCursor,
-         },
-      ),
-      refetchInterval: 5 * 60 * 1000,
-      // Seed the unfiltered view from the server-rendered window so the static
-      // shell paints instantly with real data instead of a skeleton.
-      ...(mediaType === "all"
-         ? {
-              initialData: {
-                 pages: [
-                    {
-                       items: initialItems,
-                       total: initialTotal,
-                       nextCursor: firstNextCursor,
-                    },
-                 ],
-                 pageParams: [0],
-              },
-           }
-         : {}),
-   });
+   const [items, setItems] = useState<TautulliHistoryItem[]>(initialItems);
+   const [cursor, setCursor] = useState<number | undefined>(firstNextCursor);
+   const [switching, setSwitching] = useState(false);
+   const [loadingMore, setLoadingMore] = useState(false);
 
-   const allItems = useMemo(
-      () => data?.pages.flatMap((p) => p.items) ?? [],
-      [data],
+   // Re-fetch when the media-type filter changes (server-side filter). Skips the
+   // initial mount so the server-seeded "all" window is kept (warm shell).
+   const mounted = useRef(false);
+   useEffect(() => {
+      if (!mounted.current) {
+         mounted.current = true;
+         return;
+      }
+      let cancelled = false;
+      const run = async () => {
+         setSwitching(true);
+         try {
+            if (mediaType === "all") {
+               if (!cancelled) {
+                  setItems(initialItems);
+                  setCursor(firstNextCursor);
+               }
+               return;
+            }
+            const page = await queryClient.fetchQuery(
+               trpc.tautulli.browseHistory.queryOptions({
+                  mediaType,
+                  limit: PAGE_LIMIT,
+                  cursor: 0,
+               }),
+            );
+            if (!cancelled) {
+               setItems(page.items);
+               setCursor(page.nextCursor ?? undefined);
+            }
+         } finally {
+            if (!cancelled) setSwitching(false);
+         }
+      };
+      void run();
+      return () => {
+         cancelled = true;
+      };
+   }, [mediaType, initialItems, firstNextCursor, queryClient, trpc]);
+
+   const loadMore = useCallback(async () => {
+      if (cursor === undefined || loadingMore || switching) return;
+      setLoadingMore(true);
+      try {
+         const page = await queryClient.fetchQuery(
+            trpc.tautulli.browseHistory.queryOptions({
+               ...(mediaType !== "all" ? { mediaType } : {}),
+               limit: PAGE_LIMIT,
+               cursor,
+            }),
+         );
+         setItems((prev) => [...prev, ...page.items]);
+         setCursor(page.nextCursor ?? undefined);
+      } finally {
+         setLoadingMore(false);
+      }
+   }, [cursor, loadingMore, switching, queryClient, trpc, mediaType]);
+
+   const sentinelRef = useIntersectionObserver(
+      () => void loadMore(),
+      cursor !== undefined,
    );
 
-   const items = useMemo(() => {
-      if (!debouncedSearch) return allItems;
+   const filtered = useMemo(() => {
+      if (!debouncedSearch) return items;
       const q = debouncedSearch.toLowerCase();
-      return allItems.filter((item) =>
-         item.full_title.toLowerCase().includes(q) ||
-         (item.grandparent_title && item.grandparent_title.toLowerCase().includes(q)) ||
-         item.title.toLowerCase().includes(q),
+      return items.filter(
+         (item) =>
+            item.full_title.toLowerCase().includes(q) ||
+            (item.grandparent_title &&
+               item.grandparent_title.toLowerCase().includes(q)) ||
+            item.title.toLowerCase().includes(q),
       );
-   }, [allItems, debouncedSearch]);
-
-   const loadMore = useCallback(() => {
-      if (hasNextPage && !isFetchingNextPage) {
-         void fetchNextPage();
-      }
-   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
-
-   const sentinelRef = useIntersectionObserver(loadMore, !!hasNextPage);
+   }, [items, debouncedSearch]);
 
    return (
       <div className="space-y-6">
@@ -166,20 +196,20 @@ export const ActivityBrowser = ({
             )}
          </div>
 
-         {isLoading ? (
+         {switching ? (
             <div className="space-y-2">
                {Array.from({ length: 10 }).map((_, i) => (
                   <Skeleton key={i} className="h-16 w-full rounded-md" />
                ))}
             </div>
-         ) : items.length === 0 ? (
+         ) : filtered.length === 0 ? (
             <p className="py-12 text-center text-sm text-muted-foreground">
                No activity found
             </p>
          ) : (
             <>
                <div className="space-y-0.5">
-                  {items.map((item) => {
+                  {filtered.map((item) => {
                      const isTrack = item.media_type === "track";
                      return (
                         <div
@@ -256,7 +286,7 @@ export const ActivityBrowser = ({
                   })}
                </div>
                <div ref={sentinelRef} className="h-1" />
-               {isFetchingNextPage && (
+               {loadingMore && (
                   <div className="space-y-2">
                      {Array.from({ length: 5 }).map((_, i) => (
                         <Skeleton key={i} className="h-16 w-full rounded-md" />
