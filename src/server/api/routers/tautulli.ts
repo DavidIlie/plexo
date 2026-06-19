@@ -1,6 +1,8 @@
 import { z } from "zod";
+import { cacheLife, cacheTag } from "next/cache";
+
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
-import { getCachedOrFetch, CacheTTL } from "~/lib/cache";
+import { CACHE_TAGS } from "~/lib/cache-tags";
 import {
    getHistory,
    getHomeStats,
@@ -11,6 +13,33 @@ import {
    getGeoipLookup,
 } from "~/lib/tautulli";
 import { env } from "~/env";
+
+// Cached history window (keyed on length/start/mediaType). The underlying
+// getHistory is cursor-paginated and uncached; this caches the specific windows
+// the UI requests (homepage feed + activity browse pages).
+const getHistoryWindow = async (
+   length: number,
+   start: number,
+   mediaType: string | undefined,
+) => {
+   "use cache: remote";
+   cacheLife("activity");
+   cacheTag(CACHE_TAGS.tautulli, CACHE_TAGS.tautulliHistory);
+   return getHistory(length, start, mediaType);
+};
+
+const getItemHistoryCached = async (ratingKey: string) => {
+   "use cache: remote";
+   cacheLife("activity");
+   cacheTag(CACHE_TAGS.tautulli, CACHE_TAGS.tautulliItem(ratingKey));
+
+   const history = await getHistory(200);
+   return history.data.filter(
+      (item) =>
+         String(item.rating_key) === ratingKey ||
+         String(item.grandparent_rating_key) === ratingKey,
+   );
+};
 
 export const tautulliRouter = createTRPCRouter({
    getHistory: publicProcedure
@@ -24,15 +53,12 @@ export const tautulliRouter = createTRPCRouter({
             .default({}),
       )
       .query(async ({ input }) => {
-         const result = await getCachedOrFetch(
-            `tautulli:history:${input.length}:${input.start}:${input.mediaType ?? "all"}`,
-            () => getHistory(input.length, input.start, input.mediaType),
-            CacheTTL.ACTIVITY,
+         const data = await getHistoryWindow(
+            input.length,
+            input.start,
+            input.mediaType,
          );
-         return {
-            data: result.data,
-            lastUpdatedAt: result.fetchedAt.toISOString(),
-         };
+         return { data, lastUpdatedAt: new Date().toISOString() };
       }),
 
    browseHistory: publicProcedure
@@ -45,33 +71,16 @@ export const tautulliRouter = createTRPCRouter({
       )
       .query(async ({ input }) => {
          const start = input.cursor ?? 0;
-         const mediaTypeKey = input.mediaType ?? "all";
-         const result = await getCachedOrFetch(
-            `tautulli:history:${input.limit}:${start}:${mediaTypeKey}`,
-            () => getHistory(input.limit, start, input.mediaType),
-            CacheTTL.ACTIVITY,
-         );
-         const total = result.data.recordsFiltered;
-         const nextCursor = start + input.limit < total
-            ? start + input.limit
-            : undefined;
-         return {
-            items: result.data.data,
-            total,
-            nextCursor,
-         };
+         const data = await getHistoryWindow(input.limit, start, input.mediaType);
+         const total = data.recordsFiltered;
+         const nextCursor =
+            start + input.limit < total ? start + input.limit : undefined;
+         return { items: data.data, total, nextCursor };
       }),
 
    getHomeStats: publicProcedure.query(async () => {
-      const result = await getCachedOrFetch(
-         "tautulli:homeStats",
-         getHomeStats,
-         CacheTTL.ACTIVITY,
-      );
-      return {
-         data: result.data,
-         lastUpdatedAt: result.fetchedAt.toISOString(),
-      };
+      const data = await getHomeStats();
+      return { data, lastUpdatedAt: new Date().toISOString() };
    }),
 
    getPlaysByDate: publicProcedure
@@ -84,55 +93,22 @@ export const tautulliRouter = createTRPCRouter({
             .default({}),
       )
       .query(async ({ input }) => {
-         const result = await getCachedOrFetch(
-            `tautulli:playsByDate:${input.timeRange}:${input.yAxis}`,
-            () => getPlaysByDate(input.timeRange, input.yAxis),
-            CacheTTL.ANALYTICS,
-         );
-         return {
-            data: result.data,
-            lastUpdatedAt: result.fetchedAt.toISOString(),
-         };
+         const data = await getPlaysByDate(input.timeRange, input.yAxis);
+         return { data, lastUpdatedAt: new Date().toISOString() };
       }),
 
    getPlaysByDayOfWeek: publicProcedure
-      .input(
-         z
-            .object({
-               timeRange: z.number().default(30),
-            })
-            .default({}),
-      )
+      .input(z.object({ timeRange: z.number().default(30) }).default({}))
       .query(async ({ input }) => {
-         const result = await getCachedOrFetch(
-            `tautulli:playsByDayOfWeek:${input.timeRange}`,
-            () => getPlaysByDayOfWeek(input.timeRange),
-            CacheTTL.ANALYTICS,
-         );
-         return {
-            data: result.data,
-            lastUpdatedAt: result.fetchedAt.toISOString(),
-         };
+         const data = await getPlaysByDayOfWeek(input.timeRange);
+         return { data, lastUpdatedAt: new Date().toISOString() };
       }),
 
    getPlaysByHourOfDay: publicProcedure
-      .input(
-         z
-            .object({
-               timeRange: z.number().default(30),
-            })
-            .default({}),
-      )
+      .input(z.object({ timeRange: z.number().default(30) }).default({}))
       .query(async ({ input }) => {
-         const result = await getCachedOrFetch(
-            `tautulli:playsByHourOfDay:${input.timeRange}`,
-            () => getPlaysByHourOfDay(input.timeRange),
-            CacheTTL.ANALYTICS,
-         );
-         return {
-            data: result.data,
-            lastUpdatedAt: result.fetchedAt.toISOString(),
-         };
+         const data = await getPlaysByHourOfDay(input.timeRange);
+         return { data, lastUpdatedAt: new Date().toISOString() };
       }),
 
    getMostWatched: publicProcedure
@@ -146,37 +122,19 @@ export const tautulliRouter = createTRPCRouter({
             .default({}),
       )
       .query(async ({ input }) => {
-         const result = await getCachedOrFetch(
-            `tautulli:mostWatched:${input.mediaType}:${input.timeRange}:${input.limit}`,
-            () =>
-               getMostWatched(input.mediaType, input.timeRange, input.limit),
-            CacheTTL.ANALYTICS,
+         const data = await getMostWatched(
+            input.mediaType,
+            input.timeRange,
+            input.limit,
          );
-         return {
-            data: result.data,
-            lastUpdatedAt: result.fetchedAt.toISOString(),
-         };
+         return { data, lastUpdatedAt: new Date().toISOString() };
       }),
 
    getItemHistory: publicProcedure
       .input(z.object({ ratingKey: z.string() }))
       .query(async ({ input }) => {
-         const result = await getCachedOrFetch(
-            `tautulli:itemHistory:${input.ratingKey}`,
-            async () => {
-               const history = await getHistory(200);
-               return history.data.filter(
-                  (item) =>
-                     String(item.rating_key) === input.ratingKey ||
-                     String(item.grandparent_rating_key) === input.ratingKey,
-               );
-            },
-            CacheTTL.ACTIVITY,
-         );
-         return {
-            data: result.data,
-            lastUpdatedAt: result.fetchedAt.toISOString(),
-         };
+         const data = await getItemHistoryCached(input.ratingKey);
+         return { data, lastUpdatedAt: new Date().toISOString() };
       }),
 
    resolveLocations: publicProcedure
@@ -184,18 +142,18 @@ export const tautulliRouter = createTRPCRouter({
       .query(async ({ input }) => {
          if (!env.SHOW_LOCATIONS) return { data: {} as Record<string, string> };
 
-         const unique = [...new Set(input.ipAddresses.filter(
-            (ip) => ip && ip !== "127.0.0.1" && ip !== "::1",
-         ))];
+         const unique = [
+            ...new Set(
+               input.ipAddresses.filter(
+                  (ip) => ip && ip !== "127.0.0.1" && ip !== "::1",
+               ),
+            ),
+         ];
 
          const results = await Promise.all(
             unique.map(async (ip) => {
-               const geo = await getCachedOrFetch(
-                  `geo:${ip}`,
-                  () => getGeoipLookup(ip),
-                  CacheTTL.LIBRARY,
-               );
-               const parts = [geo.data.city, geo.data.country].filter(Boolean);
+               const geo = await getGeoipLookup(ip);
+               const parts = [geo.city, geo.country].filter(Boolean);
                return [ip, parts.join(", ")] as const;
             }),
          );

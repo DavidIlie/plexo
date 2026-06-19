@@ -1,7 +1,9 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { cacheLife, cacheTag } from "next/cache";
+
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
-import { getCachedOrFetch, CacheTTL } from "~/lib/cache";
+import { CACHE_TAGS } from "~/lib/cache-tags";
 import { searchMedia } from "~/lib/tmdb";
 import { verifyTurnstile } from "~/lib/turnstile";
 import { sendRecommendation, sendTestNotification } from "~/lib/notify";
@@ -16,36 +18,107 @@ const HOUR_MS = 60 * 60 * 1000;
 const normalizeTitle = (title: string) =>
    title.toLowerCase().replace(/[^a-z0-9]/g, "");
 
-const getLibraryTitles = async (): Promise<Set<string>> => {
-   const result = await getCachedOrFetch(
-      "recommend:libraryTitles",
-      async () => {
-         const sections = await getLibrarySections();
-         const movieSection = sections.find((s) => s.type === "movie");
-         const showSection = sections.find((s) => s.type === "show");
-
-         const titles = new Set<string>();
-
-         if (movieSection) {
-            const movies = await getMovies(movieSection.key);
-            for (const m of movies.items) {
-               titles.add(`${normalizeTitle(m.title)}|${m.year ?? ""}`);
-            }
-         }
-
-         if (showSection) {
-            const shows = await getShows(showSection.key);
-            for (const s of shows.items) {
-               titles.add(`${normalizeTitle(s.title)}|${s.year ?? ""}`);
-            }
-         }
-
-         return [...titles];
-      },
-      CacheTTL.METADATA,
+const getLibraryTitlesCached = async (): Promise<string[]> => {
+   "use cache: remote";
+   cacheLife("metadata");
+   cacheTag(
+      CACHE_TAGS.recommend,
+      CACHE_TAGS.recommendLibraryTitles,
+      CACHE_TAGS.plex,
    );
 
-   return new Set(result.data);
+   const sections = await getLibrarySections();
+   const movieSection = sections.find((s) => s.type === "movie");
+   const showSection = sections.find((s) => s.type === "show");
+
+   const titles = new Set<string>();
+
+   if (movieSection) {
+      const movies = await getMovies(movieSection.key);
+      for (const m of movies.items) {
+         titles.add(`${normalizeTitle(m.title)}|${m.year ?? ""}`);
+      }
+   }
+
+   if (showSection) {
+      const shows = await getShows(showSection.key);
+      for (const s of shows.items) {
+         titles.add(`${normalizeTitle(s.title)}|${s.year ?? ""}`);
+      }
+   }
+
+   return [...titles];
+};
+
+const getLibraryTitles = async (): Promise<Set<string>> => {
+   return new Set(await getLibraryTitlesCached());
+};
+
+const searchTmdbCached = async (query: string) => {
+   "use cache: remote";
+   cacheLife("activity");
+   cacheTag(CACHE_TAGS.tmdb, CACHE_TAGS.tmdbSearch);
+   return searchMedia(query);
+};
+
+const getWishlistCached = async () => {
+   "use cache: remote";
+   cacheLife("activity");
+   cacheTag(
+      CACHE_TAGS.recommend,
+      CACHE_TAGS.recommendWishlist,
+      CACHE_TAGS.overseerr,
+   );
+
+   const [overseerrItems, plexItems] = await Promise.all([
+      env.OVERSEERR_URL && env.OVERSEERR_API_KEY
+         ? getWishlist().catch(() => [])
+         : Promise.resolve([]),
+      getPlexWatchlist().catch(() => []),
+   ]);
+
+   const plexWishlistItems = plexItems.map((item) => ({
+      id: `plex-${item.ratingKey}`,
+      title: item.title,
+      year: String(item.year ?? ""),
+      mediaType: (item.type === "movie" ? "movie" : "tv") as "movie" | "tv",
+      posterPath: item.thumb ?? null,
+      source: "plex" as const,
+      status: "watchlist" as const,
+      requestedBy: null,
+      requestedAt: null,
+   }));
+
+   const overseerrWishlistItems = overseerrItems.map((item) => ({
+      id: `overseerr-${item.tmdbId}`,
+      title: item.title,
+      year: item.year,
+      mediaType: item.mediaType,
+      posterPath: item.posterPath,
+      source: "overseerr" as const,
+      status: item.status,
+      requestedBy: item.requestedBy,
+      requestedAt: item.requestedAt,
+   }));
+
+   // Deduplicate by title+year, prefer Overseerr entries
+   const seen = new Set<string>();
+   const merged = [];
+
+   for (const item of overseerrWishlistItems) {
+      const key = `${normalizeTitle(item.title)}|${item.year}`;
+      seen.add(key);
+      merged.push(item);
+   }
+
+   for (const item of plexWishlistItems) {
+      const key = `${normalizeTitle(item.title)}|${item.year}`;
+      if (!seen.has(key)) {
+         merged.push(item);
+      }
+   }
+
+   return merged;
 };
 
 export const recommendRouter = createTRPCRouter({
@@ -59,16 +132,12 @@ export const recommendRouter = createTRPCRouter({
             });
          }
 
-         const [searchResult, libraryTitles] = await Promise.all([
-            getCachedOrFetch(
-               `tmdb:search:${input.query.toLowerCase().trim()}`,
-               () => searchMedia(input.query),
-               CacheTTL.ACTIVITY,
-            ),
+         const [searchData, libraryTitles] = await Promise.all([
+            searchTmdbCached(input.query.toLowerCase().trim()),
             getLibraryTitles(),
          ]);
 
-         const results = searchResult.data.map((item) => {
+         const results = searchData.map((item) => {
             const title = item.title ?? item.name ?? "";
             const year =
                (item.release_date ?? item.first_air_date)?.slice(0, 4) ?? "";
@@ -78,7 +147,7 @@ export const recommendRouter = createTRPCRouter({
             return { ...item, inLibrary };
          });
 
-         return { data: results, lastUpdatedAt: searchResult.fetchedAt.toISOString() };
+         return { data: results, lastUpdatedAt: new Date().toISOString() };
       }),
 
    submit: publicProcedure
@@ -182,63 +251,8 @@ export const recommendRouter = createTRPCRouter({
       }),
 
    getWishlist: publicProcedure.query(async () => {
-      const result = await getCachedOrFetch(
-         "recommend:wishlist",
-         async () => {
-            const [overseerrItems, plexItems] = await Promise.all([
-               env.OVERSEERR_URL && env.OVERSEERR_API_KEY
-                  ? getWishlist().catch(() => [])
-                  : Promise.resolve([]),
-               getPlexWatchlist().catch(() => []),
-            ]);
-
-            const plexWishlistItems = plexItems.map((item) => ({
-               id: `plex-${item.ratingKey}`,
-               title: item.title,
-               year: String(item.year ?? ""),
-               mediaType: (item.type === "movie" ? "movie" : "tv") as "movie" | "tv",
-               posterPath: item.thumb ?? null,
-               source: "plex" as const,
-               status: "watchlist" as const,
-               requestedBy: null,
-               requestedAt: null,
-            }));
-
-            const overseerrWishlistItems = overseerrItems.map((item) => ({
-               id: `overseerr-${item.tmdbId}`,
-               title: item.title,
-               year: item.year,
-               mediaType: item.mediaType,
-               posterPath: item.posterPath,
-               source: "overseerr" as const,
-               status: item.status,
-               requestedBy: item.requestedBy,
-               requestedAt: item.requestedAt,
-            }));
-
-            // Deduplicate by title+year, prefer Overseerr entries
-            const seen = new Set<string>();
-            const merged = [];
-
-            for (const item of overseerrWishlistItems) {
-               const key = `${normalizeTitle(item.title)}|${item.year}`;
-               seen.add(key);
-               merged.push(item);
-            }
-
-            for (const item of plexWishlistItems) {
-               const key = `${normalizeTitle(item.title)}|${item.year}`;
-               if (!seen.has(key)) {
-                  merged.push(item);
-               }
-            }
-
-            return merged;
-         },
-         CacheTTL.ACTIVITY,
-      );
-
-      return { data: result.data, lastUpdatedAt: result.fetchedAt.toISOString() };
+      const data = await getWishlistCached();
+      return { data, lastUpdatedAt: new Date().toISOString() };
    }),
 
    testNotification: publicProcedure
