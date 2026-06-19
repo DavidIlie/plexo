@@ -58,6 +58,11 @@ export const env = createEnv({
          .transform((v) => v === "true"),
       IMAGE_OPTIMIZE_QUALITY: z.coerce.number().int().min(1).max(100).default(85),
       IMAGE_UPSTREAM_SCALE: z.coerce.number().min(1).max(4).default(2),
+      // Server cache backend for the `use cache: remote` directive.
+      // "memory" (default) uses Next's built-in in-memory LRU; "redis" wires
+      // the Redis cache handler in next.config.ts (requires REDIS_URL).
+      CACHE_DRIVER: z.enum(["memory", "redis"]).default("memory"),
+      REDIS_URL: z.string().url().optional(),
       NODE_ENV: z
          .enum(["development", "test", "production"])
          .default("development"),
