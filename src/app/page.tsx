@@ -83,6 +83,20 @@ const DashboardStats = async () => {
    );
 };
 
+const StatsFallback = () => (
+   <div>
+      <div className="mb-4 flex items-center justify-between">
+         <Skeleton className="h-6 w-40" />
+         <Skeleton className="h-8 w-8 rounded-md" />
+      </div>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+         {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-24 w-full rounded-lg" />
+         ))}
+      </div>
+   </div>
+);
+
 const SectionFallback = () => (
    <div className="space-y-3">
       <Skeleton className="h-4 w-24" />
@@ -113,7 +127,9 @@ const DashboardPage = async () => {
    return (
       <HydrateClient>
          <div className="space-y-8">
-            <DashboardStats />
+            <Suspense fallback={<StatsFallback />}>
+               <DashboardStats />
+            </Suspense>
 
             <Suspense fallback={<SectionFallback />}>
                <Highlights />

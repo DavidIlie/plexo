@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
@@ -7,6 +8,7 @@ import {
    getQueryClient,
    HydrateClient,
 } from "~/trpc/server";
+import { Skeleton } from "~/components/ui/skeleton";
 import { ArtistDetail } from "./artist-detail";
 
 interface ArtistPageProps {
@@ -35,7 +37,24 @@ export const generateMetadata = async ({
    };
 };
 
-const ArtistPage = async ({ params }: ArtistPageProps) => {
+const ArtistFallback = () => (
+   <div className="space-y-6">
+      <Skeleton className="h-4 w-28" />
+      <div className="flex flex-col gap-6 sm:flex-row">
+         <Skeleton className="h-48 w-48 shrink-0 rounded-lg" />
+         <div className="flex-1 space-y-3">
+            <Skeleton className="h-8 w-2/3" />
+            <Skeleton className="h-4 w-1/3" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-5/6" />
+         </div>
+      </div>
+   </div>
+);
+
+// Dynamic work (param read, existence check + notFound, prefetch) lives here so
+// the page itself stays a static App Shell and this streams in under Suspense.
+const ArtistContent = async ({ params }: ArtistPageProps) => {
    const { ratingKey } = await params;
    const { data: artist } = await caller.plex.getMetadata({ ratingKey });
    if (!artist) notFound();
@@ -52,6 +71,14 @@ const ArtistPage = async ({ params }: ArtistPageProps) => {
       <HydrateClient>
          <ArtistDetail ratingKey={ratingKey} />
       </HydrateClient>
+   );
+};
+
+const ArtistPage = ({ params }: ArtistPageProps) => {
+   return (
+      <Suspense fallback={<ArtistFallback />}>
+         <ArtistContent params={params} />
+      </Suspense>
    );
 };
 export default ArtistPage;

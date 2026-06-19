@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { FooterVersionStatus } from "~/components/footer-version-status";
+import { FooterYear } from "~/components/footer-year";
 
 export const Footer = () => {
    const version = process.env.NEXT_PUBLIC_VERSION ?? "dev";
@@ -22,7 +23,7 @@ export const Footer = () => {
                />
                <span className="text-primary/70">plexo</span>
                <span className="text-border">·</span>
-               <span>{new Date().getFullYear()}</span>
+               <FooterYear />
             </div>
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
                <span>

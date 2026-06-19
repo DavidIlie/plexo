@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import { trpc, getQueryClient, HydrateClient } from "~/trpc/server";
+import { Skeleton } from "~/components/ui/skeleton";
 import { AnalyticsContent } from "./analytics-content";
 import { analyticsSearchParamsCache, periodToDays } from "./search-params";
 
@@ -6,7 +8,17 @@ interface Props {
    searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-const AnalyticsPage = async ({ searchParams }: Props) => {
+const AnalyticsFallback = () => (
+   <div className="grid gap-4 lg:grid-cols-2">
+      {Array.from({ length: 6 }).map((_, i) => (
+         <Skeleton key={i} className="h-64 w-full rounded-lg" />
+      ))}
+   </div>
+);
+
+// Reading searchParams defers this to request time, so it lives in a Suspense'd
+// child while the page itself stays a static App Shell.
+const AnalyticsData = async ({ searchParams }: Props) => {
    const { period } = await analyticsSearchParamsCache.parse(searchParams);
    const days = periodToDays(period);
    const queryClient = getQueryClient();
@@ -57,10 +69,18 @@ const AnalyticsPage = async ({ searchParams }: Props) => {
 
    return (
       <HydrateClient>
-         <div className="space-y-6">
-            <AnalyticsContent />
-         </div>
+         <AnalyticsContent />
       </HydrateClient>
+   );
+};
+
+const AnalyticsPage = ({ searchParams }: Props) => {
+   return (
+      <div className="space-y-6">
+         <Suspense fallback={<AnalyticsFallback />}>
+            <AnalyticsData searchParams={searchParams} />
+         </Suspense>
+      </div>
    );
 };
 export default AnalyticsPage;

@@ -42,5 +42,4 @@ const handler = (req: NextRequest) => {
 export { handler as GET, handler as POST };
 
 export const dynamic = "force-dynamic";
-export const fetchCache = "force-no-store";
 export const runtime = "nodejs";
