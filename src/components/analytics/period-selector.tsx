@@ -13,7 +13,6 @@ import {
 import { Button } from "~/components/ui/button";
 import {
    PERIODS,
-   periodToDays,
    navigatePeriod,
    formatPeriodLabel,
    canGoForward,
@@ -73,12 +72,4 @@ export const PeriodSelector = () => {
          </Button>
       </div>
    );
-};
-
-export const usePeriodDays = (): number => {
-   const [period] = useQueryState(
-      "period",
-      parseAsString.withDefault("last30d"),
-   );
-   return periodToDays(period);
 };

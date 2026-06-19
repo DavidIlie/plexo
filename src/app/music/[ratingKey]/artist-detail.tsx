@@ -434,19 +434,13 @@ const AlbumCard = ({ album }: { album: PlexMediaItem }) => {
 
 const ALBUMS_PAGE_SIZE = 20;
 
-export const ArtistDetail = ({ ratingKey }: { ratingKey: string }) => {
-   const trpc = useTRPC();
+interface ArtistDetailProps {
+   artist: PlexMediaItem;
+   albums: PlexMediaItem[];
+}
+
+export const ArtistDetail = ({ artist, albums }: ArtistDetailProps) => {
    const [albumsShown, setAlbumsShown] = useState(ALBUMS_PAGE_SIZE);
-
-   const { data: artistData, isLoading: artistLoading } = useQuery(
-      trpc.plex.getMetadata.queryOptions({ ratingKey }),
-   );
-   const { data: albumsData, isLoading: albumsLoading } = useQuery(
-      trpc.plex.getChildren.queryOptions({ ratingKey }),
-   );
-
-   const artist = artistData?.data;
-   const albums = albumsData?.data ?? [];
 
    const totalPlays = useMemo(() => {
       let count = 0;
@@ -464,43 +458,6 @@ export const ArtistDetail = ({ ratingKey }: { ratingKey: string }) => {
    }, []);
 
    const albumSentinelRef = useIntersectionObserver(loadMoreAlbums, hasMoreAlbums);
-
-   if (!artist) {
-      if (!artistLoading) return null;
-      return (
-         <div className="space-y-6">
-            <Link
-               href="/music"
-               className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-            >
-               <ArrowLeft className="h-4 w-4" />
-               Back to Music
-            </Link>
-            <div className="flex flex-col gap-6 sm:flex-row">
-               <Skeleton className="h-48 w-48 shrink-0 rounded-lg" />
-               <div className="flex-1 space-y-3">
-                  <Skeleton className="h-8 w-2/3" />
-                  <Skeleton className="h-4 w-1/3" />
-                  <div className="flex flex-wrap gap-1.5">
-                     {Array.from({ length: 4 }).map((_, i) => (
-                        <Skeleton key={i} className="h-5 w-16 rounded-full" />
-                     ))}
-                  </div>
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-5/6" />
-               </div>
-            </div>
-            <div className="space-y-3">
-               <Skeleton className="h-4 w-32" />
-               <div className="space-y-3">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                     <Skeleton key={i} className="h-24 w-full rounded-lg" />
-                  ))}
-               </div>
-            </div>
-         </div>
-      );
-   }
 
    return (
       <div className="space-y-6">
@@ -555,27 +512,19 @@ export const ArtistDetail = ({ ratingKey }: { ratingKey: string }) => {
             <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
                Albums ({albums.length})
             </h2>
-            {albumsLoading ? (
-               <div className="space-y-3">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                     <Skeleton key={i} className="h-24 w-full rounded-lg" />
-                  ))}
-               </div>
-            ) : (
-               <div className="space-y-2">
-                  {visibleAlbums.map((album) => (
-                     <AlbumCard key={album.ratingKey} album={album} />
-                  ))}
-                  <div ref={albumSentinelRef} className="h-1" />
-                  {hasMoreAlbums && (
-                     <div className="flex justify-center py-2">
-                        <span className="text-xs text-muted-foreground">
-                           Loading more albums...
-                        </span>
-                     </div>
-                  )}
-               </div>
-            )}
+            <div className="space-y-2">
+               {visibleAlbums.map((album) => (
+                  <AlbumCard key={album.ratingKey} album={album} />
+               ))}
+               <div ref={albumSentinelRef} className="h-1" />
+               {hasMoreAlbums && (
+                  <div className="flex justify-center py-2">
+                     <span className="text-xs text-muted-foreground">
+                        Loading more albums...
+                     </span>
+                  </div>
+               )}
+            </div>
          </div>
       </div>
    );

@@ -1,32 +1,27 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 
-import { useTRPC } from "~/trpc/react";
+import type { getVideoQualityStatsCached } from "~/server/cache/analytics";
 import { ChartWrapper, CHART_TOOLTIP_STYLE } from "~/components/analytics/chart-wrapper";
 
-export const VideoQualityChart = () => {
-   const trpc = useTRPC();
-   const { data, isLoading, isFetching } = useQuery({
-      ...trpc.analytics.getVideoQualityStats.queryOptions(),
-      refetchInterval: 30 * 60 * 1000,
-      gcTime: Infinity,
-   });
+interface Props {
+   data: Awaited<ReturnType<typeof getVideoQualityStatsCached>>;
+   lastUpdatedAt?: string;
+}
 
-   const chartData = data?.data ?? [];
-
-   if (!isLoading && chartData.length === 0) return null;
+export const VideoQualityChart = ({ data, lastUpdatedAt }: Props) => {
+   if (data.length === 0) return null;
 
    return (
       <ChartWrapper
          title="Video Quality"
          description="Resolution distribution across your movie library"
-         isLoading={isLoading}
-         isFetching={isFetching}
-         lastUpdatedAt={data?.lastUpdatedAt}
+         isLoading={false}
+         isFetching={false}
+         lastUpdatedAt={lastUpdatedAt}
       >
-         <BarChart data={chartData} layout="vertical">
+         <BarChart data={data} layout="vertical">
             <XAxis type="number" stroke="var(--muted-foreground)" />
             <YAxis
                type="category"

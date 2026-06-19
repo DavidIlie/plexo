@@ -1,38 +1,34 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, Legend } from "recharts";
 
-import { useTRPC } from "~/trpc/react";
+import type { TautulliPlaysByDate } from "~/types/tautulli";
 import { ChartWrapper, CHART_TOOLTIP_STYLE } from "~/components/analytics/chart-wrapper";
 
 interface Props {
+   data: TautulliPlaysByDate;
    timeRange?: number;
+   lastUpdatedAt?: string;
 }
 
-export const MonthlyTrendsChart: React.FC<Props> = ({ timeRange = 365 }) => {
-   const trpc = useTRPC();
-   const { data, isLoading, isFetching } = useQuery({
-      ...trpc.tautulli.getPlaysByDate.queryOptions({ timeRange }),
-      refetchInterval: 15 * 60 * 1000,
-      gcTime: Infinity,
+export const MonthlyTrendsChart: React.FC<Props> = ({
+   data,
+   timeRange = 365,
+   lastUpdatedAt,
+}) => {
+   const chartData = data.categories.map((date, index) => {
+      const point: Record<string, string | number> = { date };
+      for (const series of data.series) {
+         point[series.name] = series.data[index] ?? 0;
+      }
+      return point;
    });
 
-   const rawData = data?.data;
-   const chartData =
-      rawData?.categories.map((date, index) => {
-         const point: Record<string, string | number> = { date };
-         for (const series of rawData.series) {
-            point[series.name] = series.data[index] ?? 0;
-         }
-         return point;
-      }) ?? [];
-
-   const seriesNames = rawData?.series.map((s) => s.name) ?? [];
+   const seriesNames = data.series.map((s) => s.name);
    const colors = ["var(--chart-1)", "var(--chart-2)", "var(--chart-4)"];
 
    return (
-      <ChartWrapper title="Watch Trends" description={`Daily plays over last ${timeRange} days`} isLoading={isLoading} isFetching={isFetching} lastUpdatedAt={data?.lastUpdatedAt}>
+      <ChartWrapper title="Watch Trends" description={`Daily plays over last ${timeRange} days`} isLoading={false} isFetching={false} lastUpdatedAt={lastUpdatedAt}>
          <AreaChart data={chartData}>
             <XAxis
                dataKey="date"

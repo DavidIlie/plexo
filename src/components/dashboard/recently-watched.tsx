@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { ArrowRight, Film, Tv, Music, MapPin } from "lucide-react";
 
@@ -14,6 +14,7 @@ import { MediaDetailDialog } from "~/components/media/media-detail-dialog";
 import { PlatformBadge, getPlatformMeta } from "~/components/media/platform-icon";
 import { formatHistoryTitle } from "~/lib/utils";
 import type { PlexMediaItem } from "~/types/plex";
+import type { TautulliHistoryItem } from "~/types/tautulli";
 
 const formatDuration = (seconds: number) => {
    const mins = Math.round(seconds / 60);
@@ -27,17 +28,15 @@ const mediaTypeIcon = (type: string) => {
    return <Film className="h-3 w-3" />;
 };
 
-export const RecentlyWatched = () => {
+export const RecentlyWatchedList = ({
+   items,
+}: {
+   items: TautulliHistoryItem[];
+}) => {
    const trpc = useTRPC();
    const router = useRouter();
    const { musicEnabled, locationsEnabled } = useAppConfig();
-   const { data } = useSuspenseQuery({
-      ...trpc.tautulli.getHistory.queryOptions({ length: 10 }),
-      refetchInterval: 5 * 60 * 1000,
-   });
    const [selectedItem, setSelectedItem] = useState<PlexMediaItem | null>(null);
-
-   const items = data?.data.data ?? [];
 
    const ipAddresses = useMemo(
       () => items.map((item) => item.ip_address),

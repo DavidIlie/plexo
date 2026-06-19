@@ -1,16 +1,25 @@
 import { Suspense } from "react";
-import { connection } from "next/server";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import type { Metadata } from "next";
 
-import { trpc, getQueryClient, HydrateClient } from "~/trpc/server";
+import { env } from "~/env";
 import { getDashboardStatsCached } from "~/server/cache/stats";
+import {
+   getGenreDistributionCached,
+   getHighlightsCached,
+   getMusicGenreDistributionCached,
+   getTopArtistsCached,
+} from "~/server/cache/analytics";
+import { getHistoryWindow } from "~/server/cache/history";
+import { getWishlistCached } from "~/server/cache/recommend";
+import { getOnDeck } from "~/lib/plex";
+import { getPlaysByHourOfDay } from "~/lib/tautulli";
 import { StatCard } from "~/components/dashboard/stat-card";
-import { OnDeck } from "~/components/dashboard/on-deck";
-import { RecentlyWatched } from "~/components/dashboard/recently-watched";
-import { Highlights } from "~/components/dashboard/highlights";
-import { Wishlist } from "~/components/dashboard/wishlist";
+import { OnDeckGrid } from "~/components/dashboard/on-deck";
+import { RecentlyWatchedList } from "~/components/dashboard/recently-watched";
+import { HighlightsGrid } from "~/components/dashboard/highlights";
+import { WishlistGrid } from "~/components/dashboard/wishlist";
 import { GenreDistributionChart } from "~/components/analytics/genre-distribution-chart";
 import { MusicGenreChart } from "~/components/analytics/music-genre-chart";
 import { TopArtistsChart } from "~/components/analytics/top-artists-chart";
@@ -110,23 +119,55 @@ const SectionFallback = () => (
    </div>
 );
 
-const DashboardBody = async () => {
-   // Defer the live data sections to request time. Their server-side prefetches
-   // run getCachedOrFetch / stamp timestamps, which can't happen during the
-   // static prerender — connection() marks this subtree dynamic so it streams
-   // into the static shell as an App-Shell hole.
-   await connection();
+const Highlights = async () => {
+   const highlights = await getHighlightsCached();
+   return <HighlightsGrid highlights={highlights} />;
+};
 
-   const queryClient = getQueryClient();
-   void queryClient.prefetchQuery(trpc.plex.getOnDeck.queryOptions());
-   void queryClient.prefetchQuery(
-      trpc.tautulli.getHistory.queryOptions({ length: 10 }),
-   );
-   void queryClient.prefetchQuery(trpc.analytics.getHighlights.queryOptions());
-   void queryClient.prefetchQuery(trpc.recommend.getWishlist.queryOptions());
+const OnDeck = async () => {
+   const items = await getOnDeck();
+   return <OnDeckGrid items={items} />;
+};
 
+const Wishlist = async () => {
+   const items = await getWishlistCached();
+   return <WishlistGrid items={items} />;
+};
+
+const RecentlyWatched = async () => {
+   const hist = await getHistoryWindow(10, 0, undefined);
+   return <RecentlyWatchedList items={hist.data} />;
+};
+
+const GenreDistribution = async () => {
+   const data = await getGenreDistributionCached();
+   return <GenreDistributionChart data={data} />;
+};
+
+const WatchTimeByHour = async () => {
+   const data = await getPlaysByHourOfDay(30);
+   return <WatchTimeByHourChart data={data} timeRange={30} />;
+};
+
+const MusicGenre = async () => {
+   const data = await getMusicGenreDistributionCached();
+   return <MusicGenreChart data={data} />;
+};
+
+const TopArtists = async () => {
+   const data = await getTopArtistsCached();
+   return <TopArtistsChart data={data} />;
+};
+
+const ChartFallback = () => <Skeleton className="h-[320px] w-full rounded-lg" />;
+
+const DashboardPage = () => {
    return (
-      <HydrateClient>
+      <div className="space-y-8">
+         <Suspense fallback={<StatsFallback />}>
+            <DashboardStats />
+         </Suspense>
+
          <Suspense fallback={<SectionFallback />}>
             <Highlights />
          </Suspense>
@@ -153,28 +194,27 @@ const DashboardBody = async () => {
                </Link>
             </div>
             <div className="grid gap-4 lg:grid-cols-2">
-               <GenreDistributionChart />
-               <WatchTimeByHourChart />
-               <MusicGenreChart />
-               <TopArtistsChart />
+               <Suspense fallback={<ChartFallback />}>
+                  <GenreDistribution />
+               </Suspense>
+               <Suspense fallback={<ChartFallback />}>
+                  <WatchTimeByHour />
+               </Suspense>
+               {env.SHOW_MUSIC && (
+                  <>
+                     <Suspense fallback={<ChartFallback />}>
+                        <MusicGenre />
+                     </Suspense>
+                     <Suspense fallback={<ChartFallback />}>
+                        <TopArtists />
+                     </Suspense>
+                  </>
+               )}
             </div>
          </div>
 
          <Suspense fallback={<Skeleton className="h-64" />}>
             <RecentlyWatched />
-         </Suspense>
-      </HydrateClient>
-   );
-};
-
-const DashboardPage = () => {
-   return (
-      <div className="space-y-8">
-         <Suspense fallback={<StatsFallback />}>
-            <DashboardStats />
-         </Suspense>
-         <Suspense fallback={<SectionFallback />}>
-            <DashboardBody />
          </Suspense>
       </div>
    );

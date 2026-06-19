@@ -1,10 +1,9 @@
 "use client";
 
 import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 
-import { useTRPC } from "~/trpc/react";
+import type { getLibrarySizeStatsCached } from "~/server/cache/analytics";
 import { ChartWrapper, CHART_TOOLTIP_STYLE } from "~/components/analytics/chart-wrapper";
 
 const formatBytes = (bytes: number) => {
@@ -17,24 +16,17 @@ const formatBytes = (bytes: number) => {
 const TB = 1024 * 1024 * 1024 * 1024;
 const GB = 1024 * 1024 * 1024;
 
-export const LibrarySizeChart = () => {
-   const trpc = useTRPC();
-   const { data, isLoading, isFetching } = useQuery({
-      ...trpc.analytics.getLibrarySizeStats.queryOptions(),
-      refetchInterval: 60 * 60 * 1000,
-      gcTime: Infinity,
-   });
+interface Props {
+   data: Awaited<ReturnType<typeof getLibrarySizeStatsCached>>;
+   lastUpdatedAt?: string;
+}
 
-   const rawData = data?.data ?? [];
+export const LibrarySizeChart = ({ data, lastUpdatedAt }: Props) => {
+   const useTB = useMemo(() => data.some((d) => d.bytes >= TB), [data]);
 
-   const useTB = useMemo(
-      () => rawData.some((d) => d.bytes >= TB),
-      [rawData],
-   );
+   if (data.length === 0) return null;
 
-   if (!isLoading && rawData.length === 0) return null;
-
-   const chartData = rawData.map((d) => ({
+   const chartData = data.map((d) => ({
       name: d.name,
       size: useTB
          ? Math.round((d.bytes / TB) * 100) / 100
@@ -49,9 +41,9 @@ export const LibrarySizeChart = () => {
       <ChartWrapper
          title="Library Size"
          description="Storage usage per library"
-         isLoading={isLoading}
-         isFetching={isFetching}
-         lastUpdatedAt={data?.lastUpdatedAt}
+         isLoading={false}
+         isFetching={false}
+         lastUpdatedAt={lastUpdatedAt}
       >
          <BarChart data={chartData}>
             <XAxis dataKey="name" stroke="var(--muted-foreground)" />

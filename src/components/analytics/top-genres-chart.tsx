@@ -1,24 +1,19 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 
-import { useTRPC } from "~/trpc/react";
+import type { getTopWatchedGenresCached } from "~/server/cache/analytics";
 import { ChartWrapper, CHART_TOOLTIP_STYLE } from "~/components/analytics/chart-wrapper";
 
-export const TopGenresChart = () => {
-   const trpc = useTRPC();
-   const { data, isLoading, isFetching } = useQuery({
-      ...trpc.analytics.getTopWatchedGenres.queryOptions(),
-      refetchInterval: 15 * 60 * 1000,
-      gcTime: Infinity,
-   });
+interface Props {
+   data: Awaited<ReturnType<typeof getTopWatchedGenresCached>>;
+   lastUpdatedAt?: string;
+}
 
-   const chartData = data?.data ?? [];
-
+export const TopGenresChart = ({ data, lastUpdatedAt }: Props) => {
    return (
-      <ChartWrapper title="Most Watched Genres" isLoading={isLoading} isFetching={isFetching} lastUpdatedAt={data?.lastUpdatedAt}>
-         <BarChart data={chartData} layout="vertical">
+      <ChartWrapper title="Most Watched Genres" isLoading={false} isFetching={false} lastUpdatedAt={lastUpdatedAt}>
+         <BarChart data={data} layout="vertical">
             <XAxis type="number" stroke="var(--muted-foreground)" />
             <YAxis
                type="category"

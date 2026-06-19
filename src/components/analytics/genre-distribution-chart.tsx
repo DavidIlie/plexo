@@ -1,9 +1,8 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
 
-import { useTRPC } from "~/trpc/react";
+import type { getGenreDistributionCached } from "~/server/cache/analytics";
 import { ChartWrapper, CHART_TOOLTIP_STYLE } from "~/components/analytics/chart-wrapper";
 
 const COLORS = [
@@ -17,18 +16,16 @@ const COLORS = [
    "oklch(0.65 0.08 280)",
 ];
 
-export const GenreDistributionChart = () => {
-   const trpc = useTRPC();
-   const { data, isLoading, isFetching } = useQuery({
-      ...trpc.analytics.getGenreDistribution.queryOptions(),
-      refetchInterval: 30 * 60 * 1000,
-      gcTime: Infinity,
-   });
+interface Props {
+   data: Awaited<ReturnType<typeof getGenreDistributionCached>>;
+   lastUpdatedAt?: string;
+}
 
-   const chartData = (data?.data ?? []).slice(0, 8);
+export const GenreDistributionChart = ({ data, lastUpdatedAt }: Props) => {
+   const chartData = data.slice(0, 8);
 
    return (
-      <ChartWrapper title="Library by Genre" description="Top genres across all movies and TV shows" isLoading={isLoading} isFetching={isFetching} lastUpdatedAt={data?.lastUpdatedAt}>
+      <ChartWrapper title="Library by Genre" description="Top genres across all movies and TV shows" isLoading={false} isFetching={false} lastUpdatedAt={lastUpdatedAt}>
          <PieChart>
             <Pie
                data={chartData}

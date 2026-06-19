@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { PieChart, Pie, Cell, Tooltip } from "recharts";
 
-import { useTRPC } from "~/trpc/react";
+import type { getMediaTypeRatioCached } from "~/server/cache/analytics";
 import { ChartWrapper, CHART_TOOLTIP_STYLE } from "~/components/analytics/chart-wrapper";
 
 const COLOR_MAP: Record<string, string> = {
@@ -13,15 +12,13 @@ const COLOR_MAP: Record<string, string> = {
    Music: "var(--chart-3)",
 };
 
-export const MediaRatioChart = () => {
-   const trpc = useTRPC();
-   const { data, isLoading, isFetching } = useQuery({
-      ...trpc.analytics.getMediaTypeRatio.queryOptions(),
-      refetchInterval: 15 * 60 * 1000,
-      gcTime: Infinity,
-   });
+interface Props {
+   data: Awaited<ReturnType<typeof getMediaTypeRatioCached>>;
+   lastUpdatedAt?: string;
+}
 
-   const allData = data?.data ?? [];
+export const MediaRatioChart = ({ data, lastUpdatedAt }: Props) => {
+   const allData = data;
    const hasMusic = allData.some((d) => d.name === "Music");
    const [showMusic, setShowMusic] = useState(true);
 
@@ -36,9 +33,9 @@ export const MediaRatioChart = () => {
    return (
       <ChartWrapper
          title={title}
-         isLoading={isLoading}
-         isFetching={isFetching}
-         lastUpdatedAt={data?.lastUpdatedAt}
+         isLoading={false}
+         isFetching={false}
+         lastUpdatedAt={lastUpdatedAt}
          headerRight={
             hasMusic ? (
                <button

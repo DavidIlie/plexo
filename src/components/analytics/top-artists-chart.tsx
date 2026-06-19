@@ -1,32 +1,27 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 
-import { useTRPC } from "~/trpc/react";
+import type { getTopArtistsCached } from "~/server/cache/analytics";
 import { ChartWrapper, CHART_TOOLTIP_STYLE } from "~/components/analytics/chart-wrapper";
 
-export const TopArtistsChart = () => {
-   const trpc = useTRPC();
-   const { data, isLoading, isFetching } = useQuery({
-      ...trpc.analytics.getTopArtists.queryOptions(),
-      refetchInterval: 15 * 60 * 1000,
-      gcTime: Infinity,
-   });
+interface Props {
+   data: Awaited<ReturnType<typeof getTopArtistsCached>>;
+   lastUpdatedAt?: string;
+}
 
-   if (data?.data === null) return null;
+export const TopArtistsChart = ({ data, lastUpdatedAt }: Props) => {
+   const chartData = data.slice(0, 10);
 
-   const chartData = (data?.data ?? []).slice(0, 10);
-
-   if (!isLoading && chartData.length === 0) return null;
+   if (chartData.length === 0) return null;
 
    return (
       <ChartWrapper
          title="Most Played Artists"
          description="Artists with the most plays from your history"
-         isLoading={isLoading}
-         isFetching={isFetching}
-         lastUpdatedAt={data?.lastUpdatedAt}
+         isLoading={false}
+         isFetching={false}
+         lastUpdatedAt={lastUpdatedAt}
       >
          <BarChart data={chartData} layout="vertical">
             <XAxis type="number" stroke="var(--muted-foreground)" />

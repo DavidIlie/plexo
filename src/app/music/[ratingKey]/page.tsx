@@ -2,12 +2,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
-import {
-   caller,
-   trpc,
-   getQueryClient,
-   HydrateClient,
-} from "~/trpc/server";
+import { getMetadata, getChildren } from "~/lib/plex";
 import { Skeleton } from "~/components/ui/skeleton";
 import { ArtistDetail } from "./artist-detail";
 
@@ -19,7 +14,7 @@ export const generateMetadata = async ({
    params,
 }: ArtistPageProps): Promise<Metadata> => {
    const { ratingKey } = await params;
-   const { data: artist } = await caller.plex.getMetadata({ ratingKey });
+   const artist = await getMetadata(ratingKey);
    if (!artist) return { title: "Artist Not Found" };
    const desc = artist.summary
       ? artist.summary.slice(0, 160)
@@ -52,26 +47,20 @@ const ArtistFallback = () => (
    </div>
 );
 
-// Dynamic work (param read, existence check + notFound, prefetch) lives here so
-// the page itself stays a static App Shell and this streams in under Suspense.
+// Dynamic work (param read, existence check + notFound, data fetch) lives here
+// so the page itself stays a static App Shell and this streams in under
+// Suspense. The artist + albums come straight from the cached read functions
+// and are passed to the browser component as props (no client read fetch on
+// first paint).
 const ArtistContent = async ({ params }: ArtistPageProps) => {
    const { ratingKey } = await params;
-   const { data: artist } = await caller.plex.getMetadata({ ratingKey });
+   const [artist, albums] = await Promise.all([
+      getMetadata(ratingKey),
+      getChildren(ratingKey),
+   ]);
    if (!artist) notFound();
 
-   const queryClient = getQueryClient();
-   void queryClient.prefetchQuery(
-      trpc.plex.getMetadata.queryOptions({ ratingKey }),
-   );
-   void queryClient.prefetchQuery(
-      trpc.plex.getChildren.queryOptions({ ratingKey }),
-   );
-
-   return (
-      <HydrateClient>
-         <ArtistDetail ratingKey={ratingKey} />
-      </HydrateClient>
-   );
+   return <ArtistDetail artist={artist} albums={albums} />;
 };
 
 const ArtistPage = ({ params }: ArtistPageProps) => {

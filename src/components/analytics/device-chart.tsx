@@ -1,25 +1,22 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 
-import { useTRPC } from "~/trpc/react";
+import type { getDeviceStatsCached } from "~/server/cache/analytics";
 import { ChartWrapper, CHART_TOOLTIP_STYLE } from "~/components/analytics/chart-wrapper";
 
-export const DeviceChart = () => {
-   const trpc = useTRPC();
-   const { data, isLoading, isFetching } = useQuery({
-      ...trpc.analytics.getDeviceStats.queryOptions(),
-      refetchInterval: 15 * 60 * 1000,
-      gcTime: Infinity,
-   });
+interface Props {
+   data: Awaited<ReturnType<typeof getDeviceStatsCached>>;
+   lastUpdatedAt?: string;
+}
 
-   if (data?.data === null) return null;
+export const DeviceChart = ({ data, lastUpdatedAt }: Props) => {
+   const chartData = data.slice(0, 8);
 
-   const chartData = (data?.data ?? []).slice(0, 8);
+   if (chartData.length === 0) return null;
 
    return (
-      <ChartWrapper title="Devices" isLoading={isLoading} isFetching={isFetching} lastUpdatedAt={data?.lastUpdatedAt}>
+      <ChartWrapper title="Devices" isLoading={false} isFetching={false} lastUpdatedAt={lastUpdatedAt}>
          <BarChart data={chartData} layout="vertical">
             <XAxis type="number" stroke="var(--muted-foreground)" />
             <YAxis

@@ -1,9 +1,8 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 
-import { useTRPC } from "~/trpc/react";
+import type { TautulliPlaysByHourOfDay } from "~/types/tautulli";
 import { ChartWrapper, CHART_TOOLTIP_STYLE } from "~/components/analytics/chart-wrapper";
 
 const formatHour = (h: string) => {
@@ -14,29 +13,26 @@ const formatHour = (h: string) => {
 };
 
 interface Props {
+   data: TautulliPlaysByHourOfDay;
    timeRange?: number;
+   lastUpdatedAt?: string;
 }
 
-export const WatchTimeByHourChart: React.FC<Props> = ({ timeRange = 30 }) => {
-   const trpc = useTRPC();
-   const { data, isLoading, isFetching } = useQuery({
-      ...trpc.tautulli.getPlaysByHourOfDay.queryOptions({ timeRange }),
-      refetchInterval: 15 * 60 * 1000,
-      gcTime: Infinity,
-   });
-
-   const rawData = data?.data;
-   const chartData =
-      rawData?.categories.map((hour, index) => ({
-         hour: formatHour(hour),
-         plays: rawData.series.reduce(
-            (sum, series) => sum + (series.data[index] ?? 0),
-            0,
-         ),
-      })) ?? [];
+export const WatchTimeByHourChart: React.FC<Props> = ({
+   data,
+   timeRange = 30,
+   lastUpdatedAt,
+}) => {
+   const chartData = data.categories.map((hour, index) => ({
+      hour: formatHour(hour),
+      plays: data.series.reduce(
+         (sum, series) => sum + (series.data[index] ?? 0),
+         0,
+      ),
+   }));
 
    return (
-      <ChartWrapper title="Favorite Viewing Times" description={`Plays by hour of day, last ${timeRange} days`} isLoading={isLoading} isFetching={isFetching} lastUpdatedAt={data?.lastUpdatedAt}>
+      <ChartWrapper title="Favorite Viewing Times" description={`Plays by hour of day, last ${timeRange} days`} isLoading={false} isFetching={false} lastUpdatedAt={lastUpdatedAt}>
          <BarChart data={chartData}>
             <XAxis
                dataKey="hour"

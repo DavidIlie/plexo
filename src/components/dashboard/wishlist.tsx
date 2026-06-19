@@ -1,14 +1,15 @@
 "use client";
 
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Film, Tv, Clock, Check, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 
-import { useTRPC } from "~/trpc/react";
 import { Badge } from "~/components/ui/badge";
 import { PlexImage } from "~/components/plex-image";
+import type { getWishlistCached } from "~/server/cache/recommend";
+
+type WishlistItem = Awaited<ReturnType<typeof getWishlistCached>>[number];
 
 const statusConfig = {
    pending: { label: "Pending", icon: Clock, className: "text-amber-500" },
@@ -18,14 +19,8 @@ const statusConfig = {
    watchlist: { label: "Watchlist", icon: Clock, className: "text-primary" },
 } as const;
 
-export const Wishlist = () => {
-   const trpc = useTRPC();
-   const { data } = useSuspenseQuery({
-      ...trpc.recommend.getWishlist.queryOptions(),
-      refetchInterval: 5 * 60 * 1000,
-   });
-
-   if (data.data.length === 0) return null;
+export const WishlistGrid = ({ items }: { items: WishlistItem[] }) => {
+   if (items.length === 0) return null;
 
    return (
       <section>
@@ -33,7 +28,7 @@ export const Wishlist = () => {
             Wishlist
          </h2>
          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-            {data.data.map((item, i) => {
+            {items.map((item, i) => {
                const config = statusConfig[item.status];
                const StatusIcon = config.icon;
                const isTmdbPoster =

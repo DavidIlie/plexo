@@ -1,34 +1,27 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 
-import { useTRPC } from "~/trpc/react";
+import type { getMusicAudioFormatStatsCached } from "~/server/cache/analytics";
 import { ChartWrapper, CHART_TOOLTIP_STYLE } from "~/components/analytics/chart-wrapper";
 
-export const MusicAudioFormatChart = () => {
-   const trpc = useTRPC();
-   const { data, isLoading, isFetching } = useQuery({
-      ...trpc.analytics.getMusicAudioFormatStats.queryOptions(),
-      refetchInterval: 30 * 60 * 1000,
-      gcTime: Infinity,
-   });
+interface Props {
+   data: Awaited<ReturnType<typeof getMusicAudioFormatStatsCached>>;
+   lastUpdatedAt?: string;
+}
 
-   if (data?.data === null) return null;
-
-   const chartData = data?.data ?? [];
-
-   if (!isLoading && chartData.length === 0) return null;
+export const MusicAudioFormatChart = ({ data, lastUpdatedAt }: Props) => {
+   if (data.length === 0) return null;
 
    return (
       <ChartWrapper
          title="Music Audio Format"
          description="Audio codec distribution across your music library"
-         isLoading={isLoading}
-         isFetching={isFetching}
-         lastUpdatedAt={data?.lastUpdatedAt}
+         isLoading={false}
+         isFetching={false}
+         lastUpdatedAt={lastUpdatedAt}
       >
-         <BarChart data={chartData} layout="vertical">
+         <BarChart data={data} layout="vertical">
             <XAxis type="number" stroke="var(--muted-foreground)" />
             <YAxis
                type="category"

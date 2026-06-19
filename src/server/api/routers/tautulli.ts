@@ -1,10 +1,7 @@
 import { z } from "zod";
-import { cacheLife, cacheTag } from "next/cache";
 
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
-import { CACHE_TAGS } from "~/lib/cache-tags";
 import {
-   getHistory,
    getHomeStats,
    getPlaysByDate,
    getPlaysByDayOfWeek,
@@ -12,34 +9,8 @@ import {
    getMostWatched,
    getGeoipLookup,
 } from "~/lib/tautulli";
+import { getHistoryWindow, getItemHistoryCached } from "~/server/cache/history";
 import { env } from "~/env";
-
-// Cached history window (keyed on length/start/mediaType). The underlying
-// getHistory is cursor-paginated and uncached; this caches the specific windows
-// the UI requests (homepage feed + activity browse pages).
-const getHistoryWindow = async (
-   length: number,
-   start: number,
-   mediaType: string | undefined,
-) => {
-   "use cache: remote";
-   cacheLife("activity");
-   cacheTag(CACHE_TAGS.tautulli, CACHE_TAGS.tautulliHistory);
-   return getHistory(length, start, mediaType);
-};
-
-const getItemHistoryCached = async (ratingKey: string) => {
-   "use cache: remote";
-   cacheLife("activity");
-   cacheTag(CACHE_TAGS.tautulli, CACHE_TAGS.tautulliItem(ratingKey));
-
-   const history = await getHistory(200);
-   return history.data.filter(
-      (item) =>
-         String(item.rating_key) === ratingKey ||
-         String(item.grandparent_rating_key) === ratingKey,
-   );
-};
 
 export const tautulliRouter = createTRPCRouter({
    getHistory: publicProcedure

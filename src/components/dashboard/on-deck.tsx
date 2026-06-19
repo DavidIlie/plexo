@@ -1,12 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useSuspenseQuery } from "@tanstack/react-query";
 
-import { useTRPC } from "~/trpc/react";
 import { PlexImage } from "~/components/plex-image";
 import { MediaDetailDialog } from "~/components/media/media-detail-dialog";
-import type { PlexMediaItem, PlexOnDeckItem } from "~/types/plex";
+import type { PlexOnDeckItem } from "~/types/plex";
 
 const formatDuration = (ms: number) => {
    const totalSeconds = Math.floor(ms / 1000);
@@ -19,15 +17,8 @@ const formatDuration = (ms: number) => {
    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 };
 
-export const OnDeck = () => {
-   const trpc = useTRPC();
-   const { data } = useSuspenseQuery({
-      ...trpc.plex.getOnDeck.queryOptions(),
-      refetchInterval: 5 * 60 * 1000,
-   });
+export const OnDeckGrid = ({ items }: { items: PlexOnDeckItem[] }) => {
    const [selected, setSelected] = useState<PlexOnDeckItem | null>(null);
-
-   const items = data?.data ?? [];
 
    if (items.length === 0) return null;
 

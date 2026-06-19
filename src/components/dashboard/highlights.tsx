@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
    Trophy,
@@ -15,10 +14,12 @@ import {
    Tv,
 } from "lucide-react";
 
-import { useTRPC } from "~/trpc/react";
 import { cn } from "~/lib/utils";
 import { MediaDetailDialog } from "~/components/media/media-detail-dialog";
 import type { PlexMediaItem } from "~/types/plex";
+import type { getHighlightsCached } from "~/server/cache/analytics";
+
+type Highlights = Awaited<ReturnType<typeof getHighlightsCached>>;
 
 interface HighlightProps {
    icon: React.ElementType;
@@ -57,17 +58,12 @@ const Highlight: React.FC<HighlightProps & { index?: number }> = ({
    </motion.div>
 );
 
-export const Highlights = () => {
-   const trpc = useTRPC();
-   const { data } = useSuspenseQuery({
-      ...trpc.analytics.getHighlights.queryOptions(),
-      refetchInterval: 15 * 60 * 1000,
-   });
+export const HighlightsGrid = ({ highlights }: { highlights: Highlights }) => {
    const [selectedItem, setSelectedItem] = useState<PlexMediaItem | null>(
       null,
    );
 
-   const h = data.data;
+   const h = highlights;
 
    const openItem = (ratingKey: string, title: string, type: string) => {
       setSelectedItem({
