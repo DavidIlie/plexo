@@ -43,17 +43,11 @@ const tautulliFetch = async <T>(
 };
 
 const isPopulatedHistoryItem = (item: TautulliHistoryItem): boolean => {
-   // Filter out deleted Plex entries (empty guid) and unknown airings
    if (!item.guid && item.title === "Unknown Airing") return false;
-   // Filter out live TV recordings that are no longer available
    if (item.guid?.startsWith("tv.plex.xmltv://") && !item.thumb) return false;
    return true;
 };
 
-// NOT cached: this is the cursor-paginated browse reader (length/start vary per
-// request), so caching would create a near-unique key per page. Aggregations
-// that need a fixed window call this with fixed args inside their own cached
-// scope, so the aggregate result is still cached.
 export const getHistory = async (
    length = 10,
    start = 0,

@@ -3,10 +3,6 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
    output: "standalone",
    cacheComponents: true,
-   // Client navigation prefetch stack: prefetch only the App Shell (static
-   // parts) on <Link> hover/viewport, then stream the dynamic holes. varyParams,
-   // optimisticRouting and prefetchInlining already default on with
-   // cacheComponents; appShells additionally requires cachedNavigations.
    partialPrefetching: true,
    compiler: {
       removeConsole:
@@ -22,12 +18,6 @@ const nextConfig: NextConfig = {
       analytics: { stale: 300, revalidate: 900, expire: 1800 },
       activity: { stale: 300, revalidate: 300, expire: 600 },
    },
-   // Always register the remote handler so `redis` is traced into the standalone
-   // output and the backend can be toggled purely via runtime env (CACHE_DRIVER
-   // / REDIS_URL). The handler module picks redis vs in-memory at load time —
-   // config is frozen at build in standalone, so the choice can't live here.
-   // Opt-in Redis cache: set CACHE_DRIVER=redis to use it; otherwise Next's
-   // built-in in-memory LRU is used.
    ...(process.env.CACHE_DRIVER === "redis"
       ? {
            cacheHandlers: {

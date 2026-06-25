@@ -1,43 +1,25 @@
 import { Suspense } from "react";
-import { connection } from "next/server";
 
-import { getLibrarySections, getShows } from "~/lib/plex";
+import { getShows } from "~/lib/plex";
+import { LibraryShell } from "~/app/_lib/library-shell";
 import { ShowsBrowser } from "~/components/media/shows-browser";
-import { Skeleton } from "~/components/ui/skeleton";
-
-const GridFallback = () => (
-   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-      {Array.from({ length: 18 }).map((_, i) => (
-         <Skeleton key={i} className="aspect-[2/3] w-full rounded-md" />
-      ))}
-   </div>
-);
-
-const ShowsShell = async () => {
-   await connection();
-   const sections = await getLibrarySections();
-   const sectionId = sections.find((s) => s.type === "show")?.key;
-
-   if (!sectionId) {
-      return (
-         <p className="text-sm text-muted-foreground">No TV library found.</p>
-      );
-   }
-
-   const { items, totalSize } = await getShows(sectionId, 0, 60);
-
-   return (
-      <ShowsBrowser
-         sectionId={sectionId}
-         initialItems={items}
-         totalSize={totalSize}
-      />
-   );
-};
+import { MediaGridFallback } from "~/components/skeletons";
 
 const TVPage = () => (
-   <Suspense fallback={<GridFallback />}>
-      <ShowsShell />
+   <Suspense fallback={<MediaGridFallback />}>
+      <LibraryShell
+         type="show"
+         emptyMessage="No TV library found."
+         fetchPage={(sectionId) => getShows(sectionId, 0, 60)}
+      >
+         {({ sectionId, initialItems, totalSize }) => (
+            <ShowsBrowser
+               sectionId={sectionId}
+               initialItems={initialItems}
+               totalSize={totalSize}
+            />
+         )}
+      </LibraryShell>
    </Suspense>
 );
 export default TVPage;

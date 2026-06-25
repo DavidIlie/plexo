@@ -5,9 +5,6 @@ import { cacheLife, cacheTag } from "next/cache";
 import { CACHE_TAGS } from "~/lib/cache-tags";
 import { getHistory } from "~/lib/tautulli";
 
-// Cached history window (keyed on length/start/mediaType). The underlying
-// getHistory is cursor-paginated and uncached; this caches the specific windows
-// the UI requests (homepage feed + activity browse pages).
 export const getHistoryWindow = async (
    length: number,
    start: number,

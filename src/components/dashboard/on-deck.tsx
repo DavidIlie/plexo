@@ -6,16 +6,7 @@ import { PlexImage } from "~/components/plex-image";
 import { MediaDetailDialog } from "~/components/media/media-detail-dialog";
 import type { PlexOnDeckItem } from "~/types/plex";
 
-const formatDuration = (ms: number) => {
-   const totalSeconds = Math.floor(ms / 1000);
-   const hours = Math.floor(totalSeconds / 3600);
-   const minutes = Math.floor((totalSeconds % 3600) / 60);
-   const seconds = totalSeconds % 60;
-   if (hours > 0) {
-      return `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-   }
-   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-};
+import { formatPlexDuration } from "~/lib/duration";
 
 export const OnDeckGrid = ({ items }: { items: PlexOnDeckItem[] }) => {
    const [selected, setSelected] = useState<PlexOnDeckItem | null>(null);
@@ -47,8 +38,8 @@ export const OnDeckGrid = ({ items }: { items: PlexOnDeckItem[] }) => {
                         <>
                            <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-black/80 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                            <div className="pointer-events-none absolute bottom-0 left-0 right-0 flex items-end justify-between px-2 pb-2.5 text-[11px] font-medium text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                              <span>{formatDuration(item.viewOffset)}</span>
-                              <span>{formatDuration(item.duration)}</span>
+                              <span>{formatPlexDuration(item.viewOffset)}</span>
+                              <span>{formatPlexDuration(item.duration)}</span>
                            </div>
                            <div className="absolute bottom-0 left-0 right-0 h-1 bg-muted/60">
                               <div

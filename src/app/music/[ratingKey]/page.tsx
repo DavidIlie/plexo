@@ -47,11 +47,6 @@ const ArtistFallback = () => (
    </div>
 );
 
-// Dynamic work (param read, existence check + notFound, data fetch) lives here
-// so the page itself stays a static App Shell and this streams in under
-// Suspense. The artist + albums come straight from the cached read functions
-// and are passed to the browser component as props (no client read fetch on
-// first paint).
 const ArtistContent = async ({ params }: ArtistPageProps) => {
    const { ratingKey } = await params;
    const [artist, albums] = await Promise.all([

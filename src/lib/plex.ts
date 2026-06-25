@@ -38,13 +38,32 @@ export const getLibrarySections = async (): Promise<PlexLibrarySection[]> => {
          "/library/sections",
       );
    const sections = data.MediaContainer.Directory;
-   // Throw (rather than cache []) on a malformed 200 so a degraded Plex response
-   // can't poison every derived aggregation for the full `library` TTL. An
-   // explicitly empty list (`[]`) is a valid "no libraries" state and is kept.
    if (!sections) {
       throw new Error("Plex returned a malformed /library/sections response");
    }
    return sections;
+};
+
+const fetchSectionPage = async (
+   sectionId: string,
+   type: number,
+   start: number,
+   size: number,
+) => {
+   const data = await plexFetch<PlexMediaContainer<PlexMediaItem>>(
+      `/library/sections/${sectionId}/all?type=${type}&X-Plex-Container-Start=${start}&X-Plex-Container-Size=${size}`,
+   );
+   return {
+      items: data.MediaContainer.Metadata ?? [],
+      totalSize: data.MediaContainer.totalSize ?? 0,
+   };
+};
+
+const fetchSectionTotal = async (sectionId: string, type: number) => {
+   const data = await plexFetch<PlexMediaContainer<PlexMediaItem>>(
+      `/library/sections/${sectionId}/all?type=${type}&X-Plex-Container-Start=0&X-Plex-Container-Size=1`,
+   );
+   return data.MediaContainer.totalSize ?? 0;
 };
 
 export const getMovies = async (
@@ -55,14 +74,7 @@ export const getMovies = async (
    "use cache";
    cacheLife("metadata");
    cacheTag(CACHE_TAGS.plex, CACHE_TAGS.section(sectionId));
-
-   const data = await plexFetch<PlexMediaContainer<PlexMediaItem>>(
-      `/library/sections/${sectionId}/all?type=1&X-Plex-Container-Start=${start}&X-Plex-Container-Size=${size}`,
-   );
-   return {
-      items: data.MediaContainer.Metadata ?? [],
-      totalSize: data.MediaContainer.totalSize ?? 0,
-   };
+   return fetchSectionPage(sectionId, 1, start, size);
 };
 
 export const getShows = async (
@@ -73,14 +85,7 @@ export const getShows = async (
    "use cache";
    cacheLife("metadata");
    cacheTag(CACHE_TAGS.plex, CACHE_TAGS.section(sectionId));
-
-   const data = await plexFetch<PlexMediaContainer<PlexMediaItem>>(
-      `/library/sections/${sectionId}/all?type=2&X-Plex-Container-Start=${start}&X-Plex-Container-Size=${size}`,
-   );
-   return {
-      items: data.MediaContainer.Metadata ?? [],
-      totalSize: data.MediaContainer.totalSize ?? 0,
-   };
+   return fetchSectionPage(sectionId, 2, start, size);
 };
 
 export const getArtists = async (
@@ -91,36 +96,21 @@ export const getArtists = async (
    "use cache";
    cacheLife("metadata");
    cacheTag(CACHE_TAGS.plex, CACHE_TAGS.section(sectionId));
-
-   const data = await plexFetch<PlexMediaContainer<PlexMediaItem>>(
-      `/library/sections/${sectionId}/all?type=8&X-Plex-Container-Start=${start}&X-Plex-Container-Size=${size}`,
-   );
-   return {
-      items: data.MediaContainer.Metadata ?? [],
-      totalSize: data.MediaContainer.totalSize ?? 0,
-   };
+   return fetchSectionPage(sectionId, 8, start, size);
 };
 
 export const getAlbumCount = async (sectionId: string): Promise<number> => {
    "use cache";
    cacheLife("library");
    cacheTag(CACHE_TAGS.plex, CACHE_TAGS.section(sectionId));
-
-   const data = await plexFetch<PlexMediaContainer<PlexMediaItem>>(
-      `/library/sections/${sectionId}/all?type=9&X-Plex-Container-Start=0&X-Plex-Container-Size=1`,
-   );
-   return data.MediaContainer.totalSize ?? 0;
+   return fetchSectionTotal(sectionId, 9);
 };
 
 export const getTrackCount = async (sectionId: string): Promise<number> => {
    "use cache";
    cacheLife("library");
    cacheTag(CACHE_TAGS.plex, CACHE_TAGS.section(sectionId));
-
-   const data = await plexFetch<PlexMediaContainer<PlexMediaItem>>(
-      `/library/sections/${sectionId}/all?type=10&X-Plex-Container-Start=0&X-Plex-Container-Size=1`,
-   );
-   return data.MediaContainer.totalSize ?? 0;
+   return fetchSectionTotal(sectionId, 10);
 };
 
 export const getOnDeck = async (): Promise<PlexOnDeckItem[]> => {
@@ -173,9 +163,6 @@ export const getChildren = async (ratingKey: string): Promise<PlexMediaItem[]> =
    return data.MediaContainer.Metadata ?? [];
 };
 
-// Best-effort: the plex.tv watchlist endpoint commonly errors (token scope,
-// network), so swallow to []. The caller caches the merged wishlist under the
-// short `activity` profile, so a transient empty self-heals via SWR.
 export const getWatchlist = async (): Promise<PlexMediaItem[]> => {
    try {
       const data = await fetch(

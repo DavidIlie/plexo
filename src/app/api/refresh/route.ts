@@ -10,10 +10,6 @@ const isAuthorized = (req: NextRequest): boolean => {
    return token === env.REFRESH_SECRET;
 };
 
-// Invalidate cached `use cache: remote` data by tag. ?scope=<root> targets one
-// domain (plex/tautulli/analytics/...); omit it to refresh all roots. ?hard=1
-// expires entries immediately; otherwise a soft ("max") revalidation serves
-// stale data while it revalidates in the background.
 export const POST = async (req: NextRequest) => {
    if (!isAuthorized(req)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

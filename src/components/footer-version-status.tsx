@@ -44,9 +44,7 @@ const writeCachedSha = (sha: string) => {
          CACHE_KEY,
          JSON.stringify({ sha, checkedAt: Date.now() } satisfies LatestCommitCache),
       );
-   } catch {
-      // Ignore storage failures; the live check still works.
-   }
+   } catch {}
 };
 
 const compareVersion = (currentVersion: string, latestSha: string): VersionState => {
@@ -67,8 +65,6 @@ export const FooterVersionStatus = ({
    );
 
    useEffect(() => {
-      // Initial state is already "unknown" for the "dev" case (see useState
-      // initializer), so no setState is needed here — just skip the check.
       if (currentVersion === "dev") {
          return;
       }

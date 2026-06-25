@@ -7,10 +7,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "~/trpc/react";
 import { RefreshButton } from "~/components/refresh-button";
 import { useDebounce } from "~/hooks/use-debounce";
-import { useIntersectionObserver } from "~/hooks/use-intersection-observer";
+import { usePaginatedBrowse } from "~/hooks/use-paginated-browse";
+import { extractGenres, matchesSearch } from "~/lib/media-filters";
 import { MediaCard } from "~/components/media/media-card";
 import { MediaFilters } from "~/components/media/media-filters";
-import { Skeleton } from "~/components/ui/skeleton";
+import { LoadMoreSkeleton } from "~/components/skeletons";
 import type { PlexMediaItem } from "~/types/plex";
 
 interface ArtistsBrowserProps {
@@ -19,8 +20,6 @@ interface ArtistsBrowserProps {
    totalSize: number;
 }
 
-// Grid renders from plain state seeded with the server-fetched first page (warm
-// static shell); tRPC only appends subsequent pages on "load more".
 export const ArtistsBrowser = ({
    sectionId,
    initialItems,
@@ -33,56 +32,30 @@ export const ArtistsBrowser = ({
    const [genre, setGenre] = useState("all");
    const debouncedSearch = useDebounce(search, 300);
 
-   const [extraItems, setExtraItems] = useState<PlexMediaItem[]>([]);
-   const [cursor, setCursor] = useState<number | undefined>(
-      initialItems.length < totalSize ? initialItems.length : undefined,
+   const fetchPage = useCallback(
+      async (cursor: number) =>
+         queryClient.fetchQuery(
+            trpc.plex.browseArtists.queryOptions({ sectionId, cursor }),
+         ),
+      [queryClient, trpc, sectionId],
    );
-   const [loadingMore, setLoadingMore] = useState(false);
+
+   const { items: rawArtists, loadingMore, sentinelRef } = usePaginatedBrowse({
+      initialItems,
+      totalSize,
+      fetchPage,
+   });
 
    const artists = useMemo(
-      () => [...initialItems, ...extraItems].filter((a) => a.thumb),
-      [initialItems, extraItems],
+      () => rawArtists.filter((a) => a.thumb),
+      [rawArtists],
    );
 
-   const hasNextPage = cursor !== undefined;
-
-   const loadMore = useCallback(async () => {
-      if (cursor === undefined || loadingMore) return;
-      setLoadingMore(true);
-      try {
-         const page = await queryClient.fetchQuery(
-            trpc.plex.browseArtists.queryOptions({ sectionId, cursor }),
-         );
-         setExtraItems((prev) => [...prev, ...page.items]);
-         setCursor(page.nextCursor ?? undefined);
-      } finally {
-         setLoadingMore(false);
-      }
-   }, [cursor, loadingMore, queryClient, trpc, sectionId]);
-
-   const sentinelRef = useIntersectionObserver(
-      () => void loadMore(),
-      hasNextPage,
-   );
-
-   const genres = useMemo(() => {
-      const genreSet = new Set<string>();
-      for (const artist of artists) {
-         if (artist.Genre) {
-            for (const g of artist.Genre) genreSet.add(g.tag);
-         }
-      }
-      return Array.from(genreSet).sort();
-   }, [artists]);
+   const genres = useMemo(() => extractGenres(artists), [artists]);
 
    const filteredArtists = useMemo(() => {
       return artists.filter((artist) => {
-         if (
-            debouncedSearch &&
-            !artist.title.toLowerCase().includes(debouncedSearch.toLowerCase())
-         ) {
-            return false;
-         }
+         if (!matchesSearch(artist.title, debouncedSearch)) return false;
          if (genre !== "all" && !artist.Genre?.some((g) => g.tag === genre)) {
             return false;
          }
@@ -124,13 +97,7 @@ export const ArtistsBrowser = ({
             ))}
          </div>
          <div ref={sentinelRef} className="h-1" />
-         {loadingMore && (
-            <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">
-               {Array.from({ length: 6 }).map((_, i) => (
-                  <Skeleton key={i} className="aspect-[2/3] w-full rounded-md" />
-               ))}
-            </div>
-         )}
+         {loadingMore && <LoadMoreSkeleton variant="music" />}
       </div>
    );
 };

@@ -13,6 +13,7 @@ import {
 } from "~/lib/plex";
 import { getHistory } from "~/lib/tautulli";
 import { env } from "~/env";
+import { findSection } from "~/lib/plex-sections";
 
 export interface DashboardStats {
    displayName: string;
@@ -26,13 +27,6 @@ export interface DashboardStats {
    musicHoursListened: number;
 }
 
-/**
- * Library + watch totals shown in the dashboard header and in every page's
- * metadata. Cached remotely so it is shared across instances and can be served
- * inside the static App Shell. Called directly from `generateMetadata` (which
- * must not introduce non-deterministic values like a served-at timestamp) and
- * from the tRPC resolver (which adds `lastUpdatedAt`).
- */
 export const getDashboardStatsCached = async (): Promise<DashboardStats> => {
    "use cache";
    cacheLife("analytics");
@@ -44,11 +38,11 @@ export const getDashboardStatsCached = async (): Promise<DashboardStats> => {
    );
 
    const sections = await getLibrarySections();
-   const movieSection = sections.find((s) => s.type === "movie");
-   const showSection = sections.find((s) => s.type === "show");
+   const movieSection = findSection(sections, "movie");
+   const showSection = findSection(sections, "show");
 
    const musicSection = env.SHOW_MUSIC
-      ? sections.find((s) => s.type === "artist")
+      ? findSection(sections, "artist")
       : undefined;
 
    let totalMovies = 0;

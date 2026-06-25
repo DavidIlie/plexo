@@ -1,48 +1,30 @@
 import { Suspense } from "react";
-import { connection } from "next/server";
 import { notFound } from "next/navigation";
 
 import { env } from "~/env";
-import { getLibrarySections, getArtists } from "~/lib/plex";
+import { getArtists } from "~/lib/plex";
+import { LibraryShell } from "~/app/_lib/library-shell";
 import { ArtistsBrowser } from "~/components/media/artists-browser";
-import { Skeleton } from "~/components/ui/skeleton";
-
-const GridFallback = () => (
-   <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">
-      {Array.from({ length: 18 }).map((_, i) => (
-         <Skeleton key={i} className="aspect-[2/3] w-full rounded-md" />
-      ))}
-   </div>
-);
-
-const MusicShell = async () => {
-   await connection();
-   const sections = await getLibrarySections();
-   const sectionId = sections.find((s) => s.type === "artist")?.key;
-
-   if (!sectionId) {
-      return (
-         <p className="text-sm text-muted-foreground">No music library found.</p>
-      );
-   }
-
-   const { items, totalSize } = await getArtists(sectionId, 0, 60);
-
-   return (
-      <ArtistsBrowser
-         sectionId={sectionId}
-         initialItems={items}
-         totalSize={totalSize}
-      />
-   );
-};
+import { MediaGridFallback } from "~/components/skeletons";
 
 const MusicPage = () => {
    if (!env.SHOW_MUSIC) notFound();
 
    return (
-      <Suspense fallback={<GridFallback />}>
-         <MusicShell />
+      <Suspense fallback={<MediaGridFallback variant="music" />}>
+         <LibraryShell
+            type="artist"
+            emptyMessage="No music library found."
+            fetchPage={(sectionId) => getArtists(sectionId, 0, 60)}
+         >
+            {({ sectionId, initialItems, totalSize }) => (
+               <ArtistsBrowser
+                  sectionId={sectionId}
+                  initialItems={initialItems}
+                  totalSize={totalSize}
+               />
+            )}
+         </LibraryShell>
       </Suspense>
    );
 };

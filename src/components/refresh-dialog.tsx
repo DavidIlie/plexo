@@ -221,9 +221,6 @@ export const RefreshDialog = () => {
          });
          if (res.ok) {
             setStatus("success");
-            // Re-render server components and refetch client queries in place —
-            // never a full reload, so charts keep their old (faded) data while
-            // fresh values stream in.
             router.refresh();
             await queryClient.invalidateQueries();
             setTimeout(() => setStatus("idle"), 1500);

@@ -28,8 +28,6 @@ import { WatchTimeByHourChart } from "~/components/analytics/watch-time-by-hour-
 import { Skeleton } from "~/components/ui/skeleton";
 import { RefreshButton } from "~/components/refresh-button";
 
-// Data is per-deployment (each user's Plex/Tautulli), so it can't prerender at
-// build — the page renders at request time and caches via `use cache`.
 export const instant = false;
 
 export const generateMetadata = async (): Promise<Metadata> => {

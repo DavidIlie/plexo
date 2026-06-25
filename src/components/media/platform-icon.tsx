@@ -15,20 +15,10 @@ import {
 
 import { cn } from "~/lib/utils";
 
-/**
- * Lucide ships generic device icons, not brand logos (it stripped Feather's
- * brand marks for trademark reasons), and no off-the-shelf set covers the
- * Apple family. So this is a curated registry: hand-drawn monochrome brand
- * silhouettes where one reads well at icon size, Lucide device glyphs
- * elsewhere. Every glyph inherits `currentColor` to stay in the amber theme.
- */
-
 type GlyphProps = { className?: string };
 type Glyph = ComponentType<GlyphProps>;
 
 const svgBase = "0 0 24 24";
-
-// --- Hand-drawn brand silhouettes (solid, currentColor) -------------------
 
 const AppleGlyph = ({ className }: GlyphProps): ReactElement => (
   <svg viewBox={svgBase} fill="currentColor" className={className} aria-hidden>
@@ -48,8 +38,6 @@ const WindowsGlyph = ({ className }: GlyphProps): ReactElement => (
   </svg>
 );
 
-// PlayStation's four face-button shapes — unmistakable, and they survive a
-// 12px render better than the script "PS" mark does.
 const PlayStationGlyph = ({ className }: GlyphProps): ReactElement => (
   <svg
     viewBox={svgBase}
@@ -68,8 +56,6 @@ const PlayStationGlyph = ({ className }: GlyphProps): ReactElement => (
   </svg>
 );
 
-// --- Lucide-backed glyphs --------------------------------------------------
-
 const lucide = (Icon: LucideIcon): Glyph => {
   const Wrapped = ({ className }: GlyphProps): ReactElement => (
     <Icon className={className} aria-hidden />
@@ -79,46 +65,37 @@ const lucide = (Icon: LucideIcon): Glyph => {
 
 const DefaultGlyph = lucide(MonitorPlay);
 
-// --- Registry: normalized platform key -> { label, Icon } ------------------
-
 export interface PlatformMeta {
   label: string;
   Icon: Glyph;
 }
 
 const PLATFORMS: Record<string, PlatformMeta> = {
-  // Apple family — one brand mark, device implied by the player name
   tvos: { label: "Apple TV", Icon: AppleGlyph },
   ios: { label: "iOS", Icon: AppleGlyph },
   ipados: { label: "iPadOS", Icon: AppleGlyph },
   macos: { label: "macOS", Icon: AppleGlyph },
-  // Desktop / mobile OS
   android: { label: "Android", Icon: AndroidGlyph },
   windows: { label: "Windows", Icon: WindowsGlyph },
   windowsphone: { label: "Windows Phone", Icon: lucide(Smartphone) },
   linux: { label: "Linux", Icon: lucide(Monitor) },
-  // Browsers
   chrome: { label: "Chrome", Icon: lucide(Chrome) },
   firefox: { label: "Firefox", Icon: lucide(Flame) },
   safari: { label: "Safari", Icon: lucide(Compass) },
   edge: { label: "Edge", Icon: lucide(Globe) },
   opera: { label: "Opera", Icon: lucide(Globe) },
-  // Cast / consoles
   chromecast: { label: "Chromecast", Icon: lucide(Cast) },
   playstation: { label: "PlayStation", Icon: PlayStationGlyph },
   xbox: { label: "Xbox", Icon: lucide(Gamepad2) },
-  // Smart TVs (no clean monochrome brand mark — generic TV reads best)
   vidaa: { label: "VIDAA", Icon: lucide(Tv) },
   samsung: { label: "Samsung", Icon: lucide(Tv) },
   webos: { label: "LG", Icon: lucide(Tv) },
   roku: { label: "Roku", Icon: lucide(Tv) },
   dlna: { label: "DLNA", Icon: lucide(Tv) },
-  // Players
   kodi: { label: "Kodi", Icon: lucide(MonitorPlay) },
   plex: { label: "Plex", Icon: lucide(MonitorPlay) },
 };
 
-// Map raw Tautulli/Plex platform spellings onto a canonical registry key.
 const ALIASES: Record<string, string> = {
   "apple tv": "tvos",
   "os x": "macos",

@@ -5,6 +5,7 @@ import { env } from "~/env";
 import { CACHE_TAGS } from "~/lib/cache-tags";
 import { getLibrarySections, getMovies, getShows, getArtists, getMetadata, getChildren } from "~/lib/plex";
 import { getHistory } from "~/lib/tautulli";
+import { findSection } from "~/lib/plex-sections";
 
 const getStats = async () => {
    "use cache";
@@ -17,10 +18,9 @@ const getStats = async () => {
    );
 
    const sections = await getLibrarySections();
-   const movieSection = sections.find((s) => s.type === "movie");
-   const showSection = sections.find((s) => s.type === "show");
-
-   const musicSection = sections.find((s) => s.type === "artist");
+   const movieSection = findSection(sections, "movie");
+   const showSection = findSection(sections, "show");
+   const musicSection = findSection(sections, "artist");
 
    const totalMovies = movieSection
       ? (await getMovies(movieSection.key)).totalSize

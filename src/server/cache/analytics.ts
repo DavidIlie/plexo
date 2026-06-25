@@ -16,6 +16,8 @@ import {
    getGeoipLookup,
    getLibraryMediaInfo,
 } from "~/lib/tautulli";
+import { aggregateByKey } from "~/lib/utils";
+import { findSection } from "~/lib/plex-sections";
 import { env } from "~/env";
 
 export const getGenreDistributionCached = async () => {
@@ -24,7 +26,7 @@ export const getGenreDistributionCached = async () => {
    cacheTag(CACHE_TAGS.analytics, CACHE_TAGS.analyticsScope("genreDistribution"), CACHE_TAGS.plex);
 
    const sections = await getLibrarySections();
-   const genreCounts = new Map<string, number>();
+   const allGenres: Array<{ tag: string }> = [];
 
    for (const section of sections) {
       if (section.type !== "movie" && section.type !== "show") continue;
@@ -34,18 +36,11 @@ export const getGenreDistributionCached = async () => {
             : await getShows(section.key);
 
       for (const item of items.items) {
-         if (item.Genre) {
-            for (const genre of item.Genre) {
-               genreCounts.set(genre.tag, (genreCounts.get(genre.tag) ?? 0) + 1);
-            }
-         }
+         if (item.Genre) allGenres.push(...item.Genre);
       }
    }
 
-   return Array.from(genreCounts.entries())
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 15);
+   return aggregateByKey(allGenres, (g) => g.tag, () => 1, 15);
 };
 
 export const getTopWatchedGenresCached = async () => {
@@ -55,8 +50,8 @@ export const getTopWatchedGenresCached = async () => {
 
    const history = await getHistory(500);
    const sections = await getLibrarySections();
-   const movieSection = sections.find((s) => s.type === "movie");
-   const showSection = sections.find((s) => s.type === "show");
+   const movieSection = findSection(sections, "movie");
+   const showSection = findSection(sections, "show");
 
    const allItems = new Map<string, string[]>();
 
@@ -133,8 +128,8 @@ export const getHighlightsCached = async () => {
 
    const history = await getHistory(5000);
    const sections = await getLibrarySections();
-   const movieSection = sections.find((s) => s.type === "movie");
-   const showSection = sections.find((s) => s.type === "show");
+   const movieSection = findSection(sections, "movie");
+   const showSection = findSection(sections, "show");
 
    const playCounts = new Map<string, { ratingKey: string; title: string; plays: number; type: string; thumb: string }>();
    for (const item of history.data) {
@@ -225,7 +220,6 @@ export const getHighlightsCached = async () => {
                topLocation = geo.country;
             }
          } catch {
-            // ignore
          }
       }
    }
@@ -292,34 +286,40 @@ export const getDeviceStatsCached = async () => {
       .sort((a, b) => b.plays - a.plays);
 };
 
+const RESOLUTION_LABELS: Record<string, string> = {
+   "4k": "4K",
+   "1080": "1080p",
+   "720": "720p",
+   sd: "SD",
+};
+
 export const getVideoQualityStatsCached = async () => {
    "use cache";
    cacheLife("metadata");
    cacheTag(CACHE_TAGS.analytics, CACHE_TAGS.analyticsScope("videoQualityStats"), CACHE_TAGS.plex, CACHE_TAGS.tautulli);
 
    const sections = await getLibrarySections();
-   const movieSection = sections.find((s) => s.type === "movie");
+   const movieSection = findSection(sections, "movie");
    if (!movieSection) return [];
 
    const info = await getLibraryMediaInfo(movieSection.key, 1000);
-   const resolutions = new Map<string, number>();
+   const items = info.data.filter((i) => i.video_resolution).map((item) => ({
+      res: RESOLUTION_LABELS[item.video_resolution!] ?? item.video_resolution!,
+   }));
 
-   const resolutionLabels: Record<string, string> = {
-      "4k": "4K",
-      "1080": "1080p",
-      "720": "720p",
-      sd: "SD",
-   };
+   return aggregateByKey(items, (i) => i.res, () => 1);
+};
 
-   for (const item of info.data) {
-      if (!item.video_resolution) continue;
-      const label = resolutionLabels[item.video_resolution] ?? item.video_resolution;
-      resolutions.set(label, (resolutions.get(label) ?? 0) + 1);
-   }
-
-   return Array.from(resolutions.entries())
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count);
+const AUDIO_CODEC_LABELS: Record<string, string> = {
+   "dca-ma": "DTS-HD MA",
+   truehd: "TrueHD",
+   eac3: "EAC3",
+   ac3: "AC3",
+   aac: "AAC",
+   dca: "DTS",
+   flac: "FLAC",
+   mpeg3: "MP3",
+   opus: "Opus",
 };
 
 export const getAudioFormatStatsCached = async () => {
@@ -328,33 +328,30 @@ export const getAudioFormatStatsCached = async () => {
    cacheTag(CACHE_TAGS.analytics, CACHE_TAGS.analyticsScope("audioFormatStats"), CACHE_TAGS.plex, CACHE_TAGS.tautulli);
 
    const sections = await getLibrarySections();
-   const movieSection = sections.find((s) => s.type === "movie");
+   const movieSection = findSection(sections, "movie");
    if (!movieSection) return [];
 
    const info = await getLibraryMediaInfo(movieSection.key, 1000);
-   const codecs = new Map<string, number>();
+   const items = info.data.filter((i) => i.audio_codec).map((item) => ({
+      codec: AUDIO_CODEC_LABELS[item.audio_codec!] ?? item.audio_codec!.toUpperCase(),
+   }));
 
-   const codecLabels: Record<string, string> = {
-      "dca-ma": "DTS-HD MA",
-      truehd: "TrueHD",
-      eac3: "EAC3",
-      ac3: "AC3",
-      aac: "AAC",
-      dca: "DTS",
-      flac: "FLAC",
-      mpeg3: "MP3",
-      opus: "Opus",
-   };
+   return aggregateByKey(items, (i) => i.codec, () => 1);
+};
 
-   for (const item of info.data) {
-      if (!item.audio_codec) continue;
-      const label = codecLabels[item.audio_codec] ?? item.audio_codec.toUpperCase();
-      codecs.set(label, (codecs.get(label) ?? 0) + 1);
-   }
-
-   return Array.from(codecs.entries())
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count);
+const MUSIC_CODEC_LABELS: Record<string, string> = {
+   flac: "FLAC",
+   alac: "ALAC",
+   aac: "AAC",
+   mp3: "MP3",
+   opus: "Opus",
+   vorbis: "Vorbis",
+   wav: "WAV",
+   pcm: "PCM",
+   dsd_lsbf_planar: "DSD",
+   dca: "DTS",
+   wavpack: "WavPack",
+   ape: "APE",
 };
 
 export const getMusicAudioFormatStatsCached = async () => {
@@ -363,38 +360,17 @@ export const getMusicAudioFormatStatsCached = async () => {
    cacheTag(CACHE_TAGS.analytics, CACHE_TAGS.analyticsScope("musicAudioFormatStats"), CACHE_TAGS.plex);
 
    const sections = await getLibrarySections();
-   const musicSection = sections.find((s) => s.type === "artist");
+   const musicSection = findSection(sections, "artist");
    if (!musicSection) return [];
 
-   // type=10 is tracks in Plex
    const tracks = await getSectionItems(musicSection.key, 10);
-   const codecs = new Map<string, number>();
+   const items = tracks
+      .filter((t) => t.Media?.[0]?.audioCodec)
+      .map((track) => ({
+         codec: MUSIC_CODEC_LABELS[track.Media![0]!.audioCodec!] ?? track.Media![0]!.audioCodec!.toUpperCase(),
+      }));
 
-   const codecLabels: Record<string, string> = {
-      flac: "FLAC",
-      alac: "ALAC",
-      aac: "AAC",
-      mp3: "MP3",
-      opus: "Opus",
-      vorbis: "Vorbis",
-      wav: "WAV",
-      pcm: "PCM",
-      dsd_lsbf_planar: "DSD",
-      dca: "DTS",
-      wavpack: "WavPack",
-      ape: "APE",
-   };
-
-   for (const track of tracks) {
-      const codec = track.Media?.[0]?.audioCodec;
-      if (!codec) continue;
-      const label = codecLabels[codec] ?? codec.toUpperCase();
-      codecs.set(label, (codecs.get(label) ?? 0) + 1);
-   }
-
-   return Array.from(codecs.entries())
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count);
+   return aggregateByKey(items, (i) => i.codec, () => 1);
 };
 
 export const getMusicGenreDistributionCached = async () => {
@@ -403,24 +379,17 @@ export const getMusicGenreDistributionCached = async () => {
    cacheTag(CACHE_TAGS.analytics, CACHE_TAGS.analyticsScope("musicGenreDistribution"), CACHE_TAGS.plex);
 
    const sections = await getLibrarySections();
-   const musicSection = sections.find((s) => s.type === "artist");
+   const musicSection = findSection(sections, "artist");
    if (!musicSection) return [];
 
    const artists = await getArtists(musicSection.key);
-   const genreCounts = new Map<string, number>();
+   const allGenres: Array<{ tag: string }> = [];
 
    for (const artist of artists.items) {
-      if (artist.Genre) {
-         for (const genre of artist.Genre) {
-            genreCounts.set(genre.tag, (genreCounts.get(genre.tag) ?? 0) + 1);
-         }
-      }
+      if (artist.Genre) allGenres.push(...artist.Genre);
    }
 
-   return Array.from(genreCounts.entries())
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 15);
+   return aggregateByKey(allGenres, (g) => g.tag, () => 1, 15);
 };
 
 export const getTopArtistsCached = async () => {
@@ -429,19 +398,12 @@ export const getTopArtistsCached = async () => {
    cacheTag(CACHE_TAGS.analytics, CACHE_TAGS.analyticsScope("topArtists"), CACHE_TAGS.tautulli);
 
    const history = await getHistory(5000);
-   const artistPlays = new Map<string, number>();
+   const items = history.data
+      .filter((i) => i.media_type === "track")
+      .map((item) => ({ name: item.grandparent_title || item.title }));
 
-   for (const item of history.data) {
-      if (item.media_type === "track") {
-         const name = item.grandparent_title || item.title;
-         artistPlays.set(name, (artistPlays.get(name) ?? 0) + 1);
-      }
-   }
-
-   return Array.from(artistPlays.entries())
-      .map(([name, plays]) => ({ name, plays }))
-      .sort((a, b) => b.plays - a.plays)
-      .slice(0, 15);
+   const result = aggregateByKey(items, (i) => i.name, () => 1, 15);
+   return result.map(({ name, count }) => ({ name, plays: count }));
 };
 
 export const getLibrarySizeStatsCached = async () => {
@@ -452,7 +414,6 @@ export const getLibrarySizeStatsCached = async () => {
    const sections = await getLibrarySections();
    const sizes: Array<{ name: string; type: string; bytes: number; items: number }> = [];
 
-   // Plex type IDs: 1=movie, 4=episode, 10=track
    const typeMap: Record<string, number> = {
       movie: 1,
       show: 4,

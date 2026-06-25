@@ -15,8 +15,7 @@ import { env } from "~/env";
 
 const HOUR_MS = 60 * 60 * 1000;
 
-const normalizeTitle = (title: string) =>
-   title.toLowerCase().replace(/[^a-z0-9]/g, "");
+import { normalizeTitle } from "~/lib/media-match";
 
 const getLibraryTitles = async (): Promise<Set<string>> => {
    return new Set(await getLibraryTitlesCached());
@@ -117,9 +116,7 @@ export const recommendRouter = createTRPCRouter({
          ) {
             try {
                await createOverseerrRequest(input.tmdbId, input.mediaType);
-            } catch {
-               // Overseerr request is best-effort
-            }
+            } catch {}
          }
 
          return { success: true };

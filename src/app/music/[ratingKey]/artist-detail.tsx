@@ -31,6 +31,7 @@ import {
    HoverCardTrigger,
 } from "~/components/ui/hover-card";
 import type { PlexMediaItem } from "~/types/plex";
+import { formatPlexDuration } from "~/lib/duration";
 
 const SUMMARY_LIMIT = 300;
 
@@ -72,12 +73,6 @@ const ArtistSummary = ({ text, artistName }: { text: string; artistName: string 
          </Dialog>
       </>
    );
-};
-
-const formatDuration = (ms: number) => {
-   const minutes = Math.floor(ms / 60000);
-   const seconds = Math.floor((ms % 60000) / 1000);
-   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 };
 
 const formatFileSize = (bytes: number) => {
@@ -380,7 +375,7 @@ const AlbumTracks = ({ albumKey }: { albumKey: string }) => {
                   {track.duration && (
                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Clock className="h-3 w-3" />
-                        {formatDuration(track.duration)}
+                        {formatPlexDuration(track.duration)}
                      </span>
                   )}
                </div>

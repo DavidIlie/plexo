@@ -5,28 +5,23 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
-import { ArrowRight, Film, Tv, Music, MapPin } from "lucide-react";
+import { ArrowRight, MapPin } from "lucide-react";
 
 import { useTRPC } from "~/trpc/react";
 import { useAppConfig } from "~/components/app-config-provider";
 import { PlexImage } from "~/components/plex-image";
 import { MediaDetailDialog } from "~/components/media/media-detail-dialog";
 import { PlatformBadge, getPlatformMeta } from "~/components/media/platform-icon";
+import { formatPlayDuration } from "~/lib/duration";
+import {
+   historyArtistKey,
+   historyItemToMediaItem,
+   mediaTypeIcon,
+} from "~/lib/history-ui";
 import { formatHistoryTitle } from "~/lib/utils";
-import type { PlexMediaItem } from "~/types/plex";
+
 import type { TautulliHistoryItem } from "~/types/tautulli";
-
-const formatDuration = (seconds: number) => {
-   const mins = Math.round(seconds / 60);
-   if (mins < 60) return `${mins}m`;
-   return `${Math.floor(mins / 60)}h ${mins % 60}m`;
-};
-
-const mediaTypeIcon = (type: string) => {
-   if (type === "track") return <Music className="h-3 w-3" />;
-   if (type === "episode" || type === "show") return <Tv className="h-3 w-3" />;
-   return <Film className="h-3 w-3" />;
-};
+import type { PlexMediaItem } from "~/types/plex";
 
 export const RecentlyWatchedList = ({
    items,
@@ -76,22 +71,10 @@ export const RecentlyWatchedList = ({
                      className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-muted/50"
                      onClick={() => {
                         if (isTrack) {
-                           const artistKey = String(item.grandparent_rating_key || item.rating_key);
-                           router.push(`/music/${artistKey}`);
+                           router.push(`/music/${historyArtistKey(item)}`);
                            return;
                         }
-                        setSelectedItem({
-                           ratingKey: String(
-                              item.grandparent_rating_key || item.rating_key,
-                           ),
-                           key: "",
-                           type:
-                              item.media_type === "episode"
-                                 ? "show"
-                                 : item.media_type,
-                           title: item.grandparent_title || item.title,
-                           addedAt: 0,
-                        });
+                        setSelectedItem(historyItemToMediaItem(item));
                      }}
                   >
                      <PlexImage
@@ -118,7 +101,7 @@ export const RecentlyWatchedList = ({
                            {item.play_duration > 0 && (
                               <>
                                  <span className="text-border">·</span>
-                                 <span>{formatDuration(item.play_duration)}</span>
+                                 <span>{formatPlayDuration(item.play_duration)}</span>
                               </>
                            )}
                            {item.platform && (

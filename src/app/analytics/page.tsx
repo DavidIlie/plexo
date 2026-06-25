@@ -1,8 +1,7 @@
-import { Suspense } from "react";
+import { Suspense, type ComponentType } from "react";
 import { connection } from "next/server";
 
 import { env } from "~/env";
-import { Skeleton } from "~/components/ui/skeleton";
 import { PeriodSelector } from "~/components/analytics/period-selector";
 import { RefreshButton } from "~/components/refresh-button";
 import { GenreDistributionChart } from "~/components/analytics/genre-distribution-chart";
@@ -19,6 +18,7 @@ import { TopArtistsChart } from "~/components/analytics/top-artists-chart";
 import { MonthlyTrendsChart } from "~/components/analytics/monthly-trends-chart";
 import { WatchTimeByDayChart } from "~/components/analytics/watch-time-by-day-chart";
 import { WatchTimeByHourChart } from "~/components/analytics/watch-time-by-hour-chart";
+import { ChartFallback } from "~/components/skeletons";
 import {
    getGenreDistributionCached,
    getTopWatchedGenresCached,
@@ -39,77 +39,23 @@ import {
 } from "~/lib/tautulli";
 import { analyticsSearchParamsCache, periodToDays } from "./search-params";
 
-// Data is per-deployment (each user's Plex/Tautulli), so it can't prerender at
-// build — the page renders at request time and caches via `use cache`.
 export const instant = false;
 
 interface Props {
    searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-const ChartFallback = () => <Skeleton className="h-64 w-full rounded-lg" />;
+async function CachedChart<T>({
+   fetch,
+   Chart,
+}: {
+   fetch: () => Promise<T>;
+   Chart: ComponentType<{ data: T }>;
+}) {
+   const data = await fetch();
+   return <Chart data={data} />;
+}
 
-// Static (period-independent) read charts. Each server component awaits its
-// cached data function directly and renders the client chart leaf, streamed
-// into the static App Shell via its own Suspense boundary.
-const GenreDistributionCard = async () => {
-   const data = await getGenreDistributionCached();
-   return <GenreDistributionChart data={data} />;
-};
-
-const TopGenresCard = async () => {
-   const data = await getTopWatchedGenresCached();
-   return <TopGenresChart data={data} />;
-};
-
-const MediaRatioCard = async () => {
-   const data = await getMediaTypeRatioCached();
-   return <MediaRatioChart data={data} />;
-};
-
-const DeviceCard = async () => {
-   const data = await getDeviceStatsCached();
-   return <DeviceChart data={data} />;
-};
-
-const LocationCard = async () => {
-   const data = await getLocationStatsCached();
-   return <LocationChart data={data} />;
-};
-
-const VideoQualityCard = async () => {
-   const data = await getVideoQualityStatsCached();
-   return <VideoQualityChart data={data} />;
-};
-
-const AudioFormatCard = async () => {
-   const data = await getAudioFormatStatsCached();
-   return <AudioFormatChart data={data} />;
-};
-
-const LibrarySizeCard = async () => {
-   const data = await getLibrarySizeStatsCached();
-   return <LibrarySizeChart data={data} />;
-};
-
-const MusicAudioFormatCard = async () => {
-   const data = await getMusicAudioFormatStatsCached();
-   return <MusicAudioFormatChart data={data} />;
-};
-
-const MusicGenreCard = async () => {
-   const data = await getMusicGenreDistributionCached();
-   return <MusicGenreChart data={data} />;
-};
-
-const TopArtistsCard = async () => {
-   const data = await getTopArtistsCached();
-   return <TopArtistsChart data={data} />;
-};
-
-// Period-dependent charts read the ?period searchParam, so they live in their
-// own Suspense'd server child that streams in at request time. periodToDays
-// only crosses a number into the cached tautulli functions.
 const PeriodCharts = async ({ searchParams }: Props) => {
    const { period } = await analyticsSearchParamsCache.parse(searchParams);
    const days = periodToDays(period);
@@ -149,8 +95,6 @@ const AnalyticsPage = async ({ searchParams }: Props) => {
                </p>
             </div>
             <div className="flex items-center gap-2">
-               {/* PeriodSelector reads useSearchParams (via nuqs useQueryState),
-                   so it streams in via Suspense under Cache Components. */}
                <Suspense
                   fallback={
                      <div className="h-8 w-[180px] rounded-md border border-border/50 bg-card" />
@@ -167,22 +111,22 @@ const AnalyticsPage = async ({ searchParams }: Props) => {
                <PeriodCharts searchParams={searchParams} />
             </Suspense>
             <Suspense fallback={<ChartFallback />}>
-               <MediaRatioCard />
+               <CachedChart fetch={getMediaTypeRatioCached} Chart={MediaRatioChart} />
             </Suspense>
             <Suspense fallback={<ChartFallback />}>
-               <GenreDistributionCard />
+               <CachedChart fetch={getGenreDistributionCached} Chart={GenreDistributionChart} />
             </Suspense>
             <Suspense fallback={<ChartFallback />}>
-               <TopGenresCard />
+               <CachedChart fetch={getTopWatchedGenresCached} Chart={TopGenresChart} />
             </Suspense>
             {env.SHOW_DEVICES && (
                <Suspense fallback={<ChartFallback />}>
-                  <DeviceCard />
+                  <CachedChart fetch={getDeviceStatsCached} Chart={DeviceChart} />
                </Suspense>
             )}
             {env.SHOW_LOCATIONS && (
                <Suspense fallback={<ChartFallback />}>
-                  <LocationCard />
+                  <CachedChart fetch={getLocationStatsCached} Chart={LocationChart} />
                </Suspense>
             )}
          </div>
@@ -194,10 +138,10 @@ const AnalyticsPage = async ({ searchParams }: Props) => {
                </h2>
                <div className="grid gap-4 md:grid-cols-2">
                   <Suspense fallback={<ChartFallback />}>
-                     <MusicGenreCard />
+                     <CachedChart fetch={getMusicGenreDistributionCached} Chart={MusicGenreChart} />
                   </Suspense>
                   <Suspense fallback={<ChartFallback />}>
-                     <TopArtistsCard />
+                     <CachedChart fetch={getTopArtistsCached} Chart={TopArtistsChart} />
                   </Suspense>
                </div>
             </div>
@@ -209,18 +153,18 @@ const AnalyticsPage = async ({ searchParams }: Props) => {
             </h2>
             <div className="grid gap-4 md:grid-cols-2">
                <Suspense fallback={<ChartFallback />}>
-                  <VideoQualityCard />
+                  <CachedChart fetch={getVideoQualityStatsCached} Chart={VideoQualityChart} />
                </Suspense>
                <Suspense fallback={<ChartFallback />}>
-                  <AudioFormatCard />
+                  <CachedChart fetch={getAudioFormatStatsCached} Chart={AudioFormatChart} />
                </Suspense>
                {env.SHOW_MUSIC && (
                   <Suspense fallback={<ChartFallback />}>
-                     <MusicAudioFormatCard />
+                     <CachedChart fetch={getMusicAudioFormatStatsCached} Chart={MusicAudioFormatChart} />
                   </Suspense>
                )}
                <Suspense fallback={<ChartFallback />}>
-                  <LibrarySizeCard />
+                  <CachedChart fetch={getLibrarySizeStatsCached} Chart={LibrarySizeChart} />
                </Suspense>
             </div>
          </div>

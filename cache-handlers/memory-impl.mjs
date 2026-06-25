@@ -1,21 +1,13 @@
 // @ts-check
 /** @typedef {import("./remote-handler.js").CacheEntry} CacheEntry */
 
-// In-memory fallback cache handler, used when Redis is not selected. Implements
-// the same CacheHandler interface as the Redis handler so `use cache: remote`
-// works with zero external infrastructure (per-instance, lost on restart) —
-// equivalent to Next's built-in LRU but self-contained so the backend choice
-// can be made at runtime. State lives on globalThis to survive dev HMR reloads.
-
 const MAX_ENTRIES = 1000;
 
 const globalForCache = /** @type {{ __plexoMemHandler?: ReturnType<typeof build> }} */ (
    globalThis
 );
 
-/**
- * @typedef {{ tags: string[], stale: number, timestamp: number, expire: number, revalidate: number }} EntryMeta
- */
+/** @typedef {{ tags: string[], stale: number, timestamp: number, expire: number, revalidate: number }} EntryMeta */
 
 function build() {
    /** @type {Map<string, { meta: EntryMeta, buf: Buffer }>} */
@@ -37,10 +29,7 @@ function build() {
    };
 
    return {
-      /**
-       * @param {string} cacheKey
-       * @param {string[]} _softTags
-       */
+      /** @param {string} cacheKey @param {string[]} _softTags */
       async get(cacheKey, _softTags) {
          const pending = pendingSets.get(cacheKey);
          if (pending) await pending;
@@ -48,8 +37,6 @@ function build() {
          const stored = cache.get(cacheKey);
          if (!stored) return undefined;
 
-         // Hard-miss only past `expire`; stale-but-serveable entries are returned
-         // so Next can serve stale and revalidate in the background.
          if (Date.now() > stored.meta.timestamp + stored.meta.expire * 1000) {
             cache.delete(cacheKey);
             return undefined;
@@ -71,10 +58,7 @@ function build() {
          };
       },
 
-      /**
-       * @param {string} cacheKey
-       * @param {Promise<CacheEntry>} pendingEntry
-       */
+      /** @param {string} cacheKey @param {Promise<CacheEntry>} pendingEntry */
       async set(cacheKey, pendingEntry) {
          let resolvePending = () => {};
          const p = new Promise((resolve) => {
@@ -112,9 +96,7 @@ function build() {
          }
       },
 
-      async refreshTags() {
-         // In-process state needs no external sync.
-      },
+      async refreshTags() {},
 
       /** @param {string[]} tags */
       async getExpiration(tags) {

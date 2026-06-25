@@ -6,19 +6,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "~/trpc/react";
 import { RefreshButton } from "~/components/refresh-button";
 import { useDebounce } from "~/hooks/use-debounce";
-import { useIntersectionObserver } from "~/hooks/use-intersection-observer";
+import { usePaginatedBrowse } from "~/hooks/use-paginated-browse";
+import { extractGenres, matchesSearch } from "~/lib/media-filters";
+import { getResolutionCategory } from "~/lib/media-quality";
 import { MediaGrid } from "~/components/media/media-grid";
 import { MediaFilters } from "~/components/media/media-filters";
-import { Skeleton } from "~/components/ui/skeleton";
+import { LoadMoreSkeleton } from "~/components/skeletons";
 import type { PlexMediaItem } from "~/types/plex";
-
-const getResolutionCategory = (res: string | undefined): string => {
-   if (!res) return "unknown";
-   if (res === "4k" || res === "2160") return "4k";
-   if (res === "1080") return "1080p";
-   if (res === "720") return "720p";
-   return "sd";
-};
 
 interface MoviesBrowserProps {
    sectionId: string;
@@ -26,11 +20,6 @@ interface MoviesBrowserProps {
    totalSize: number;
 }
 
-// Renders the grid from plain state seeded with the server-fetched first page,
-// so the initial render (and the static prerender) shows real posters in the
-// shell. tRPC is used ONLY to append subsequent pages on "load more" — never as
-// the render source (a useQuery/useInfiniteQuery render path does not
-// materialize into the static shell, which is what kept this route "cold").
 export const MoviesBrowser = ({
    sectionId,
    initialItems,
@@ -44,47 +33,21 @@ export const MoviesBrowser = ({
    const [quality, setQuality] = useState("all");
    const debouncedSearch = useDebounce(search, 300);
 
-   const [extraItems, setExtraItems] = useState<PlexMediaItem[]>([]);
-   const [cursor, setCursor] = useState<number | undefined>(
-      initialItems.length < totalSize ? initialItems.length : undefined,
-   );
-   const [loadingMore, setLoadingMore] = useState(false);
-
-   const movies = useMemo(
-      () => [...initialItems, ...extraItems],
-      [initialItems, extraItems],
-   );
-
-   const hasNextPage = cursor !== undefined;
-
-   const loadMore = useCallback(async () => {
-      if (cursor === undefined || loadingMore) return;
-      setLoadingMore(true);
-      try {
-         const page = await queryClient.fetchQuery(
+   const fetchPage = useCallback(
+      async (cursor: number) =>
+         queryClient.fetchQuery(
             trpc.plex.browseMovies.queryOptions({ sectionId, cursor }),
-         );
-         setExtraItems((prev) => [...prev, ...page.items]);
-         setCursor(page.nextCursor ?? undefined);
-      } finally {
-         setLoadingMore(false);
-      }
-   }, [cursor, loadingMore, queryClient, trpc, sectionId]);
-
-   const sentinelRef = useIntersectionObserver(
-      () => void loadMore(),
-      hasNextPage,
+         ),
+      [queryClient, trpc, sectionId],
    );
 
-   const genres = useMemo(() => {
-      const genreSet = new Set<string>();
-      for (const movie of movies) {
-         if (movie.Genre) {
-            for (const g of movie.Genre) genreSet.add(g.tag);
-         }
-      }
-      return Array.from(genreSet).sort();
-   }, [movies]);
+   const { items: movies, loadingMore, sentinelRef } = usePaginatedBrowse({
+      initialItems,
+      totalSize,
+      fetchPage,
+   });
+
+   const genres = useMemo(() => extractGenres(movies), [movies]);
 
    const qualityOptions = useMemo(() => {
       const cats = new Set<string>();
@@ -104,12 +67,7 @@ export const MoviesBrowser = ({
 
    const filteredMovies = useMemo(() => {
       return movies.filter((movie) => {
-         if (
-            debouncedSearch &&
-            !movie.title.toLowerCase().includes(debouncedSearch.toLowerCase())
-         ) {
-            return false;
-         }
+         if (!matchesSearch(movie.title, debouncedSearch)) return false;
          if (genre !== "all" && !movie.Genre?.some((g) => g.tag === genre)) {
             return false;
          }
@@ -174,13 +132,7 @@ export const MoviesBrowser = ({
 
          <MediaGrid items={filteredMovies} />
          <div ref={sentinelRef} className="h-1" />
-         {loadingMore && (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-               {Array.from({ length: 6 }).map((_, i) => (
-                  <Skeleton key={i} className="aspect-[2/3] w-full rounded-md" />
-               ))}
-            </div>
-         )}
+         {loadingMore && <LoadMoreSkeleton />}
       </div>
    );
 };

@@ -24,3 +24,20 @@ export const formatHistoryTitle = (item: HistoryTitleItem) => {
    }
    return item.full_title;
 };
+
+export const aggregateByKey = <T extends Record<string, unknown>>(
+   items: T[],
+   keyFn: (item: T) => string,
+   valueFn: (item: T) => number = () => 1,
+   limit?: number,
+): Array<{ name: string; count: number }> => {
+   const counts = new Map<string, number>();
+   for (const item of items) {
+      const key = keyFn(item);
+      counts.set(key, (counts.get(key) ?? 0) + valueFn(item));
+   }
+   return Array.from(counts.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, limit);
+};

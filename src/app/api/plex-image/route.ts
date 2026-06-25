@@ -52,7 +52,6 @@ export const GET = async (req: NextRequest) => {
       });
    }
 
-   // Deduplicate in-flight requests for the same image
    const existing = imageInFlight.get(cacheKey);
    if (existing) {
       const result = await existing;

@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow, format } from "date-fns";
-import { Film, Tv, Music, ArrowLeft, Search, X } from "lucide-react";
+import { ArrowLeft, Search, X } from "lucide-react";
 import Link from "next/link";
 
 import { useTRPC } from "~/trpc/react";
@@ -16,6 +16,12 @@ import { PlatformBadge } from "~/components/media/platform-icon";
 import { Skeleton } from "~/components/ui/skeleton";
 import { Input } from "~/components/ui/input";
 import { formatHistoryTitle } from "~/lib/utils";
+import { formatPlayDuration } from "~/lib/duration";
+import {
+   historyArtistKey,
+   historyItemToMediaItem,
+   mediaTypeIcon,
+} from "~/lib/history-ui";
 import {
    Select,
    SelectContent,
@@ -28,18 +34,6 @@ import type { TautulliHistoryItem } from "~/types/tautulli";
 
 const PAGE_LIMIT = 30;
 
-const formatDuration = (seconds: number) => {
-   const mins = Math.round(seconds / 60);
-   if (mins < 60) return `${mins}m`;
-   return `${Math.floor(mins / 60)}h ${mins % 60}m`;
-};
-
-const mediaTypeIcon = (type: string) => {
-   if (type === "track") return <Music className="h-3.5 w-3.5 text-primary/60" />;
-   if (type === "episode" || type === "show") return <Tv className="h-3.5 w-3.5 text-primary/60" />;
-   return <Film className="h-3.5 w-3.5 text-primary/60" />;
-};
-
 const mediaTypeLabel = (type: string) => {
    if (type === "track") return "Track";
    if (type === "episode") return "Episode";
@@ -48,16 +42,10 @@ const mediaTypeLabel = (type: string) => {
 };
 
 interface ActivityBrowserProps {
-   /** Server-rendered first page of the unfiltered ("all") history window. */
    initialItems: TautulliHistoryItem[];
-   /** recordsFiltered for the unfiltered window — drives the first nextCursor. */
    initialTotal: number;
 }
 
-// The unfiltered ("all") first page renders from plain state seeded by the
-// server, so the static shell paints with real activity. The media-type filter
-// is server-side (browseHistory), so switching type fetches a fresh page via
-// tRPC; "load more" appends. Search filters the loaded items client-side.
 export const ActivityBrowser = ({
    initialItems,
    initialTotal,
@@ -78,8 +66,6 @@ export const ActivityBrowser = ({
    const [switching, setSwitching] = useState(false);
    const [loadingMore, setLoadingMore] = useState(false);
 
-   // Re-fetch when the media-type filter changes (server-side filter). Skips the
-   // initial mount so the server-seeded "all" window is kept (warm shell).
    const mounted = useRef(false);
    useEffect(() => {
       if (!mounted.current) {
@@ -217,22 +203,10 @@ export const ActivityBrowser = ({
                            className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-2.5 transition-colors hover:bg-muted/50"
                            onClick={() => {
                               if (isTrack) {
-                                 const artistKey = String(item.grandparent_rating_key || item.rating_key);
-                                 router.push(`/music/${artistKey}`);
+                                 router.push(`/music/${historyArtistKey(item)}`);
                                  return;
                               }
-                              setSelectedItem({
-                                 ratingKey: String(
-                                    item.grandparent_rating_key || item.rating_key,
-                                 ),
-                                 key: "",
-                                 type:
-                                    item.media_type === "episode"
-                                       ? "show"
-                                       : item.media_type,
-                                 title: item.grandparent_title || item.title,
-                                 addedAt: 0,
-                              });
+                              setSelectedItem(historyItemToMediaItem(item));
                            }}
                         >
                            <PlexImage
@@ -270,7 +244,7 @@ export const ActivityBrowser = ({
                                  {item.play_duration > 0 && (
                                     <>
                                        <span className="text-border">·</span>
-                                       <span>{formatDuration(item.play_duration)}</span>
+                                       <span>{formatPlayDuration(item.play_duration)}</span>
                                     </>
                                  )}
                                  {item.platform && (

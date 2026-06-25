@@ -11,15 +11,21 @@ import {
    getMetadata,
    getChildren,
 } from "~/lib/plex";
+import { browseInput, paginateSection, stamp } from "~/server/api/helpers";
 
-// All lib fetchers below are 'use cache: remote' (keyed on their args), so the
-// router procedures are thin: call the cached fetcher and stamp the served-at
-// time. The static import lib functions own caching, tags, and revalidation.
+const paginatedBrowse = (
+   fetch: typeof getMovies,
+) =>
+   publicProcedure.input(browseInput).query(async ({ input }) => {
+      const start = input.cursor ?? 0;
+      const data = await fetch(input.sectionId, start, input.limit);
+      return paginateSection(start, input.limit, data);
+   });
+
 export const plexRouter = createTRPCRouter({
-   getLibrarySections: publicProcedure.query(async () => {
-      const data = await getLibrarySections();
-      return { data, lastUpdatedAt: new Date().toISOString() };
-   }),
+   getLibrarySections: publicProcedure.query(async () =>
+      stamp(await getLibrarySections()),
+   ),
 
    getMovies: publicProcedure
       .input(
@@ -29,10 +35,9 @@ export const plexRouter = createTRPCRouter({
             size: z.number().default(500),
          }),
       )
-      .query(async ({ input }) => {
-         const data = await getMovies(input.sectionId, input.start, input.size);
-         return { data, lastUpdatedAt: new Date().toISOString() };
-      }),
+      .query(async ({ input }) =>
+         stamp(await getMovies(input.sectionId, input.start, input.size)),
+      ),
 
    getShows: publicProcedure
       .input(
@@ -42,10 +47,9 @@ export const plexRouter = createTRPCRouter({
             size: z.number().default(500),
          }),
       )
-      .query(async ({ input }) => {
-         const data = await getShows(input.sectionId, input.start, input.size);
-         return { data, lastUpdatedAt: new Date().toISOString() };
-      }),
+      .query(async ({ input }) =>
+         stamp(await getShows(input.sectionId, input.start, input.size)),
+      ),
 
    getArtists: publicProcedure
       .input(
@@ -55,63 +59,15 @@ export const plexRouter = createTRPCRouter({
             size: z.number().default(500),
          }),
       )
-      .query(async ({ input }) => {
-         const data = await getArtists(input.sectionId, input.start, input.size);
-         return { data, lastUpdatedAt: new Date().toISOString() };
-      }),
+      .query(async ({ input }) =>
+         stamp(await getArtists(input.sectionId, input.start, input.size)),
+      ),
 
-   browseMovies: publicProcedure
-      .input(
-         z.object({
-            sectionId: z.string(),
-            cursor: z.number().nullish(),
-            limit: z.number().default(60),
-         }),
-      )
-      .query(async ({ input }) => {
-         const start = input.cursor ?? 0;
-         const data = await getMovies(input.sectionId, start, input.limit);
-         const nextCursor =
-            start + input.limit < data.totalSize ? start + input.limit : undefined;
-         return { items: data.items, totalSize: data.totalSize, nextCursor };
-      }),
+   browseMovies: paginatedBrowse(getMovies),
+   browseShows: paginatedBrowse(getShows),
+   browseArtists: paginatedBrowse(getArtists),
 
-   browseShows: publicProcedure
-      .input(
-         z.object({
-            sectionId: z.string(),
-            cursor: z.number().nullish(),
-            limit: z.number().default(60),
-         }),
-      )
-      .query(async ({ input }) => {
-         const start = input.cursor ?? 0;
-         const data = await getShows(input.sectionId, start, input.limit);
-         const nextCursor =
-            start + input.limit < data.totalSize ? start + input.limit : undefined;
-         return { items: data.items, totalSize: data.totalSize, nextCursor };
-      }),
-
-   browseArtists: publicProcedure
-      .input(
-         z.object({
-            sectionId: z.string(),
-            cursor: z.number().nullish(),
-            limit: z.number().default(60),
-         }),
-      )
-      .query(async ({ input }) => {
-         const start = input.cursor ?? 0;
-         const data = await getArtists(input.sectionId, start, input.limit);
-         const nextCursor =
-            start + input.limit < data.totalSize ? start + input.limit : undefined;
-         return { items: data.items, totalSize: data.totalSize, nextCursor };
-      }),
-
-   getOnDeck: publicProcedure.query(async () => {
-      const data = await getOnDeck();
-      return { data, lastUpdatedAt: new Date().toISOString() };
-   }),
+   getOnDeck: publicProcedure.query(async () => stamp(await getOnDeck())),
 
    getRecentlyAdded: publicProcedure
       .input(
@@ -120,29 +76,19 @@ export const plexRouter = createTRPCRouter({
             count: z.number().default(20),
          }),
       )
-      .query(async ({ input }) => {
-         const data = await getRecentlyAdded(input.sectionId, input.count);
-         return { data, lastUpdatedAt: new Date().toISOString() };
-      }),
+      .query(async ({ input }) =>
+         stamp(await getRecentlyAdded(input.sectionId, input.count)),
+      ),
 
    getGenres: publicProcedure
       .input(z.object({ sectionId: z.string() }))
-      .query(async ({ input }) => {
-         const data = await getGenres(input.sectionId);
-         return { data, lastUpdatedAt: new Date().toISOString() };
-      }),
+      .query(async ({ input }) => stamp(await getGenres(input.sectionId))),
 
    getMetadata: publicProcedure
       .input(z.object({ ratingKey: z.string() }))
-      .query(async ({ input }) => {
-         const data = await getMetadata(input.ratingKey);
-         return { data, lastUpdatedAt: new Date().toISOString() };
-      }),
+      .query(async ({ input }) => stamp(await getMetadata(input.ratingKey))),
 
    getChildren: publicProcedure
       .input(z.object({ ratingKey: z.string() }))
-      .query(async ({ input }) => {
-         const data = await getChildren(input.ratingKey);
-         return { data, lastUpdatedAt: new Date().toISOString() };
-      }),
+      .query(async ({ input }) => stamp(await getChildren(input.ratingKey))),
 });

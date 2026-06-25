@@ -19,9 +19,6 @@ const ActivityFallback = () => (
    </div>
 );
 
-// Server child reads the cached, unfiltered history window directly and renders
-// the browser leaf with real data baked into the static shell. The browser keeps
-// infinite-scroll/filter via tautulli.browseHistory; this just seeds page one.
 const ActivityContent = async () => {
    await connection();
    const window = await getHistoryWindow(FIRST_PAGE_LEN, 0, undefined);
@@ -34,11 +31,9 @@ const ActivityContent = async () => {
    );
 };
 
-const ActivityPage = () => {
-   return (
-      <Suspense fallback={<ActivityFallback />}>
-         <ActivityContent />
-      </Suspense>
-   );
-};
+const ActivityPage = () => (
+   <Suspense fallback={<ActivityFallback />}>
+      <ActivityContent />
+   </Suspense>
+);
 export default ActivityPage;

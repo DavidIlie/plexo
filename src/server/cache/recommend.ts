@@ -12,9 +12,8 @@ import {
 } from "~/lib/plex";
 import { getWishlist } from "~/lib/overseerr";
 import { env } from "~/env";
-
-const normalizeTitle = (title: string) =>
-   title.toLowerCase().replace(/[^a-z0-9]/g, "");
+import { normalizeTitle } from "~/lib/media-match";
+import { findSection } from "~/lib/plex-sections";
 
 export const getLibraryTitlesCached = async (): Promise<string[]> => {
    "use cache";
@@ -26,8 +25,8 @@ export const getLibraryTitlesCached = async (): Promise<string[]> => {
    );
 
    const sections = await getLibrarySections();
-   const movieSection = sections.find((s) => s.type === "movie");
-   const showSection = sections.find((s) => s.type === "show");
+   const movieSection = findSection(sections, "movie");
+   const showSection = findSection(sections, "show");
 
    const titles = new Set<string>();
 
@@ -64,9 +63,6 @@ export const getWishlistCached = async () => {
       CACHE_TAGS.overseerr,
    );
 
-   // Both sources are best-effort (-> []). The result is cached under the short
-   // `activity` profile, so a transient empty self-heals on the next SWR
-   // revalidation rather than poisoning the cache for long.
    const [overseerrItems, plexItems] = await Promise.all([
       env.OVERSEERR_URL && env.OVERSEERR_API_KEY
          ? getWishlist().catch(() => [])
@@ -98,7 +94,6 @@ export const getWishlistCached = async () => {
       requestedAt: item.requestedAt,
    }));
 
-   // Deduplicate by title+year, prefer Overseerr entries
    const seen = new Set<string>();
    const merged = [];
 
