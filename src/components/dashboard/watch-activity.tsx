@@ -27,24 +27,24 @@ const levelClass: Record<0 | 1 | 2 | 3 | 4, string> = {
 const weekVariants: Variants = {
    hidden: {},
    show: {
-      transition: { staggerChildren: 0.015 },
+      transition: { staggerChildren: 0.008 },
    },
 };
 
 const dayVariants: Variants = {
-   hidden: { opacity: 0, scale: 0.3, y: -4 },
+   hidden: { opacity: 0, scale: 0.8, y: -2 },
    show: {
       opacity: 1,
       scale: 1,
       y: 0,
-      transition: { duration: 0.45, ease },
+      transition: { duration: 0.3, ease },
    },
 };
 
 const containerVariants: Variants = {
    hidden: {},
    show: {
-      transition: { staggerChildren: 0.018 },
+      transition: { staggerChildren: 0.006 },
    },
 };
 
@@ -91,6 +91,36 @@ export function WatchActivityGraph({ data }: { data: WatchActivityData }) {
    const inView = useInView(rootRef, { once: true, amount: 0.15 });
    const [hover, setHover] = useState<WatchDay | null>(null);
    const reduce = useReducedMotion() ?? false;
+
+   // Roving focus: the grid is a single tab stop; arrows move between days
+   // (up/down = adjacent day, left/right = same weekday in adjacent week).
+   const allDays = useMemo(
+      () => data.weeks.flatMap((w) => w.days),
+      [data.weeks],
+   );
+   const [focusedDate, setFocusedDate] = useState<string | null>(null);
+   const cellRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+   const entryDate = focusedDate ?? allDays[allDays.length - 1]?.date;
+
+   const onGridKeyDown = (e: React.KeyboardEvent) => {
+      if (!entryDate) return;
+      const deltas: Partial<Record<string, number>> = {
+         ArrowUp: -1,
+         ArrowDown: 1,
+         ArrowLeft: -7,
+         ArrowRight: 7,
+      };
+      const delta = deltas[e.key];
+      if (delta === undefined) return;
+      e.preventDefault();
+      const idx = allDays.findIndex((d) => d.date === entryDate);
+      if (idx === -1) return;
+      const next =
+         allDays[Math.min(allDays.length - 1, Math.max(0, idx + delta))];
+      if (!next) return;
+      setFocusedDate(next.date);
+      cellRefs.current.get(next.date)?.focus();
+   };
 
    const totalWeeks = data.weeks.length;
    const MOBILE_WEEKS = 26; // last ~6 months on mobile
@@ -155,7 +185,8 @@ export function WatchActivityGraph({ data }: { data: WatchActivityData }) {
                      aria-hidden
                      className="inline-flex h-1.5 w-1.5 rounded-full bg-primary"
                   />
-                  <span>last 365 days</span>
+                  <span className="sm:hidden">last 6 months shown</span>
+                  <span className="hidden sm:inline">last 365 days</span>
                </div>
                <div className="flex items-baseline gap-2">
                   <CountUp
@@ -165,7 +196,7 @@ export function WatchActivityGraph({ data }: { data: WatchActivityData }) {
                      className="text-3xl font-bold tracking-tight sm:text-4xl"
                   />
                   <span className="text-sm text-muted-foreground">
-                     plays this year
+                     plays in the last 365 days
                   </span>
                </div>
             </div>
@@ -245,6 +276,7 @@ export function WatchActivityGraph({ data }: { data: WatchActivityData }) {
                   variants={containerVariants}
                   initial={reduce ? "show" : "hidden"}
                   animate={reduce || inView ? "show" : "hidden"}
+                  onKeyDown={onGridKeyDown}
                   className="flex flex-1 gap-[3px] sm:gap-1"
                >
                   {data.weeks.map((w, wi) => (
@@ -271,12 +303,20 @@ export function WatchActivityGraph({ data }: { data: WatchActivityData }) {
                                  key={d.date}
                                  variants={dayVariants}
                                  type="button"
+                                 tabIndex={d.date === entryDate ? 0 : -1}
+                                 ref={(el: HTMLButtonElement | null) => {
+                                    if (el) cellRefs.current.set(d.date, el);
+                                    else cellRefs.current.delete(d.date);
+                                 }}
                                  aria-label={`${d.count} ${
                                     d.count === 1 ? "play" : "plays"
                                  } on ${formatDate(d.date)}`}
                                  onMouseEnter={() => setHover(d)}
                                  onMouseLeave={() => setHover(null)}
-                                 onFocus={() => setHover(d)}
+                                 onFocus={() => {
+                                    setHover(d);
+                                    setFocusedDate(d.date);
+                                 }}
                                  onBlur={() => setHover(null)}
                                  whileHover={
                                     reduce ? undefined : { scale: 1.4, zIndex: 5 }
@@ -306,9 +346,9 @@ export function WatchActivityGraph({ data }: { data: WatchActivityData }) {
                {hover ? (
                   <motion.div
                      key={hover.date}
-                     initial={{ opacity: 0, y: 4 }}
+                     initial={reduce ? false : { opacity: 0, y: 4 }}
                      animate={{ opacity: 1, y: 0 }}
-                     transition={{ duration: 0.2 }}
+                     transition={{ duration: reduce ? 0 : 0.2 }}
                      className="flex items-baseline gap-2"
                   >
                      <span className="font-semibold text-foreground">
@@ -321,9 +361,13 @@ export function WatchActivityGraph({ data }: { data: WatchActivityData }) {
                   </motion.div>
                ) : data.busiestDay ? (
                   <motion.div
-                     initial={{ opacity: 0, y: 4 }}
+                     initial={reduce ? false : { opacity: 0, y: 4 }}
                      animate={{ opacity: 1, y: 0 }}
-                     transition={{ duration: 0.3, delay: 1 }}
+                     transition={
+                        reduce
+                           ? { duration: 0 }
+                           : { duration: 0.3, delay: 1 }
+                     }
                      className="flex items-baseline gap-2 text-muted-foreground"
                   >
                      <span>Busiest day:</span>
