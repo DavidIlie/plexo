@@ -116,12 +116,16 @@ export const getDashboardStatsCached = async (): Promise<DashboardStats> => {
    };
 };
 
-const watchLevel = (count: number, maxCount: number): WatchDay["level"] => {
-   if (count === 0 || maxCount === 0) return 0;
-   const r = count / maxCount;
-   if (r <= 0.25) return 1;
-   if (r <= 0.5) return 2;
-   if (r <= 0.75) return 3;
+// Absolute plays/day buckets. Plex watch data is heavily right-skewed —
+// most active days have 1-4 plays with the odd binge hitting 10+ — so
+// ratio-to-max would collapse nearly every active day into level 1 and wash
+// the graph out. Fixed thresholds keyed to plays/day spread typical activity
+// across the whole ramp (GitHub's own scale is likewise forgiving).
+const watchLevel = (count: number): WatchDay["level"] => {
+   if (count <= 0) return 0;
+   if (count === 1) return 1;
+   if (count <= 3) return 2;
+   if (count <= 6) return 3;
    return 4;
 };
 
@@ -164,7 +168,7 @@ export const getWatchActivityCached =
             date,
             weekday,
             count,
-            level: watchLevel(count, maxCount),
+            level: watchLevel(count),
          };
 
          if (i === 0 || weekday === 0 || current === null) {
@@ -190,9 +194,14 @@ export const getWatchActivityCached =
          }
       }
 
+      // Walk backward from the most recent day. Grant grace for the trailing
+      // day (today): Tautulli returns a continuous zero-filled range including
+      // the current day, so without this an active streak would collapse to 0
+      // every midnight until the user watches something that day.
       let currentStreak = 0;
       for (let i = counts.length - 1; i >= 0; i--) {
          if (counts[i]! > 0) currentStreak++;
+         else if (i === counts.length - 1) continue;
          else break;
       }
 

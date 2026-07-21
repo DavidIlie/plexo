@@ -7,6 +7,7 @@ import {
    motion,
    useInView,
    useMotionValue,
+   useReducedMotion,
    useTransform,
    type Variants,
 } from "framer-motion";
@@ -50,22 +51,28 @@ const containerVariants: Variants = {
 function CountUp({
    value,
    inView,
+   reduce,
    className,
 }: {
    value: number;
    inView: boolean;
+   reduce: boolean;
    className?: string;
 }) {
    const count = useMotionValue(0);
    const rounded = useTransform(count, (v) => Math.round(v).toLocaleString());
    useEffect(() => {
       if (!inView) return;
+      if (reduce) {
+         count.set(value);
+         return;
+      }
       const controls = animate(count, value, {
          duration: 1.6,
          ease,
       });
       return () => controls.stop();
-   }, [inView, value, count]);
+   }, [inView, value, count, reduce]);
    return <motion.span className={className}>{rounded}</motion.span>;
 }
 
@@ -83,6 +90,7 @@ export function WatchActivityGraph({ data }: { data: WatchActivityData }) {
    const rootRef = useRef<HTMLDivElement>(null);
    const inView = useInView(rootRef, { once: true, amount: 0.15 });
    const [hover, setHover] = useState<WatchDay | null>(null);
+   const reduce = useReducedMotion() ?? false;
 
    const totalWeeks = data.weeks.length;
    const MOBILE_WEEKS = 26; // last ~6 months on mobile
@@ -143,17 +151,17 @@ export function WatchActivityGraph({ data }: { data: WatchActivityData }) {
                <div className="mb-1.5 flex items-center gap-2 font-mono text-[0.65rem] tracking-[0.2em] text-muted-foreground uppercase">
                   <Clapperboard className="h-3 w-3" />
                   <span>watch activity</span>
-                  <span className="inline-flex items-center gap-1">
-                     <span className="relative flex h-1.5 w-1.5">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
-                        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
-                     </span>
-                  </span>
+                  <span
+                     aria-hidden
+                     className="inline-flex h-1.5 w-1.5 rounded-full bg-primary"
+                  />
+                  <span>last 365 days</span>
                </div>
                <div className="flex items-baseline gap-2">
                   <CountUp
                      value={data.total}
                      inView={inView}
+                     reduce={reduce}
                      className="text-3xl font-bold tracking-tight sm:text-4xl"
                   />
                   <span className="text-sm text-muted-foreground">
@@ -169,6 +177,7 @@ export function WatchActivityGraph({ data }: { data: WatchActivityData }) {
                   label="current"
                   value={`${data.currentStreak}d`}
                   inView={inView}
+                  reduce={reduce}
                   delay={0.2}
                />
                <StatPill
@@ -176,6 +185,7 @@ export function WatchActivityGraph({ data }: { data: WatchActivityData }) {
                   label="longest"
                   value={`${data.longestStreak}d`}
                   inView={inView}
+                  reduce={reduce}
                   delay={0.3}
                />
             </div>
@@ -233,8 +243,8 @@ export function WatchActivityGraph({ data }: { data: WatchActivityData }) {
                {/* Cells — each week = flex-1 column of 7 aspect-square cells */}
                <motion.div
                   variants={containerVariants}
-                  initial="hidden"
-                  animate={inView ? "show" : "hidden"}
+                  initial={reduce ? "show" : "hidden"}
+                  animate={reduce || inView ? "show" : "hidden"}
                   className="flex flex-1 gap-[3px] sm:gap-1"
                >
                   {data.weeks.map((w, wi) => (
@@ -261,12 +271,16 @@ export function WatchActivityGraph({ data }: { data: WatchActivityData }) {
                                  key={d.date}
                                  variants={dayVariants}
                                  type="button"
-                                 aria-label={`${d.count} plays on ${d.date}`}
+                                 aria-label={`${d.count} ${
+                                    d.count === 1 ? "play" : "plays"
+                                 } on ${formatDate(d.date)}`}
                                  onMouseEnter={() => setHover(d)}
                                  onMouseLeave={() => setHover(null)}
                                  onFocus={() => setHover(d)}
                                  onBlur={() => setHover(null)}
-                                 whileHover={{ scale: 1.4, zIndex: 5 }}
+                                 whileHover={
+                                    reduce ? undefined : { scale: 1.4, zIndex: 5 }
+                                 }
                                  transition={{
                                     type: "spring",
                                     stiffness: 400,
@@ -340,19 +354,23 @@ function StatPill({
    label,
    value,
    inView,
+   reduce,
    delay,
 }: {
    icon: React.ReactNode;
    label: string;
    value: string;
    inView: boolean;
+   reduce: boolean;
    delay: number;
 }) {
    return (
       <motion.div
-         initial={{ opacity: 0, y: 8 }}
-         animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }}
-         transition={{ duration: 0.5, ease, delay }}
+         initial={reduce ? false : { opacity: 0, y: 8 }}
+         animate={
+            reduce || inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }
+         }
+         transition={reduce ? { duration: 0 } : { duration: 0.5, ease, delay }}
          className="flex items-center gap-2 rounded-full border border-border/80 bg-background/60 px-3 py-1.5 backdrop-blur-sm"
       >
          <span className="text-primary">{icon}</span>
