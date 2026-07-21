@@ -5,7 +5,10 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 import { env } from "~/env";
-import { getDashboardStatsCached } from "~/server/cache/stats";
+import {
+   getDashboardStatsCached,
+   getWatchActivityCached,
+} from "~/server/cache/stats";
 import {
    getGenreDistributionCached,
    getHighlightsCached,
@@ -20,6 +23,7 @@ import { StatCard } from "~/components/dashboard/stat-card";
 import { OnDeckGrid } from "~/components/dashboard/on-deck";
 import { RecentlyWatchedList } from "~/components/dashboard/recently-watched";
 import { HighlightsGrid } from "~/components/dashboard/highlights";
+import { WatchActivityGraph } from "~/components/dashboard/watch-activity";
 import { WishlistGrid } from "~/components/dashboard/wishlist";
 import { GenreDistributionChart } from "~/components/analytics/genre-distribution-chart";
 import { MusicGenreChart } from "~/components/analytics/music-genre-chart";
@@ -123,6 +127,35 @@ const SectionFallback = () => (
    </div>
 );
 
+const WatchActivity = async () => {
+   const data = await getWatchActivityCached();
+   return <WatchActivityGraph data={data} />;
+};
+
+const WatchActivityFallback = () => (
+   <div className="rounded-2xl border border-border/80 bg-card/50 p-5 sm:p-7">
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+         <Skeleton className="h-8 w-40" />
+         <div className="flex gap-3">
+            <Skeleton className="h-7 w-24 rounded-full" />
+            <Skeleton className="h-7 w-24 rounded-full" />
+         </div>
+      </div>
+      <div className="flex gap-[3px] sm:gap-1">
+         {Array.from({ length: 52 }).map((_, wi) => (
+            <div key={wi} className="flex flex-1 flex-col gap-[3px] sm:gap-1">
+               {Array.from({ length: 7 }).map((_, di) => (
+                  <Skeleton
+                     key={di}
+                     className="aspect-square w-full rounded-[3px]"
+                  />
+               ))}
+            </div>
+         ))}
+      </div>
+   </div>
+);
+
 const Highlights = async () => {
    const highlights = await getHighlightsCached();
    return <HighlightsGrid highlights={highlights} />;
@@ -171,6 +204,10 @@ const DashboardPage = async () => {
       <div className="space-y-8">
          <Suspense fallback={<StatsFallback />}>
             <DashboardStats />
+         </Suspense>
+
+         <Suspense fallback={<WatchActivityFallback />}>
+            <WatchActivity />
          </Suspense>
 
          <Suspense fallback={<SectionFallback />}>
