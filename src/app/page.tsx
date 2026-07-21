@@ -206,16 +206,16 @@ const DashboardPage = async () => {
             <DashboardStats />
          </Suspense>
 
-         <Suspense fallback={<WatchActivityFallback />}>
-            <WatchActivity />
-         </Suspense>
-
          <Suspense fallback={<SectionFallback />}>
             <Highlights />
          </Suspense>
 
          <Suspense fallback={<SectionFallback />}>
             <OnDeck />
+         </Suspense>
+
+         <Suspense fallback={<WatchActivityFallback />}>
+            <WatchActivity />
          </Suspense>
 
          <Suspense fallback={null}>
