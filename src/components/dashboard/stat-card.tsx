@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, m, useReducedMotion } from "framer-motion";
 import { Film, Tv, Eye, Clock, Music, Disc3, Library, type LucideIcon } from "lucide-react";
 
 import { AnimatedNumber } from "~/components/ui/animated-number";
@@ -37,7 +37,7 @@ export const StatCard: React.FC<StatCardProps> = ({
       typeof value === "number" ? value : parseIntegerString(value);
 
    return (
-      <motion.div
+      <m.div
          initial={{ opacity: 0, y: 12 }}
          animate={{ opacity: 1, y: 0 }}
          transition={{ duration: 0.3, delay: index * 0.05 }}
@@ -59,7 +59,7 @@ export const StatCard: React.FC<StatCardProps> = ({
                // Non-integer values (e.g. "2h 15m") can't count up — slide the
                // old value out and the new one in on refetch instead.
                <AnimatePresence mode="wait" initial={false}>
-                  <motion.span
+                  <m.span
                      key={String(value)}
                      initial={
                         prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 8 }
@@ -78,10 +78,10 @@ export const StatCard: React.FC<StatCardProps> = ({
                      className="inline-block"
                   >
                      {value}
-                  </motion.span>
+                  </m.span>
                </AnimatePresence>
             )}
          </p>
-      </motion.div>
+      </m.div>
    );
 };

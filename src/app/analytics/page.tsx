@@ -4,20 +4,25 @@ import { connection } from "next/server";
 import { env } from "~/env";
 import { PeriodSelector } from "~/components/analytics/period-selector";
 import { RefreshButton } from "~/components/refresh-button";
-import { GenreDistributionChart } from "~/components/analytics/genre-distribution-chart";
-import { TopGenresChart } from "~/components/analytics/top-genres-chart";
+// First visible row stays statically imported (SSR'd markup, no pop-in);
+// everything below the fold goes through the lazy variants so its hydration
+// JS is deferred until scrolled near.
 import { MediaRatioChart } from "~/components/analytics/media-ratio-chart";
-import { DeviceChart } from "~/components/analytics/device-chart";
 import { LocationChart } from "~/components/analytics/location-chart";
-import { VideoQualityChart } from "~/components/analytics/video-quality-chart";
-import { AudioFormatChart } from "~/components/analytics/audio-format-chart";
-import { LibrarySizeChart } from "~/components/analytics/library-size-chart";
-import { MusicAudioFormatChart } from "~/components/analytics/music-audio-format-chart";
-import { MusicGenreChart } from "~/components/analytics/music-genre-chart";
-import { TopArtistsChart } from "~/components/analytics/top-artists-chart";
 import { MonthlyTrendsChart } from "~/components/analytics/monthly-trends-chart";
 import { WatchTimeByDayChart } from "~/components/analytics/watch-time-by-day-chart";
 import { WatchTimeByHourChart } from "~/components/analytics/watch-time-by-hour-chart";
+import {
+   AudioFormatChartLazy,
+   DeviceChartLazy,
+   GenreDistributionChartLazy,
+   LibrarySizeChartLazy,
+   MusicAudioFormatChartLazy,
+   MusicGenreChartLazy,
+   TopArtistsChartLazy,
+   TopGenresChartLazy,
+   VideoQualityChartLazy,
+} from "~/components/analytics/lazy-charts";
 import { ChartFallback } from "~/components/skeletons";
 import {
    getGenreDistributionCached,
@@ -113,14 +118,14 @@ const AnalyticsPage = ({ searchParams }: Props) => {
                <CachedChart fetch={getMediaTypeRatioCached} Chart={MediaRatioChart} />
             </Suspense>
             <Suspense fallback={<ChartFallback />}>
-               <CachedChart fetch={getGenreDistributionCached} Chart={GenreDistributionChart} />
+               <CachedChart fetch={getGenreDistributionCached} Chart={GenreDistributionChartLazy} />
             </Suspense>
             <Suspense fallback={<ChartFallback />}>
-               <CachedChart fetch={getTopWatchedGenresCached} Chart={TopGenresChart} />
+               <CachedChart fetch={getTopWatchedGenresCached} Chart={TopGenresChartLazy} />
             </Suspense>
             {env.SHOW_DEVICES && (
                <Suspense fallback={<ChartFallback />}>
-                  <CachedChart fetch={getDeviceStatsCached} Chart={DeviceChart} />
+                  <CachedChart fetch={getDeviceStatsCached} Chart={DeviceChartLazy} />
                </Suspense>
             )}
             {env.SHOW_LOCATIONS && (
@@ -137,10 +142,10 @@ const AnalyticsPage = ({ searchParams }: Props) => {
                </h2>
                <div className="grid gap-4 md:grid-cols-2">
                   <Suspense fallback={<ChartFallback />}>
-                     <CachedChart fetch={getMusicGenreDistributionCached} Chart={MusicGenreChart} />
+                     <CachedChart fetch={getMusicGenreDistributionCached} Chart={MusicGenreChartLazy} />
                   </Suspense>
                   <Suspense fallback={<ChartFallback />}>
-                     <CachedChart fetch={getTopArtistsCached} Chart={TopArtistsChart} />
+                     <CachedChart fetch={getTopArtistsCached} Chart={TopArtistsChartLazy} />
                   </Suspense>
                </div>
             </div>
@@ -152,18 +157,18 @@ const AnalyticsPage = ({ searchParams }: Props) => {
             </h2>
             <div className="grid gap-4 md:grid-cols-2">
                <Suspense fallback={<ChartFallback />}>
-                  <CachedChart fetch={getVideoQualityStatsCached} Chart={VideoQualityChart} />
+                  <CachedChart fetch={getVideoQualityStatsCached} Chart={VideoQualityChartLazy} />
                </Suspense>
                <Suspense fallback={<ChartFallback />}>
-                  <CachedChart fetch={getAudioFormatStatsCached} Chart={AudioFormatChart} />
+                  <CachedChart fetch={getAudioFormatStatsCached} Chart={AudioFormatChartLazy} />
                </Suspense>
                {env.SHOW_MUSIC && (
                   <Suspense fallback={<ChartFallback />}>
-                     <CachedChart fetch={getMusicAudioFormatStatsCached} Chart={MusicAudioFormatChart} />
+                     <CachedChart fetch={getMusicAudioFormatStatsCached} Chart={MusicAudioFormatChartLazy} />
                   </Suspense>
                )}
                <Suspense fallback={<ChartFallback />}>
-                  <CachedChart fetch={getLibrarySizeStatsCached} Chart={LibrarySizeChart} />
+                  <CachedChart fetch={getLibrarySizeStatsCached} Chart={LibrarySizeChartLazy} />
                </Suspense>
             </div>
          </div>

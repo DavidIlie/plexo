@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { Film, Tv, Clock, Check, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
@@ -37,7 +37,7 @@ export const WishlistGrid = ({ items }: { items: WishlistItem[] }) => {
                   item.posterPath && item.posterPath.startsWith("/library");
 
                return (
-                  <motion.div
+                  <m.div
                      key={item.id}
                      initial={{ opacity: 0, y: 8 }}
                      animate={{ opacity: 1, y: 0 }}
@@ -93,7 +93,7 @@ export const WishlistGrid = ({ items }: { items: WishlistItem[] }) => {
                               ` · ${formatDistanceToNow(new Date(item.requestedAt), { addSuffix: true })}`}
                         </p>
                      </div>
-                  </motion.div>
+                  </m.div>
                );
             })}
          </div>

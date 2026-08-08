@@ -9,10 +9,9 @@ import { TRPCReactProvider } from "~/trpc/react";
 import { ThemeProvider } from "~/components/theme-provider";
 import { Navbar } from "~/components/navbar";
 import { Footer } from "~/components/footer";
-import { RefreshDialog } from "~/components/refresh-dialog";
-import { SearchDialog } from "~/components/search-dialog";
-import { RecommendDialog } from "~/components/recommend-dialog";
+import { LazyDialogs } from "~/components/lazy-dialogs";
 import { AppConfigProvider } from "~/components/app-config-provider";
+import { MotionProvider } from "~/components/motion-provider";
 import { OfflineBanner } from "~/components/offline-banner";
 import AppErrorBoundary from "~/components/app-error-boundary";
 
@@ -92,28 +91,28 @@ const RootLayout = ({
                   musicEnabled={env.SHOW_MUSIC}
                   locationsEnabled={env.SHOW_LOCATIONS}
                >
-                  <NuqsAdapter>
-                     <TRPCReactProvider>
-                        {/* Navbar reads usePathname (runtime routing state), so
-                            it streams in via Suspense under Cache Components. The
-                            height-matched fallback avoids layout shift. */}
-                        <Suspense
-                           fallback={
-                              <div className="h-14 border-b border-border/50 bg-background/80 backdrop-blur-sm" />
-                           }
-                        >
-                           <Navbar />
-                        </Suspense>
-                        <main className="mx-auto max-w-7xl px-4 py-6 pb-24 md:pb-6">
-                           <AppErrorBoundary>{children}</AppErrorBoundary>
-                        </main>
-                        <Footer />
-                        <OfflineBanner />
-                        <SearchDialog />
-                        <RefreshDialog />
-                        <RecommendDialog />
-                     </TRPCReactProvider>
-                  </NuqsAdapter>
+                  <MotionProvider>
+                     <NuqsAdapter>
+                        <TRPCReactProvider>
+                           {/* Navbar reads usePathname (runtime routing state), so
+                               it streams in via Suspense under Cache Components. The
+                               height-matched fallback avoids layout shift. */}
+                           <Suspense
+                              fallback={
+                                 <div className="h-14 border-b border-border/50 bg-background/80 backdrop-blur-sm" />
+                              }
+                           >
+                              <Navbar />
+                           </Suspense>
+                           <main className="mx-auto max-w-7xl px-4 py-6 pb-24 md:pb-6">
+                              <AppErrorBoundary>{children}</AppErrorBoundary>
+                           </main>
+                           <Footer />
+                           <OfflineBanner />
+                           <LazyDialogs />
+                        </TRPCReactProvider>
+                     </NuqsAdapter>
+                  </MotionProvider>
                </AppConfigProvider>
             </ThemeProvider>
          </body>

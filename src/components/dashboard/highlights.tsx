@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { m, useReducedMotion } from "framer-motion";
 import {
    Trophy,
    Repeat,
@@ -46,7 +46,7 @@ const Highlight: React.FC<HighlightProps & { index?: number }> = ({
    const prefersReducedMotion = useReducedMotion();
 
    return (
-      <motion.div
+      <m.div
          initial={{ opacity: 0, y: 8 }}
          animate={{ opacity: 1, y: 0 }}
          transition={{ duration: 0.25, delay: index * 0.04 }}
@@ -80,7 +80,7 @@ const Highlight: React.FC<HighlightProps & { index?: number }> = ({
                <p className="text-xs text-muted-foreground">{detail}</p>
             )}
          </div>
-      </motion.div>
+      </m.div>
    );
 };
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, m, useReducedMotion } from "framer-motion";
 import { PieChart, Pie, Cell, Sector, Tooltip } from "recharts";
 import type { PieSectorDataItem } from "recharts";
 
@@ -119,7 +119,7 @@ export const MediaRatioChart = ({ data, lastUpdatedAt }: Props) => {
                />
                <span className="relative h-4 text-[11px] uppercase tracking-wide text-muted-foreground">
                   <AnimatePresence mode="wait" initial={false}>
-                     <motion.span
+                     <m.span
                         key={
                            activeIndex !== null
                               ? (chartData[activeIndex]?.name ?? "Titles")
@@ -134,7 +134,7 @@ export const MediaRatioChart = ({ data, lastUpdatedAt }: Props) => {
                         {activeIndex !== null
                            ? (chartData[activeIndex]?.name ?? "Titles")
                            : "Titles"}
-                     </motion.span>
+                     </m.span>
                   </AnimatePresence>
                </span>
             </>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { motion, useInView, useReducedMotion, useSpring, useTransform } from "framer-motion";
+import { m, useInView, useReducedMotion, useSpring, useTransform } from "framer-motion";
 
 interface AnimatedNumberProps {
    value: number;
@@ -51,15 +51,15 @@ export const AnimatedNumber: React.FC<AnimatedNumberProps> = ({
 
    if (prefersReducedMotion) {
       return (
-         <motion.span ref={ref} className={className}>
+         <m.span ref={ref} className={className}>
             {formatFn(value)}
-         </motion.span>
+         </m.span>
       );
    }
 
    return (
-      <motion.span ref={ref} className={className} aria-label={formatFn(value)}>
-         <motion.span aria-hidden="true">{display}</motion.span>
-      </motion.span>
+      <m.span ref={ref} className={className} aria-label={formatFn(value)}>
+         <m.span aria-hidden="true">{display}</m.span>
+      </m.span>
    );
 };

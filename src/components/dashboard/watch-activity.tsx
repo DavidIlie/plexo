@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Clapperboard, Flame, Trophy } from "lucide-react";
 import {
    animate,
-   motion,
+   m,
    useInView,
    useMotionValue,
    useReducedMotion,
@@ -70,7 +70,7 @@ function CountUp({
       });
       return () => controls.stop();
    }, [inView, value, count, reduce]);
-   return <motion.span className={className}>{rounded}</motion.span>;
+   return <m.span className={className}>{rounded}</m.span>;
 }
 
 function formatDate(iso: string) {
@@ -308,7 +308,7 @@ export function WatchActivityGraph({ data }: { data: WatchActivityData }) {
          <div className="relative mt-5 flex flex-wrap items-center justify-between gap-3">
             <div className="min-h-[1.5rem] text-xs">
                {hover ? (
-                  <motion.div
+                  <m.div
                      key={hover.date}
                      initial={reduce ? false : { opacity: 0, y: 4 }}
                      animate={{ opacity: 1, y: 0 }}
@@ -322,9 +322,9 @@ export function WatchActivityGraph({ data }: { data: WatchActivityData }) {
                         {hover.count === 1 ? "play" : "plays"} on{" "}
                         {formatDate(hover.date)}
                      </span>
-                  </motion.div>
+                  </m.div>
                ) : data.busiestDay ? (
-                  <motion.button
+                  <m.button
                      type="button"
                      initial={reduce ? false : { opacity: 0, y: 4 }}
                      animate={{ opacity: 1, y: 0 }}
@@ -347,7 +347,7 @@ export function WatchActivityGraph({ data }: { data: WatchActivityData }) {
                         {data.busiestDay.count}
                      </span>
                      <span>on {formatDate(data.busiestDay.date)}</span>
-                  </motion.button>
+                  </m.button>
                ) : null}
             </div>
             <div className="flex items-center gap-1.5 text-[0.65rem] text-muted-foreground">
@@ -488,7 +488,7 @@ function StatPill({
    delay: number;
 }) {
    return (
-      <motion.div
+      <m.div
          initial={reduce ? false : { opacity: 0, y: 8 }}
          animate={
             reduce || inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }
@@ -503,6 +503,6 @@ function StatPill({
                {label}
             </span>
          </div>
-      </motion.div>
+      </m.div>
    );
 }

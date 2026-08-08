@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { MapPin } from "lucide-react";
 
 import type { getLocationStatsCached } from "~/server/cache/analytics";
@@ -24,7 +24,7 @@ export const LocationChart = ({ data, lastUpdatedAt }: Props) => {
          ) : (
             <div className="mt-2 space-y-2">
                {locations.map((loc, index) => (
-                  <motion.div
+                  <m.div
                      key={loc.location}
                      initial={{ opacity: 0, y: 8 }}
                      animate={{ opacity: 1, y: 0 }}
@@ -43,7 +43,7 @@ export const LocationChart = ({ data, lastUpdatedAt }: Props) => {
                      <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-muted">
                         {/* Bar is laid out at its final width; the reveal
                             animates scaleX only (compositor-friendly). */}
-                        <motion.div
+                        <m.div
                            initial={{ scaleX: 0 }}
                            animate={{ scaleX: 1 }}
                            transition={{
@@ -57,7 +57,7 @@ export const LocationChart = ({ data, lastUpdatedAt }: Props) => {
                            className="h-full origin-left rounded-full bg-primary"
                         />
                      </div>
-                  </motion.div>
+                  </m.div>
                ))}
             </div>
          )}

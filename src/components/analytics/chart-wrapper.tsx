@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { RefreshCw } from "lucide-react";
 import { ResponsiveContainer } from "recharts";
 import { formatDistanceToNow } from "date-fns";
@@ -34,7 +34,7 @@ export const ChartCard = ({
    headerRight,
    children,
 }: ChartCardProps) => (
-   <motion.div
+   <m.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
@@ -60,7 +60,7 @@ export const ChartCard = ({
                : `Updated ${formatDistanceToNow(new Date(lastUpdatedAt), { addSuffix: true })}`}
          </p>
       )}
-   </motion.div>
+   </m.div>
 );
 
 interface ChartWrapperProps {
