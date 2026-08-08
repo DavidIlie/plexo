@@ -1,6 +1,6 @@
 # Plexo
 
-Personal Plex media dashboard built with Next.js 16.3 (canary, Cache Components).
+Personal Plex media dashboard built with Next.js 16.3 (stable, Cache Components + Instant Navigations).
 
 ## Rules
 
@@ -11,8 +11,8 @@ Personal Plex media dashboard built with Next.js 16.3 (canary, Cache Components)
 
 ## Tech Stack
 
-- **Next.js 16.3 canary** with App Router, standalone output, **Cache Components** (`cacheComponents: true` — PPR, `use cache`, App Shell prefetching)
-- **React 19**, **TypeScript 5.7+** (strict)
+- **Next.js 16.3.0 stable** with App Router, standalone output, **Cache Components** (`cacheComponents: true` + `partialPrefetching: true` — PPR, `use cache`, per-route App Shell prefetching), React Compiler (`reactCompiler` + `experimental.turbopackRustReactCompiler`, no Babel plugin), `experimental.useOffline` (OfflineBanner in layout via `next/offline`), `catchError` error boundary (`src/components/app-error-boundary.tsx` via `next/error`)
+- **React 19**, **TypeScript 7** (native tsc; `next build` type-checks via the project-local CLI). `.pnpmfile.cjs` pins @typescript-eslint packages to TS 6 because typescript-estree needs the JS compiler API that TS 7 doesn't ship — keep it copied into Docker deps stages.
 - **ESLint flat config** (`eslint.config.mjs`; `next lint` removed in 16 — use `pnpm lint` = `eslint .`)
 - **Tailwind CSS v4** with `@tailwindcss/postcss`, dark-first amber theme (OKLCH)
 - **shadcn/ui** — components in `src/components/ui/`, config in `components.json`
