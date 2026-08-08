@@ -15,19 +15,19 @@ export const WatchProgress: React.FC<WatchProgressProps> = ({
 
    return (
       <div className={cn("space-y-1", className)}>
-         <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>
+         <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+            <span className="truncate">
                {viewed}/{total} episodes
             </span>
-            <span>{percentage}%</span>
+            <span className="shrink-0 tabular-nums">{percentage}%</span>
          </div>
          <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
             <div
                className={cn(
-                  "h-full rounded-full transition-all",
+                  "h-full origin-left rounded-full transition-transform duration-300",
                   percentage === 100 ? "bg-green-500" : "bg-primary",
                )}
-               style={{ width: `${percentage}%` }}
+               style={{ transform: `scaleX(${percentage / 100})` }}
             />
          </div>
       </div>

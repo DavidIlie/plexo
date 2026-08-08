@@ -56,7 +56,7 @@ const Highlight: React.FC<HighlightProps & { index?: number }> = ({
                : undefined
          }
          className={cn(
-            "flex items-start gap-3 rounded-lg border border-border/50 bg-card p-3",
+            "flex items-start gap-3 rounded-lg border border-border/50 bg-card p-4",
             onClick && "cursor-pointer transition-colors hover:border-primary/30",
          )}
          onClick={onClick}
@@ -106,7 +106,7 @@ export const HighlightsGrid = ({ highlights }: { highlights: Highlights }) => {
          <h2 className="mb-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
             Highlights
          </h2>
-         <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+         <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
             {h.mostWatched && (
                <Highlight
                   icon={Trophy}

@@ -11,7 +11,7 @@ import { usePaginatedBrowse } from "~/hooks/use-paginated-browse";
 import { extractGenres, matchesSearch } from "~/lib/media-filters";
 import { MediaCard } from "~/components/media/media-card";
 import { MediaFilters } from "~/components/media/media-filters";
-import { LoadMoreSkeleton } from "~/components/skeletons";
+import { LoadMoreSkeleton, MEDIA_GRID_CLASSES } from "~/components/skeletons";
 import type { PlexMediaItem } from "~/types/plex";
 
 interface ArtistsBrowserProps {
@@ -87,7 +87,7 @@ export const ArtistsBrowser = ({
             genres={genres}
          />
 
-         <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">
+         <div className={MEDIA_GRID_CLASSES}>
             {filteredArtists.map((artist) => (
                <MediaCard
                   key={artist.ratingKey}

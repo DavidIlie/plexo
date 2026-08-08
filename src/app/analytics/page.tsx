@@ -56,6 +56,7 @@ async function CachedChart<T>({
 }
 
 const PeriodCharts = async ({ searchParams }: Props) => {
+   await connection();
    const { period } = await analyticsSearchParamsCache.parse(searchParams);
    const days = periodToDays(period);
 
@@ -85,7 +86,7 @@ const PeriodChartsFallback = () => (
 const AnalyticsPage = ({ searchParams }: Props) => {
    return (
       <div className="space-y-6">
-         <div className="flex items-center justify-between">
+         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-y-2">
             <div>
                <h1 className="text-lg font-semibold">Analytics</h1>
                <p className="text-sm text-muted-foreground">
@@ -95,7 +96,7 @@ const AnalyticsPage = ({ searchParams }: Props) => {
             <div className="flex items-center gap-2">
                <Suspense
                   fallback={
-                     <div className="h-8 w-[180px] rounded-md border border-border/50 bg-card" />
+                     <div className="h-8 w-[196px] rounded-md border border-border/50 bg-card" />
                   }
                >
                   <PeriodSelector />

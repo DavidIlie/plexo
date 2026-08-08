@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { PlexMediaItem } from "~/types/plex";
 import { MediaCard } from "./media-card";
 import { MediaDetailDialog } from "./media-detail-dialog";
+import { MEDIA_GRID_CLASSES } from "~/components/skeletons";
 
 interface MediaGridProps {
    items: PlexMediaItem[];
@@ -18,7 +19,7 @@ export const MediaGrid: React.FC<MediaGridProps> = ({
 
    return (
       <>
-         <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">
+         <div className={MEDIA_GRID_CLASSES}>
             {items.map((item) => (
                <MediaCard
                   key={item.ratingKey}

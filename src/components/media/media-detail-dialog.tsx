@@ -274,14 +274,14 @@ const SeasonBreakdown: React.FC<{ ratingKey: string }> = ({ ratingKey }) => {
                         <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-muted">
                            <div
                               className={cn(
-                                 "h-full rounded-full transition-all",
+                                 "h-full origin-left rounded-full transition-transform duration-300",
                                  watchPct === 100
                                     ? "bg-green-500"
                                     : watchPct > 0
                                       ? "bg-chart-1"
                                       : "bg-transparent",
                               )}
-                              style={{ width: `${watchPct}%` }}
+                              style={{ transform: `scaleX(${watchPct / 100})` }}
                            />
                         </div>
                      )}

@@ -4,6 +4,7 @@ import { BarChart, Bar, Cell, XAxis, YAxis, Tooltip } from "recharts";
 import type { TooltipContentProps } from "recharts";
 
 import { ChartEmptyState, ChartWrapper } from "~/components/analytics/chart-wrapper";
+import { useIsNarrowViewport } from "~/hooks/use-media-query";
 import {
    BAR_CURSOR,
    HOVER_SERIES_OPACITY,
@@ -64,10 +65,15 @@ export const VerticalBarChart = ({
 }: VerticalBarChartProps) => {
    const chartData = slice ? data.slice(0, slice) : data;
    const { hoverIdx, baseAnimate, onMouseMove, onMouseLeave } = useChartHover();
+   const isNarrow = useIsNarrowViewport();
+
+   // On phones the fixed axis width would eat a third of the chart — cap it so
+   // bars keep the majority of the horizontal space.
+   const effectiveYWidth = isNarrow ? Math.min(yWidth, 68) : yWidth;
 
    // Truncate long category names so they never overflow the fixed axis width.
    // ~7px per character at 11px font, minus room for the ellipsis.
-   const maxChars = Math.max(6, Math.floor(yWidth / 7) - 1);
+   const maxChars = Math.max(6, Math.floor(effectiveYWidth / 7) - 1);
    const truncate = (v: string) =>
       v.length > maxChars ? `${v.slice(0, maxChars - 1)}…` : v;
 
@@ -109,7 +115,7 @@ export const VerticalBarChart = ({
             <YAxis
                type="category"
                dataKey="name"
-               width={yWidth}
+               width={effectiveYWidth}
                stroke="var(--muted-foreground)"
                tickLine={false}
                axisLine={false}

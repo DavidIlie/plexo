@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useMemo } from "react";
+import { useDeferredValue, useId, useMemo } from "react";
 import { AreaChart, Area, CartesianGrid, Line, XAxis, YAxis, Tooltip, Legend } from "recharts";
 import { format } from "date-fns";
 
@@ -47,6 +47,10 @@ export const MonthlyTrendsChart: React.FC<Props> = ({
    const uid = useId();
    const { hoverIdx, hovering, baseAnimate, onMouseMove, onMouseLeave } =
       useChartHover();
+   // The hover accent rebuilds the full row array (365 dates x 3 keys per
+   // series), so defer it: pointer tracking (tooltip/cursor) stays at frame
+   // rate while the accent recompute lags a frame at most.
+   const deferredHoverIdx = useDeferredValue(hoverIdx);
 
    const seriesMeta = useMemo(
       () =>
@@ -79,11 +83,13 @@ export const MonthlyTrendsChart: React.FC<Props> = ({
                row[`${series.name}__tail`] =
                   index >= secondToLast ? value : null;
                row[`${series.name}__left`] =
-                  hoverIdx !== null && index <= hoverIdx ? value : null;
+                  deferredHoverIdx !== null && index <= deferredHoverIdx
+                     ? value
+                     : null;
             }
             return row;
          }),
-      [data.categories, data.series, hoverIdx, lastIndex, secondToLast],
+      [data.categories, data.series, deferredHoverIdx, lastIndex, secondToLast],
    );
 
    const byDate = useMemo(() => {

@@ -91,7 +91,10 @@ export const RecentlyWatchedList = ({
                      <div className="min-w-0 flex-1">
                         <p className="truncate text-sm">{formatHistoryTitle(item)}</p>
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-                           <span className="flex items-center gap-1">
+                           <span
+                              suppressHydrationWarning
+                              className="flex items-center gap-1"
+                           >
                               {mediaTypeIcon(item.media_type)}
                               {formatDistanceToNow(
                                  new Date(item.stopped * 1000),

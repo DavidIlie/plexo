@@ -8,6 +8,7 @@ import type { PieSectorDataItem } from "recharts";
 import { ChartEmptyState, ChartWrapper } from "~/components/analytics/chart-wrapper";
 import { HOVER_SERIES_OPACITY, MOUNT_ANIMATION } from "~/components/analytics/chart-motion";
 import { ChartTooltipCard, ChartTooltipRow } from "~/components/analytics/chart-tooltip";
+import { useIsNarrowViewport } from "~/hooks/use-media-query";
 
 export const CHART_COLORS = [
    "var(--chart-1)",
@@ -85,6 +86,7 @@ export const DistributionPieChart = ({
    const chartData = data.slice(0, 8);
    const { isAnimationActive, markInteracted } = usePieMountAnimation();
    const [activeIndex, setActiveIndex] = useState<number | null>(null);
+   const isNarrow = useIsNarrowViewport();
 
    if (chartData.length === 0) {
       if (hideWhenEmpty) return null;
@@ -119,8 +121,8 @@ export const DistributionPieChart = ({
                data={chartData}
                cx="50%"
                cy="50%"
-               innerRadius={55}
-               outerRadius={90}
+               innerRadius={isNarrow ? 48 : 55}
+               outerRadius={isNarrow ? 78 : 90}
                dataKey="count"
                nameKey="name"
                paddingAngle={2}
@@ -142,7 +144,6 @@ export const DistributionPieChart = ({
                      fillOpacity={
                         activeIndex === null || activeIndex === index ? 1 : HOVER_SERIES_OPACITY
                      }
-                     className="transition-[fill-opacity] duration-200 ease-out"
                      style={{ transition: "fill-opacity 200ms ease-out" }}
                   />
                ))}
@@ -152,14 +153,22 @@ export const DistributionPieChart = ({
                wrapperStyle={{ outline: "none" }}
             />
             <Legend
-               layout="vertical"
-               align="right"
-               verticalAlign="middle"
+               layout={isNarrow ? "horizontal" : "vertical"}
+               align={isNarrow ? "center" : "right"}
+               verticalAlign={isNarrow ? "bottom" : "middle"}
                iconType="circle"
                iconSize={8}
-               wrapperStyle={{ fontSize: "11px", paddingLeft: "12px" }}
-               formatter={(value) => (
-                  <span style={{ color: "var(--muted-foreground)" }}>{value}</span>
+               wrapperStyle={
+                  isNarrow
+                     ? { fontSize: "11px" }
+                     : { fontSize: "11px", paddingLeft: "12px" }
+               }
+               formatter={(value: string) => (
+                  <span style={{ color: "var(--muted-foreground)" }}>
+                     {isNarrow && value.length > 14
+                        ? `${value.slice(0, 13)}…`
+                        : value}
+                  </span>
                )}
             />
          </PieChart>

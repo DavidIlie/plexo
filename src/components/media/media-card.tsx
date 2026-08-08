@@ -34,7 +34,10 @@ export const MediaCard: React.FC<MediaCardProps> = ({
       : null;
 
    return (
-      <div className="group cursor-pointer" onClick={onClick}>
+      <div
+         className="group cursor-pointer [content-visibility:auto] [contain-intrinsic-size:auto_300px]"
+         onClick={onClick}
+      >
          <div className="relative aspect-[2/3] overflow-hidden rounded-md">
             <PlexImage
                path={item.thumb}

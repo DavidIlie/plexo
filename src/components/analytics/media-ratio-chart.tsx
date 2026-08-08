@@ -96,55 +96,18 @@ export const MediaRatioChart = ({ data, lastUpdatedAt }: Props) => {
                <button
                   type="button"
                   onClick={() => setShowMusic((v) => !v)}
-                  className="rounded-md border border-border/50 px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  className="relative rounded-md border border-border/50 px-2 py-0.5 text-xs text-muted-foreground transition-colors before:absolute before:-inset-2 hover:bg-accent hover:text-foreground"
                >
                   {showMusic ? "Hide Music" : "Show Music"}
                </button>
             ) : undefined
          }
-      >
-         <div className="relative">
-            <PieChart>
-               <Pie
-                  data={chartData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  dataKey="value"
-                  nameKey="name"
-                  paddingAngle={2}
-                  cornerRadius={4}
-                  strokeWidth={0}
-                  isAnimationActive={isAnimationActive}
-                  {...MOUNT_ANIMATION}
-                  activeShape={renderActiveSlice}
-                  onMouseEnter={(_, index) => {
-                     markInteracted();
-                     setActiveIndex(index);
-                  }}
-                  onMouseLeave={() => setActiveIndex(null)}
-               >
-                  {chartData.map((entry, index) => (
-                     <Cell
-                        key={`cell-${index}`}
-                        fill={colorFor(entry.name)}
-                        fillOpacity={
-                           activeIndex === null || activeIndex === index ? 1 : HOVER_SERIES_OPACITY
-                        }
-                        className="transition-[fill-opacity] duration-200 ease-out"
-                        style={{ transition: "fill-opacity 200ms ease-out" }}
-                     />
-                  ))}
-               </Pie>
-               <Tooltip
-                  content={<RatioTooltip total={total} />}
-                  wrapperStyle={{ outline: "none" }}
-               />
-            </PieChart>
-            {/* Center readout tracks the hovered slice: count crossfades to the
-                slice value and the label swaps to the slice name. */}
-            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+         // Center readout tracks the hovered slice: count crossfades to the
+         // slice value and the label swaps to the slice name. Rendered as an
+         // overlay over the ResponsiveContainer's box so it flex-centers onto
+         // the cx/cy 50% donut hole at every width.
+         overlay={
+            <>
                <AnimatedNumber
                   value={
                      activeIndex !== null
@@ -174,8 +137,46 @@ export const MediaRatioChart = ({ data, lastUpdatedAt }: Props) => {
                      </motion.span>
                   </AnimatePresence>
                </span>
-            </div>
-         </div>
+            </>
+         }
+      >
+         <PieChart>
+            <Pie
+               data={chartData}
+               cx="50%"
+               cy="50%"
+               innerRadius={60}
+               outerRadius={100}
+               dataKey="value"
+               nameKey="name"
+               paddingAngle={2}
+               cornerRadius={4}
+               strokeWidth={0}
+               isAnimationActive={isAnimationActive}
+               {...MOUNT_ANIMATION}
+               activeShape={renderActiveSlice}
+               onMouseEnter={(_, index) => {
+                  markInteracted();
+                  setActiveIndex(index);
+               }}
+               onMouseLeave={() => setActiveIndex(null)}
+            >
+               {chartData.map((entry, index) => (
+                  <Cell
+                     key={`cell-${index}`}
+                     fill={colorFor(entry.name)}
+                     fillOpacity={
+                        activeIndex === null || activeIndex === index ? 1 : HOVER_SERIES_OPACITY
+                     }
+                     style={{ transition: "fill-opacity 200ms ease-out" }}
+                  />
+               ))}
+            </Pie>
+            <Tooltip
+               content={<RatioTooltip total={total} />}
+               wrapperStyle={{ outline: "none" }}
+            />
+         </PieChart>
       </ChartWrapper>
    );
 };

@@ -30,6 +30,7 @@ import { MusicGenreChart } from "~/components/analytics/music-genre-chart";
 import { TopArtistsChart } from "~/components/analytics/top-artists-chart";
 import { WatchTimeByHourChart } from "~/components/analytics/watch-time-by-hour-chart";
 import { Skeleton } from "~/components/ui/skeleton";
+import { ChartFallback } from "~/components/skeletons";
 import { RefreshButton } from "~/components/refresh-button";
 
 export const generateMetadata = async (): Promise<Metadata> => {
@@ -71,7 +72,7 @@ const DashboardStats = async () => {
             </h1>
             <RefreshButton />
          </div>
-         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             <StatCard icon="Film" label="Movies" value={data.totalMovies} index={0} />
             <StatCard icon="Tv" label="Shows" value={data.totalShows} index={1} />
             <StatCard icon="Eye" label="Watched" value={data.watchedItems} index={2} />
@@ -107,7 +108,7 @@ const StatsFallback = () => (
          <Skeleton className="h-6 w-40" />
          <Skeleton className="h-8 w-8 rounded-md" />
       </div>
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
          {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-24 w-full rounded-lg" />
          ))}
@@ -133,7 +134,7 @@ const WatchActivity = async () => {
 };
 
 const WatchActivityFallback = () => (
-   <div className="rounded-2xl border border-border/80 bg-card/50 p-5 sm:p-7">
+   <div className="rounded-2xl border border-border/50 bg-card/50 p-5 sm:p-7">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
          <Skeleton className="h-8 w-40" />
          <div className="flex gap-3">
@@ -203,8 +204,6 @@ const TopArtists = async () => {
    const data = await getTopArtistsCached();
    return <TopArtistsChart data={data} />;
 };
-
-const ChartFallback = () => <Skeleton className="h-[320px] w-full rounded-lg" />;
 
 const DashboardPage = () => {
    return (

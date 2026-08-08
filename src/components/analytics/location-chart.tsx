@@ -2,9 +2,9 @@
 
 import { motion } from "framer-motion";
 import { MapPin } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
 
 import type { getLocationStatsCached } from "~/server/cache/analytics";
+import { ChartCard } from "~/components/analytics/chart-wrapper";
 
 interface Props {
    data: Awaited<ReturnType<typeof getLocationStatsCached>>;
@@ -16,21 +16,13 @@ export const LocationChart = ({ data, lastUpdatedAt }: Props) => {
    const maxCount = locations.reduce((max, loc) => Math.max(max, loc.count), 0);
 
    return (
-      <motion.div
-         initial={{ opacity: 0, y: 10 }}
-         animate={{ opacity: 1, y: 0 }}
-         transition={{ duration: 0.35 }}
-         className="rounded-lg border border-border/50 bg-card/50 p-4"
-      >
-         <div className="mb-3 flex items-center gap-2">
-            <p className="text-sm font-medium">Watch Locations</p>
-         </div>
+      <ChartCard title="Watch Locations" lastUpdatedAt={lastUpdatedAt}>
          {locations.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">
                No location data available
             </p>
          ) : (
-            <div className="space-y-2">
+            <div className="mt-2 space-y-2">
                {locations.map((loc, index) => (
                   <motion.div
                      key={loc.location}
@@ -49,28 +41,26 @@ export const LocationChart = ({ data, lastUpdatedAt }: Props) => {
                         </span>
                      </div>
                      <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-muted">
+                        {/* Bar is laid out at its final width; the reveal
+                            animates scaleX only (compositor-friendly). */}
                         <motion.div
-                           initial={{ width: 0 }}
-                           animate={{
-                              width: `${maxCount > 0 ? (loc.count / maxCount) * 100 : 0}%`,
-                           }}
+                           initial={{ scaleX: 0 }}
+                           animate={{ scaleX: 1 }}
                            transition={{
                               duration: 0.5,
                               delay: 0.15 + index * 0.04,
                               ease: [0.23, 1, 0.32, 1],
                            }}
-                           className="h-full rounded-full bg-primary"
+                           style={{
+                              width: `${maxCount > 0 ? (loc.count / maxCount) * 100 : 0}%`,
+                           }}
+                           className="h-full origin-left rounded-full bg-primary"
                         />
                      </div>
                   </motion.div>
                ))}
             </div>
          )}
-         {lastUpdatedAt && (
-            <p className="mt-2 text-right text-[10px] text-muted-foreground/60">
-               {`Updated ${formatDistanceToNow(new Date(lastUpdatedAt), { addSuffix: true })}`}
-            </p>
-         )}
-      </motion.div>
+      </ChartCard>
    );
 };

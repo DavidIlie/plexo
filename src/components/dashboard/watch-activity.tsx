@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Clapperboard, Flame, Trophy } from "lucide-react";
 import {
    animate,
@@ -49,13 +49,20 @@ function CountUp({
    reduce: boolean;
    className?: string;
 }) {
-   const count = useMotionValue(0);
+   // Initialized to the real value so static contexts (SSR, print, captures)
+   // never show "0"; the count-up rewinds to 0 only when it actually plays.
+   const count = useMotionValue(value);
    const rounded = useTransform(count, (v) => Math.round(v).toLocaleString());
+   const started = useRef(false);
    useEffect(() => {
       if (!inView) return;
       if (reduce) {
          count.set(value);
          return;
+      }
+      if (!started.current) {
+         started.current = true;
+         count.set(0);
       }
       const controls = animate(count, value, {
          duration: 1.6,
@@ -92,25 +99,43 @@ export function WatchActivityGraph({ data }: { data: WatchActivityData }) {
    const cellRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
    const entryDate = focusedDate ?? allDays[allDays.length - 1]?.date;
 
-   const onGridKeyDown = (e: React.KeyboardEvent) => {
-      if (!entryDate) return;
-      const deltas: Partial<Record<string, number>> = {
-         ArrowUp: -1,
-         ArrowDown: 1,
-         ArrowLeft: -7,
-         ArrowRight: 7,
-      };
-      const delta = deltas[e.key];
-      if (delta === undefined) return;
-      e.preventDefault();
-      const idx = allDays.findIndex((d) => d.date === entryDate);
-      if (idx === -1) return;
-      const next =
-         allDays[Math.min(allDays.length - 1, Math.max(0, idx + delta))];
-      if (!next) return;
-      setFocusedDate(next.date);
-      cellRefs.current.get(next.date)?.focus();
-   };
+   const onGridKeyDown = useCallback(
+      (e: React.KeyboardEvent) => {
+         if (!entryDate) return;
+         const deltas: Partial<Record<string, number>> = {
+            ArrowUp: -1,
+            ArrowDown: 1,
+            ArrowLeft: -7,
+            ArrowRight: 7,
+         };
+         const delta = deltas[e.key];
+         if (delta === undefined) return;
+         e.preventDefault();
+         const idx = allDays.findIndex((d) => d.date === entryDate);
+         if (idx === -1) return;
+         const next =
+            allDays[Math.min(allDays.length - 1, Math.max(0, idx + delta))];
+         if (!next) return;
+         setFocusedDate(next.date);
+         cellRefs.current.get(next.date)?.focus();
+      },
+      [allDays, entryDate],
+   );
+
+   // Stable callbacks so the memoized grid never re-renders on hover — only
+   // the small footer readout subtree tracks `hover` state.
+   const onHoverCell = useCallback((d: WatchDay | null) => setHover(d), []);
+   const onFocusCell = useCallback((d: WatchDay) => {
+      setHover(d);
+      setFocusedDate(d.date);
+   }, []);
+   const registerCell = useCallback(
+      (date: string, el: HTMLButtonElement | null) => {
+         if (el) cellRefs.current.set(date, el);
+         else cellRefs.current.delete(date);
+      },
+      [],
+   );
 
    const totalWeeks = data.weeks.length;
    const MOBILE_WEEKS = 26; // last ~6 months on mobile
@@ -157,7 +182,9 @@ export function WatchActivityGraph({ data }: { data: WatchActivityData }) {
    return (
       <div
          ref={rootRef}
-         className="relative overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-br from-card/80 via-card/50 to-muted/30 p-5 sm:p-7"
+         // Intentional hero treatment (rounded-2xl + gradient) — the border
+         // token matches the rest of the card system.
+         className="relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-card/80 via-card/50 to-muted/30 p-5 sm:p-7"
       >
          {/* Decorative glow */}
          <div
@@ -261,88 +288,19 @@ export function WatchActivityGraph({ data }: { data: WatchActivityData }) {
                   <span className="h-[calc((100%-6*0.2rem)/7)]" />
                </div>
 
-               {/* Cells — each week = flex-1 column of 7 aspect-square cells.
-                   The staggered populate is a one-time CSS sweep (see
-                   .watch-cell-animate in globals.css): cells stay paused until
-                   the grid scrolls into view and gains `watch-grid-visible`,
-                   then fade/scale in on a per-column delay. It never re-runs on
-                   data refetch since the cells keep their stable `d.date` keys
-                   and are not remounted. */}
-               <div
-                  onKeyDown={onGridKeyDown}
-                  className={`flex flex-1 gap-[3px] sm:gap-1 ${
-                     !reduce && inView ? "watch-grid-visible" : ""
-                  }`}
-               >
-                  {data.weeks.map((w, wi) => {
-                     const desktopDelay =
-                        totalWeeks > 1
-                           ? (wi / (totalWeeks - 1)) * POPULATE_SWEEP_MS
-                           : 0;
-                     const mobileDelay =
-                        wi < mobileStart
-                           ? 0
-                           : mobileVisibleCount > 1
-                             ? ((wi - mobileStart) / (mobileVisibleCount - 1)) *
-                               POPULATE_SWEEP_MS
-                             : 0;
-                     return (
-                        <div
-                           key={wi}
-                           className={`min-w-0 flex-1 flex-col gap-[3px] sm:flex sm:gap-1 ${
-                              wi < mobileStart ? "hidden" : "flex"
-                           }`}
-                        >
-                           {Array.from({ length: 7 }).map((_, di) => {
-                              const d = w.days.find((x) => x.weekday === di);
-                              if (!d) {
-                                 return (
-                                    <div
-                                       key={di}
-                                       className="aspect-square w-full"
-                                    />
-                                 );
-                              }
-                              const isHot = hover?.date === d.date;
-                              const rowOffset = di * POPULATE_ROW_STEP_MS;
-                              const cellStyle = {
-                                 "--wd": `${desktopDelay + rowOffset}ms`,
-                                 "--wm": `${mobileDelay + rowOffset}ms`,
-                              } as React.CSSProperties;
-                              return (
-                                 <button
-                                    key={d.date}
-                                    type="button"
-                                    style={reduce ? undefined : cellStyle}
-                                    tabIndex={d.date === entryDate ? 0 : -1}
-                                    ref={(el: HTMLButtonElement | null) => {
-                                       if (el) cellRefs.current.set(d.date, el);
-                                       else cellRefs.current.delete(d.date);
-                                    }}
-                                    aria-label={`${d.count} ${
-                                       d.count === 1 ? "play" : "plays"
-                                    } on ${formatDate(d.date)}`}
-                                    onMouseEnter={() => setHover(d)}
-                                    onMouseLeave={() => setHover(null)}
-                                    onFocus={() => {
-                                       setHover(d);
-                                       setFocusedDate(d.date);
-                                    }}
-                                    onBlur={() => setHover(null)}
-                                    className={`relative aspect-square w-full rounded-[3px] ring-offset-card transition-transform duration-150 ease-out outline-none hover:z-10 hover:scale-125 focus-visible:z-10 focus-visible:scale-125 focus-visible:ring-2 focus-visible:ring-primary motion-reduce:transition-none motion-reduce:hover:scale-100 ${
-                                       levelClass[d.level]
-                                    } ${reduce ? "" : "watch-cell-animate"} ${
-                                       isHot
-                                          ? "ring-2 ring-primary ring-offset-2"
-                                          : ""
-                                    }`}
-                                 />
-                              );
-                           })}
-                        </div>
-                     );
-                  })}
-               </div>
+               <WeeksGrid
+                  weeks={data.weeks}
+                  totalWeeks={totalWeeks}
+                  mobileStart={mobileStart}
+                  mobileVisibleCount={mobileVisibleCount}
+                  reduce={reduce}
+                  inView={inView}
+                  entryDate={entryDate}
+                  onGridKeyDown={onGridKeyDown}
+                  onHoverCell={onHoverCell}
+                  onFocusCell={onFocusCell}
+                  registerCell={registerCell}
+               />
             </div>
          </div>
 
@@ -407,6 +365,112 @@ export function WatchActivityGraph({ data }: { data: WatchActivityData }) {
       </div>
    );
 }
+
+interface WeeksGridProps {
+   weeks: WatchActivityData["weeks"];
+   totalWeeks: number;
+   mobileStart: number;
+   mobileVisibleCount: number;
+   reduce: boolean;
+   inView: boolean;
+   entryDate: string | undefined;
+   onGridKeyDown: (e: React.KeyboardEvent) => void;
+   onHoverCell: (d: WatchDay | null) => void;
+   onFocusCell: (d: WatchDay) => void;
+   registerCell: (date: string, el: HTMLButtonElement | null) => void;
+}
+
+/* Cells — each week = flex-1 column of 7 aspect-square cells.
+   The staggered populate is a one-time CSS sweep (see .watch-cell-animate in
+   globals.css): cells stay paused until the grid scrolls into view and gains
+   `watch-grid-visible`, then fade/scale in on a per-column delay. It never
+   re-runs on data refetch since the cells keep their stable `d.date` keys and
+   are not remounted.
+
+   Memoized so hovering (which only feeds the footer readout) never re-renders
+   the ~365 buttons; the hover ring itself is pure CSS on the button. */
+const WeeksGrid = React.memo(function WeeksGrid({
+   weeks,
+   totalWeeks,
+   mobileStart,
+   mobileVisibleCount,
+   reduce,
+   inView,
+   entryDate,
+   onGridKeyDown,
+   onHoverCell,
+   onFocusCell,
+   registerCell,
+}: WeeksGridProps) {
+   return (
+      <div
+         onKeyDown={onGridKeyDown}
+         className={`flex flex-1 gap-[3px] sm:gap-1 ${
+            !reduce && inView ? "watch-grid-visible" : ""
+         }`}
+      >
+         {weeks.map((w, wi) => {
+            const desktopDelay =
+               totalWeeks > 1
+                  ? (wi / (totalWeeks - 1)) * POPULATE_SWEEP_MS
+                  : 0;
+            const mobileDelay =
+               wi < mobileStart
+                  ? 0
+                  : mobileVisibleCount > 1
+                    ? ((wi - mobileStart) / (mobileVisibleCount - 1)) *
+                      POPULATE_SWEEP_MS
+                    : 0;
+            return (
+               <div
+                  key={wi}
+                  className={`min-w-0 flex-1 flex-col gap-[3px] sm:flex sm:gap-1 ${
+                     wi < mobileStart ? "hidden" : "flex"
+                  }`}
+               >
+                  {Array.from({ length: 7 }).map((_, di) => {
+                     const d = w.days.find((x) => x.weekday === di);
+                     if (!d) {
+                        return (
+                           <div
+                              key={di}
+                              className="aspect-square w-full"
+                           />
+                        );
+                     }
+                     const rowOffset = di * POPULATE_ROW_STEP_MS;
+                     const cellStyle = {
+                        "--wd": `${desktopDelay + rowOffset}ms`,
+                        "--wm": `${mobileDelay + rowOffset}ms`,
+                     } as React.CSSProperties;
+                     return (
+                        <button
+                           key={d.date}
+                           type="button"
+                           style={reduce ? undefined : cellStyle}
+                           tabIndex={d.date === entryDate ? 0 : -1}
+                           ref={(el: HTMLButtonElement | null) => {
+                              registerCell(d.date, el);
+                           }}
+                           aria-label={`${d.count} ${
+                              d.count === 1 ? "play" : "plays"
+                           } on ${formatDate(d.date)}`}
+                           onMouseEnter={() => onHoverCell(d)}
+                           onMouseLeave={() => onHoverCell(null)}
+                           onFocus={() => onFocusCell(d)}
+                           onBlur={() => onHoverCell(null)}
+                           className={`relative aspect-square w-full rounded-[3px] ring-offset-card transition-transform duration-150 ease-out outline-none hover:z-10 hover:scale-125 hover:ring-2 hover:ring-primary hover:ring-offset-2 focus-visible:z-10 focus-visible:scale-125 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:hover:scale-100 ${
+                              levelClass[d.level]
+                           } ${reduce ? "" : "watch-cell-animate"}`}
+                        />
+                     );
+                  })}
+               </div>
+            );
+         })}
+      </div>
+   );
+});
 
 function StatPill({
    icon,

@@ -104,7 +104,7 @@ export const Navbar = () => {
                         onClick={openRecommend}
                      >
                         <Heart className="h-3.5 w-3.5" />
-                        <span className="hidden text-xs sm:inline">Recommend</span>
+                        <span className="hidden text-xs lg:inline">Recommend</span>
                      </Button>
                   )}
                   <Button
@@ -114,8 +114,8 @@ export const Navbar = () => {
                      onClick={openSearch}
                   >
                      <Search className="h-3.5 w-3.5" />
-                     <span className="hidden text-xs sm:inline">Search</span>
-                     <kbd className="hidden rounded border border-border bg-muted px-1 py-0.5 font-mono text-[10px] sm:inline">
+                     <span className="hidden text-xs lg:inline">Search</span>
+                     <kbd className="hidden rounded border border-border bg-muted px-1 py-0.5 font-mono text-[10px] lg:inline">
                         K
                      </kbd>
                   </Button>
@@ -180,7 +180,7 @@ export const Navbar = () => {
          </nav>
 
          {/* Bottom nav — mobile only */}
-         <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border/50 bg-background/95 backdrop-blur-sm md:hidden">
+         <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border/50 bg-background md:hidden">
             <div className="flex h-16 items-center justify-around px-2">
                {navItems.map((item) => {
                   const isActive =
