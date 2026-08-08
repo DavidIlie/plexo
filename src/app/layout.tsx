@@ -13,6 +13,8 @@ import { RefreshDialog } from "~/components/refresh-dialog";
 import { SearchDialog } from "~/components/search-dialog";
 import { RecommendDialog } from "~/components/recommend-dialog";
 import { AppConfigProvider } from "~/components/app-config-provider";
+import { OfflineBanner } from "~/components/offline-banner";
+import AppErrorBoundary from "~/components/app-error-boundary";
 
 const geistSans = Geist({
    variable: "--font-geist-sans",
@@ -87,9 +89,10 @@ const RootLayout = ({
                            <Navbar />
                         </Suspense>
                         <main className="mx-auto max-w-7xl px-4 py-6 pb-24 md:pb-6">
-                           {children}
+                           <AppErrorBoundary>{children}</AppErrorBoundary>
                         </main>
                         <Footer />
+                        <OfflineBanner />
                         <SearchDialog />
                         <RefreshDialog />
                         <RecommendDialog />
