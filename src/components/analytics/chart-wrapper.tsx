@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { motion } from "framer-motion";
 import { RefreshCw } from "lucide-react";
 import { ResponsiveContainer } from "recharts";
@@ -8,13 +8,11 @@ import { formatDistanceToNow } from "date-fns";
 
 import { Skeleton } from "~/components/ui/skeleton";
 
-export const CHART_TOOLTIP_STYLE: CSSProperties = {
-   backgroundColor: "var(--card)",
-   border: "1px solid var(--border)",
-   borderRadius: "var(--radius)",
-   color: "var(--foreground)",
-   fontSize: "12px",
-};
+// Centered placeholder rendered via ChartWrapper's `empty` slot when a chart
+// has no data — the card keeps its footprint instead of vanishing from the grid.
+export const ChartEmptyState = ({ message = "No data yet" }: { message?: string }) => (
+   <span className="text-[11px] text-muted-foreground">{message}</span>
+);
 
 interface ChartWrapperProps {
    title: string;
@@ -23,8 +21,10 @@ interface ChartWrapperProps {
    isFetching?: boolean;
    lastUpdatedAt?: string;
    height?: number;
-   children: ReactNode;
+   children?: ReactNode;
    headerRight?: ReactNode;
+   // When set, rendered centered in place of the chart (children are ignored).
+   empty?: ReactNode;
 }
 
 export const ChartWrapper = ({
@@ -36,6 +36,7 @@ export const ChartWrapper = ({
    height = 280,
    children,
    headerRight,
+   empty,
 }: ChartWrapperProps) => {
    const isRefetching = isFetching && !isLoading;
 
@@ -76,14 +77,27 @@ export const ChartWrapper = ({
             <p className="mb-3 text-xs text-muted-foreground">{description}</p>
          )}
          <div className={isRefetching ? "opacity-60 transition-opacity duration-300" : ""}>
-            <ResponsiveContainer width="100%" height={height}>
-               {children}
-            </ResponsiveContainer>
+            {empty != null ? (
+               <div
+                  className="flex w-full items-center justify-center"
+                  style={{ height }}
+               >
+                  {empty}
+               </div>
+            ) : (
+               <ResponsiveContainer
+                  width="100%"
+                  height={height}
+                  initialDimension={{ width: 600, height }}
+               >
+                  {children}
+               </ResponsiveContainer>
+            )}
          </div>
          {lastUpdatedAt && (
             <p className="mt-2 text-right text-[10px] text-muted-foreground/60">
                {isRefetching
-                  ? `Refreshing\u2026 last updated ${formatDistanceToNow(new Date(lastUpdatedAt), { addSuffix: true })}`
+                  ? `Refreshing… last updated ${formatDistanceToNow(new Date(lastUpdatedAt), { addSuffix: true })}`
                   : `Updated ${formatDistanceToNow(new Date(lastUpdatedAt), { addSuffix: true })}`}
             </p>
          )}

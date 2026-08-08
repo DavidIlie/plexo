@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useId, useMemo } from "react";
 import { BarChart, Bar, Cell, XAxis, YAxis, Tooltip } from "recharts";
 
 import type { getLibrarySizeStatsCached } from "~/server/cache/analytics";
-import { ChartWrapper } from "~/components/analytics/chart-wrapper";
+import { ChartEmptyState, ChartWrapper } from "~/components/analytics/chart-wrapper";
 import {
    BAR_CURSOR,
+   CustomBar,
    HOVER_SERIES_OPACITY,
    MOUNT_ANIMATION,
    useChartHover,
@@ -34,12 +35,24 @@ interface Props {
 }
 
 export const LibrarySizeChart = ({ data, lastUpdatedAt }: Props) => {
+   const gradId = useId();
    const { hoverIdx, hovering, baseAnimate, onMouseMove, onMouseLeave } =
       useChartHover();
 
    const useTB = useMemo(() => data.some((d) => d.bytes >= TB), [data]);
 
-   if (data.length === 0) return null;
+   if (data.length === 0) {
+      return (
+         <ChartWrapper
+            title="Library Size"
+            description="Storage usage per library"
+            isLoading={false}
+            isFetching={false}
+            lastUpdatedAt={lastUpdatedAt}
+            empty={<ChartEmptyState />}
+         />
+      );
+   }
 
    const chartData = data.map((d) => ({
       name: d.name,
@@ -61,6 +74,12 @@ export const LibrarySizeChart = ({ data, lastUpdatedAt }: Props) => {
          lastUpdatedAt={lastUpdatedAt}
       >
          <BarChart data={chartData} onMouseMove={onMouseMove} onMouseLeave={onMouseLeave}>
+            <defs>
+               <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={CHART_COLOR} stopOpacity={0.9} />
+                  <stop offset="100%" stopColor={CHART_COLOR} stopOpacity={0.35} />
+               </linearGradient>
+            </defs>
             <XAxis
                dataKey="name"
                tickLine={false}
@@ -100,8 +119,10 @@ export const LibrarySizeChart = ({ data, lastUpdatedAt }: Props) => {
             />
             <Bar
                dataKey="size"
-               fill={CHART_COLOR}
-               radius={[4, 4, 0, 0]}
+               fill={`url(#${gradId})`}
+               maxBarSize={48}
+               background={{ fill: "var(--muted)", fillOpacity: 0.2, radius: 4 }}
+               shape={<CustomBar barCount={chartData.length} />}
                isAnimationActive={baseAnimate}
                {...MOUNT_ANIMATION}
             >

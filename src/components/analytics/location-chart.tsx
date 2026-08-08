@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { MapPin } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -12,9 +13,15 @@ interface Props {
 
 export const LocationChart = ({ data, lastUpdatedAt }: Props) => {
    const locations = data;
+   const maxCount = locations.reduce((max, loc) => Math.max(max, loc.count), 0);
 
    return (
-      <div className="rounded-lg border border-border/50 p-4">
+      <motion.div
+         initial={{ opacity: 0, y: 10 }}
+         animate={{ opacity: 1, y: 0 }}
+         transition={{ duration: 0.35 }}
+         className="rounded-lg border border-border/50 bg-card/50 p-4"
+      >
          <div className="mb-3 flex items-center gap-2">
             <p className="text-sm font-medium">Watch Locations</p>
          </div>
@@ -24,19 +31,38 @@ export const LocationChart = ({ data, lastUpdatedAt }: Props) => {
             </p>
          ) : (
             <div className="space-y-2">
-               {locations.map((loc) => (
-                  <div
+               {locations.map((loc, index) => (
+                  <motion.div
                      key={loc.location}
-                     className="flex items-center justify-between rounded-md bg-muted/30 px-3 py-2"
+                     initial={{ opacity: 0, y: 8 }}
+                     animate={{ opacity: 1, y: 0 }}
+                     transition={{ duration: 0.25, delay: index * 0.04 }}
+                     className="rounded-md bg-muted/30 px-3 py-2"
                   >
-                     <div className="flex items-center gap-2">
-                        <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="text-sm">{loc.location}</span>
+                     <div className="flex items-center justify-between">
+                        <div className="flex min-w-0 items-center gap-2">
+                           <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                           <span className="truncate text-sm">{loc.location}</span>
+                        </div>
+                        <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                           {loc.count} {loc.count !== 1 ? "entries" : "entry"}
+                        </span>
                      </div>
-                     <span className="text-xs tabular-nums text-muted-foreground">
-                        {loc.count} {loc.count !== 1 ? "entries" : "entry"}
-                     </span>
-                  </div>
+                     <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-muted">
+                        <motion.div
+                           initial={{ width: 0 }}
+                           animate={{
+                              width: `${maxCount > 0 ? (loc.count / maxCount) * 100 : 0}%`,
+                           }}
+                           transition={{
+                              duration: 0.5,
+                              delay: 0.15 + index * 0.04,
+                              ease: [0.23, 1, 0.32, 1],
+                           }}
+                           className="h-full rounded-full bg-primary"
+                        />
+                     </div>
+                  </motion.div>
                ))}
             </div>
          )}
@@ -45,6 +71,6 @@ export const LocationChart = ({ data, lastUpdatedAt }: Props) => {
                {`Updated ${formatDistanceToNow(new Date(lastUpdatedAt), { addSuffix: true })}`}
             </p>
          )}
-      </div>
+      </motion.div>
    );
 };

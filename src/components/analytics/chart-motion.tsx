@@ -66,6 +66,49 @@ export const useChartHover = () => {
    };
 };
 
+interface CustomBarProps {
+   x?: number;
+   y?: number;
+   width?: number;
+   height?: number;
+   fill?: string;
+   fillOpacity?: number;
+   barCount: number;
+}
+
+// Rounded-top bar with adaptive radius (ported from zerocut's custom-bar).
+// Recharts' `radius` prop rounds corners independently of bar height, which
+// distorts short bars; this clamps the radius to min(r, h/2, w/2) and floors
+// non-zero bars at 4px so tiny values stay visible. Bottom edge stays square
+// on the baseline.
+export const CustomBar = ({
+   x = 0,
+   y = 0,
+   width = 0,
+   height = 0,
+   fill,
+   fillOpacity = 1,
+   barCount,
+}: CustomBarProps) => {
+   if (width <= 0 || height <= 0) return null;
+
+   const bottom = y + height;
+   const minH = 4;
+   const h = height < minH ? minH : height;
+   const top = bottom - h;
+
+   let radius = barCount > 90 ? 2.5 : 5;
+   radius = Math.min(radius, Math.floor(h / 2), Math.floor(width / 2));
+   if (radius < 0) radius = 0;
+
+   const r = radius;
+   const d = r
+      ? `M ${x},${top + r} Q ${x},${top} ${x + r},${top} L ${x + width - r},${top} Q ${x + width},${top} ${x + width},${top + r} L ${x + width},${bottom} L ${x},${bottom} Z`
+      : `M ${x},${top} L ${x + width},${top} L ${x + width},${bottom} L ${x},${bottom} Z`;
+
+   return <path d={d} fill={fill} fillOpacity={fillOpacity} />;
+};
+
 interface PulseDotProps {
    cx?: number;
    cy?: number;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import {
    Trophy,
    Repeat,
@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "~/lib/utils";
+import { AnimatedNumber } from "~/components/ui/animated-number";
 import { MediaDetailDialog } from "~/components/media/media-detail-dialog";
 import type { PlexMediaItem } from "~/types/plex";
 import type { getHighlightsCached } from "~/server/cache/analytics";
@@ -24,7 +25,10 @@ type Highlights = Awaited<ReturnType<typeof getHighlightsCached>>;
 interface HighlightProps {
    icon: React.ElementType;
    label: string;
-   value: string;
+   // Either a plain string value or an animated number with an optional suffix.
+   value?: string;
+   numericValue?: number;
+   suffix?: string;
    detail?: string;
    onClick?: () => void;
 }
@@ -33,30 +37,52 @@ const Highlight: React.FC<HighlightProps & { index?: number }> = ({
    icon: Icon,
    label,
    value,
+   numericValue,
+   suffix,
    detail,
    onClick,
    index = 0,
-}) => (
-   <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, delay: index * 0.04 }}
-      className={cn(
-         "flex items-start gap-3 rounded-lg border border-border/50 bg-card p-3",
-         onClick && "cursor-pointer transition-colors hover:border-primary/30",
-      )}
-      onClick={onClick}
-   >
-      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary/60" />
-      <div className="min-w-0">
-         <p className="text-xs text-muted-foreground">{label}</p>
-         <p className="truncate text-sm font-medium">{value}</p>
-         {detail && (
-            <p className="text-xs text-muted-foreground">{detail}</p>
+}) => {
+   const prefersReducedMotion = useReducedMotion();
+
+   return (
+      <motion.div
+         initial={{ opacity: 0, y: 8 }}
+         animate={{ opacity: 1, y: 0 }}
+         transition={{ duration: 0.25, delay: index * 0.04 }}
+         whileHover={
+            onClick && !prefersReducedMotion
+               ? { y: -2, transition: { type: "spring", bounce: 0, duration: 0.4 } }
+               : undefined
+         }
+         className={cn(
+            "flex items-start gap-3 rounded-lg border border-border/50 bg-card p-3",
+            onClick && "cursor-pointer transition-colors hover:border-primary/30",
          )}
-      </div>
-   </motion.div>
-);
+         onClick={onClick}
+      >
+         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10">
+            <Icon className="h-3.5 w-3.5 text-primary" />
+         </span>
+         <div className="min-w-0">
+            <p className="text-xs text-muted-foreground">{label}</p>
+            <p className="truncate text-sm font-medium tabular-nums">
+               {numericValue !== undefined ? (
+                  <>
+                     <AnimatedNumber value={numericValue} />
+                     {suffix ? ` ${suffix}` : null}
+                  </>
+               ) : (
+                  value
+               )}
+            </p>
+            {detail && (
+               <p className="text-xs text-muted-foreground">{detail}</p>
+            )}
+         </div>
+      </motion.div>
+   );
+};
 
 export const HighlightsGrid = ({ highlights }: { highlights: Highlights }) => {
    const [selectedItem, setSelectedItem] = useState<PlexMediaItem | null>(
@@ -114,12 +140,13 @@ export const HighlightsGrid = ({ highlights }: { highlights: Highlights }) => {
             <Highlight
                icon={Play}
                label="Total Plays"
-               value={h.totalPlays.toLocaleString()}
+               numericValue={h.totalPlays}
             />
             <Highlight
                icon={Calendar}
                label="Active Days"
-               value={`${h.daysWithActivity} days`}
+               numericValue={h.daysWithActivity}
+               suffix="days"
             />
             <Highlight
                icon={TrendingUp}
@@ -138,7 +165,7 @@ export const HighlightsGrid = ({ highlights }: { highlights: Highlights }) => {
                <Highlight
                   icon={Tv}
                   label="Total Episodes"
-                  value={h.totalEpisodes.toLocaleString()}
+                  numericValue={h.totalEpisodes}
                />
             )}
             {h.topDevice && (

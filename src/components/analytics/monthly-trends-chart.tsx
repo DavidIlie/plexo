@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useMemo } from "react";
-import { AreaChart, Area, Line, XAxis, YAxis, Tooltip, Legend } from "recharts";
+import { AreaChart, Area, CartesianGrid, Line, XAxis, YAxis, Tooltip, Legend } from "recharts";
 import { format } from "date-fns";
 
 import type { TautulliPlaysByDate } from "~/types/tautulli";
@@ -136,6 +136,12 @@ export const MonthlyTrendsChart: React.FC<Props> = ({
                   </linearGradient>
                ))}
             </defs>
+            <CartesianGrid
+               strokeDasharray="3 3"
+               stroke="var(--border)"
+               opacity={0.5}
+               vertical={false}
+            />
             <XAxis
                dataKey="date"
                tickLine={false}
@@ -149,7 +155,11 @@ export const MonthlyTrendsChart: React.FC<Props> = ({
                tickLine={false}
                axisLine={false}
                allowDecimals={false}
+               domain={[0, (max: number) => Math.ceil(max * 1.15)]}
                tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+               tickFormatter={(v: number) =>
+                  v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v)
+               }
             />
             <Tooltip
                cursor={CHART_CURSOR}

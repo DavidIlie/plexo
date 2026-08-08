@@ -3,7 +3,7 @@
 import { BarChart, Bar, Cell, XAxis, YAxis, Tooltip } from "recharts";
 import type { TooltipContentProps } from "recharts";
 
-import { ChartWrapper } from "~/components/analytics/chart-wrapper";
+import { ChartEmptyState, ChartWrapper } from "~/components/analytics/chart-wrapper";
 import {
    BAR_CURSOR,
    HOVER_SERIES_OPACITY,
@@ -64,7 +64,25 @@ export const VerticalBarChart = ({
 }: VerticalBarChartProps) => {
    const chartData = slice ? data.slice(0, slice) : data;
    const { hoverIdx, baseAnimate, onMouseMove, onMouseLeave } = useChartHover();
-   if (chartData.length === 0) return null;
+
+   // Truncate long category names so they never overflow the fixed axis width.
+   // ~7px per character at 11px font, minus room for the ellipsis.
+   const maxChars = Math.max(6, Math.floor(yWidth / 7) - 1);
+   const truncate = (v: string) =>
+      v.length > maxChars ? `${v.slice(0, maxChars - 1)}…` : v;
+
+   if (chartData.length === 0) {
+      return (
+         <ChartWrapper
+            title={title}
+            description={description}
+            isLoading={false}
+            isFetching={false}
+            lastUpdatedAt={lastUpdatedAt}
+            empty={<ChartEmptyState />}
+         />
+      );
+   }
 
    return (
       <ChartWrapper
@@ -82,6 +100,7 @@ export const VerticalBarChart = ({
          >
             <XAxis
                type="number"
+               allowDecimals={false}
                stroke="var(--muted-foreground)"
                tickLine={false}
                axisLine={false}
@@ -95,6 +114,7 @@ export const VerticalBarChart = ({
                tickLine={false}
                axisLine={false}
                tick={{ fontSize: tickFontSize, fill: "var(--muted-foreground)" }}
+               tickFormatter={truncate}
             />
             <Tooltip
                cursor={BAR_CURSOR}
@@ -109,6 +129,8 @@ export const VerticalBarChart = ({
                dataKey={dataKey}
                fill={fill}
                radius={[0, 4, 4, 0]}
+               maxBarSize={18}
+               background={{ fill: "var(--muted)", fillOpacity: 0.25, radius: 4 }}
                isAnimationActive={baseAnimate}
                {...MOUNT_ANIMATION}
             >

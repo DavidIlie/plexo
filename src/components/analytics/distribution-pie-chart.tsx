@@ -5,7 +5,7 @@ import { useReducedMotion } from "framer-motion";
 import { PieChart, Pie, Cell, Sector, Tooltip, Legend } from "recharts";
 import type { PieSectorDataItem } from "recharts";
 
-import { ChartWrapper } from "~/components/analytics/chart-wrapper";
+import { ChartEmptyState, ChartWrapper } from "~/components/analytics/chart-wrapper";
 import { HOVER_SERIES_OPACITY, MOUNT_ANIMATION } from "~/components/analytics/chart-motion";
 import { ChartTooltipCard, ChartTooltipRow } from "~/components/analytics/chart-tooltip";
 
@@ -86,7 +86,19 @@ export const DistributionPieChart = ({
    const { isAnimationActive, markInteracted } = usePieMountAnimation();
    const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
-   if (hideWhenEmpty && chartData.length === 0) return null;
+   if (chartData.length === 0) {
+      if (hideWhenEmpty) return null;
+      return (
+         <ChartWrapper
+            title={title}
+            description={description}
+            isLoading={false}
+            isFetching={false}
+            lastUpdatedAt={lastUpdatedAt}
+            empty={<ChartEmptyState />}
+         />
+      );
+   }
 
    const total = chartData.reduce((sum, d) => sum + d.count, 0);
    const colorFor = (name: string) => {
@@ -112,6 +124,7 @@ export const DistributionPieChart = ({
                dataKey="count"
                nameKey="name"
                paddingAngle={2}
+               cornerRadius={4}
                strokeWidth={0}
                isAnimationActive={isAnimationActive}
                {...MOUNT_ANIMATION}
@@ -145,6 +158,9 @@ export const DistributionPieChart = ({
                iconType="circle"
                iconSize={8}
                wrapperStyle={{ fontSize: "11px", paddingLeft: "12px" }}
+               formatter={(value) => (
+                  <span style={{ color: "var(--muted-foreground)" }}>{value}</span>
+               )}
             />
          </PieChart>
       </ChartWrapper>

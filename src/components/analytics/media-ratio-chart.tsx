@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { PieChart, Pie, Cell, Sector, Tooltip } from "recharts";
 import type { PieSectorDataItem } from "recharts";
 
@@ -114,6 +114,7 @@ export const MediaRatioChart = ({ data, lastUpdatedAt }: Props) => {
                   dataKey="value"
                   nameKey="name"
                   paddingAngle={2}
+                  cornerRadius={4}
                   strokeWidth={0}
                   isAnimationActive={isAnimationActive}
                   {...MOUNT_ANIMATION}
@@ -141,14 +142,37 @@ export const MediaRatioChart = ({ data, lastUpdatedAt }: Props) => {
                   wrapperStyle={{ outline: "none" }}
                />
             </PieChart>
+            {/* Center readout tracks the hovered slice: count crossfades to the
+                slice value and the label swaps to the slice name. */}
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
                <AnimatedNumber
-                  value={total}
+                  value={
+                     activeIndex !== null
+                        ? (chartData[activeIndex]?.value ?? total)
+                        : total
+                  }
                   immediate
                   className="text-2xl font-bold tabular-nums text-foreground"
                />
-               <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                  Titles
+               <span className="relative h-4 text-[11px] uppercase tracking-wide text-muted-foreground">
+                  <AnimatePresence mode="wait" initial={false}>
+                     <motion.span
+                        key={
+                           activeIndex !== null
+                              ? (chartData[activeIndex]?.name ?? "Titles")
+                              : "Titles"
+                        }
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.15 }}
+                        className="block leading-4"
+                     >
+                        {activeIndex !== null
+                           ? (chartData[activeIndex]?.name ?? "Titles")
+                           : "Titles"}
+                     </motion.span>
+                  </AnimatePresence>
                </span>
             </div>
          </div>

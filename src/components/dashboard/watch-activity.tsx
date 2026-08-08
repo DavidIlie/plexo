@@ -23,6 +23,15 @@ const levelClass: Record<0 | 1 | 2 | 3 | 4, string> = {
    4: "bg-primary",
 };
 
+// Human-readable bucket labels matching watchLevel() in server/cache/stats.ts.
+const levelLabel: Record<0 | 1 | 2 | 3 | 4, string> = {
+   0: "No plays",
+   1: "1 play",
+   2: "2–3 plays",
+   3: "4–6 plays",
+   4: "7+ plays",
+};
+
 // One-time populate sweep: total spread of per-column start delays (ms) plus a
 // tiny per-row offset for organic diagonal feel. Kept under ~900ms end-to-end
 // (SWEEP + last-row offset + the 300ms cell animation defined in globals.css).
@@ -357,7 +366,8 @@ export function WatchActivityGraph({ data }: { data: WatchActivityData }) {
                      </span>
                   </motion.div>
                ) : data.busiestDay ? (
-                  <motion.div
+                  <motion.button
+                     type="button"
                      initial={reduce ? false : { opacity: 0, y: 4 }}
                      animate={{ opacity: 1, y: 0 }}
                      transition={
@@ -365,22 +375,30 @@ export function WatchActivityGraph({ data }: { data: WatchActivityData }) {
                            ? { duration: 0 }
                            : { duration: 0.3, delay: 1 }
                      }
-                     className="flex items-baseline gap-2 text-muted-foreground"
+                     onClick={() => {
+                        const date = data.busiestDay?.date;
+                        if (!date) return;
+                        setFocusedDate(date);
+                        cellRefs.current.get(date)?.focus();
+                     }}
+                     className="flex cursor-pointer items-baseline gap-2 rounded-sm text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary"
+                     aria-label={`Jump to busiest day, ${formatDate(data.busiestDay.date)}`}
                   >
                      <span>Busiest day:</span>
                      <span className="font-semibold text-foreground">
                         {data.busiestDay.count}
                      </span>
                      <span>on {formatDate(data.busiestDay.date)}</span>
-                  </motion.div>
+                  </motion.button>
                ) : null}
             </div>
             <div className="flex items-center gap-1.5 text-[0.65rem] text-muted-foreground">
                <span>Less</span>
-               {[0, 1, 2, 3, 4].map((l) => (
+               {([0, 1, 2, 3, 4] as const).map((l) => (
                   <span
                      key={l}
-                     className={`h-3 w-3 rounded-[3px] ${levelClass[l as 0 | 1 | 2 | 3 | 4]}`}
+                     title={levelLabel[l]}
+                     className={`h-3 w-3 rounded-[3px] ${levelClass[l]}`}
                   />
                ))}
                <span>More</span>
