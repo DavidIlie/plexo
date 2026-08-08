@@ -10,7 +10,12 @@ export const env = createEnv({
       TAUTULLI_USER_ID: z.string().optional(),
       REFRESH_SECRET: z.string(),
       DISPLAY_NAME: z.string().default("David"),
-      APP_URL: z.string().url().default("http://localhost:3000"),
+      // Required in prod: metadataBase resolves every og:image/og:url from
+      // this, so a silent localhost fallback would break all embeds.
+      APP_URL:
+         process.env.NODE_ENV === "production"
+            ? z.string().url()
+            : z.string().url().default("http://localhost:3000"),
       PLAUSIBLE_ENABLED: z
          .enum(["true", "false"])
          .default("false")

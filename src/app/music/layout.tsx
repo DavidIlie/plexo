@@ -4,19 +4,38 @@ import { getDashboardStatsCached } from "~/server/cache/stats";
 
 export const generateMetadata = async (): Promise<Metadata> => {
    await connection();
-   const data = await getDashboardStatsCached();
-   const count = data.totalArtists ?? 0;
-   const desc = `Browse ${count} artists in the library`;
-   return {
-      title: `Music (${count} artists)`,
-      description: desc,
-      openGraph: {
+   try {
+      const data = await getDashboardStatsCached();
+      const count = data.totalArtists ?? 0;
+      const desc = `Browse ${count} artists in the library`;
+      return {
          title: `Music (${count} artists)`,
          description: desc,
-         images: [{ url: "/og?page=music", width: 1200, height: 630 }],
-      },
-      twitter: { card: "summary_large_image", images: ["/og?page=music"] },
-   };
+         openGraph: {
+            siteName: "Plexo",
+            type: "website",
+            title: `Music (${count} artists)`,
+            description: desc,
+            url: "/music",
+            images: [{ url: "/og?page=music", width: 1200, height: 630 }],
+         },
+         twitter: { card: "summary_large_image", images: ["/og?page=music"] },
+      };
+   } catch {
+      return {
+         title: "Music",
+         description: "Browse artists in the library",
+         openGraph: {
+            siteName: "Plexo",
+            type: "website",
+            title: "Music",
+            description: "Browse artists in the library",
+            url: "/music",
+            images: [{ url: "/og?page=music", width: 1200, height: 630 }],
+         },
+         twitter: { card: "summary_large_image", images: ["/og?page=music"] },
+      };
+   }
 };
 
 const MusicLayout = ({ children }: { children: React.ReactNode }) => {

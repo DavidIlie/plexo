@@ -35,29 +35,51 @@ import { RefreshButton } from "~/components/refresh-button";
 
 export const generateMetadata = async (): Promise<Metadata> => {
    await connection();
-   const data = await getDashboardStatsCached();
-   const parts = [
-      `${data.totalMovies} movies`,
-      `${data.totalShows} shows`,
-   ];
-   if (data.totalArtists > 0) parts.push(`${data.totalArtists} artists`);
-   parts.push(`${data.hoursWatched.toLocaleString()} hours watched`);
-   const desc = parts.join(", ");
-   return {
-      title: `${data.displayName}'s Library | Plexo`,
-      description: desc,
-      openGraph: {
-         title: `${data.displayName}'s Library`,
+   try {
+      const data = await getDashboardStatsCached();
+      const parts = [
+         `${data.totalMovies} movies`,
+         `${data.totalShows} shows`,
+      ];
+      if (data.totalArtists > 0) parts.push(`${data.totalArtists} artists`);
+      parts.push(`${data.hoursWatched.toLocaleString()} hours watched`);
+      const desc = parts.join(", ");
+      return {
+         title: `${data.displayName}'s Library | Plexo`,
          description: desc,
-         images: [{ url: "/og?page=dashboard", width: 1200, height: 630 }],
-      },
-      twitter: {
-         card: "summary_large_image",
-         title: `${data.displayName}'s Library`,
-         description: desc,
-         images: ["/og?page=dashboard"],
-      },
-   };
+         openGraph: {
+            siteName: "Plexo",
+            type: "website",
+            title: `${data.displayName}'s Library`,
+            description: desc,
+            url: "/",
+            images: [{ url: "/og?page=dashboard", width: 1200, height: 630 }],
+         },
+         twitter: {
+            card: "summary_large_image",
+            title: `${data.displayName}'s Library`,
+            description: desc,
+            images: ["/og?page=dashboard"],
+         },
+      };
+   } catch {
+      return {
+         title: "Plexo - Personal Media Dashboard",
+         description: "Personal media dashboard for Plex",
+         openGraph: {
+            siteName: "Plexo",
+            type: "website",
+            title: "Plexo - Personal Media Dashboard",
+            description: "Personal media dashboard for Plex",
+            url: "/",
+            images: [{ url: "/og?page=dashboard", width: 1200, height: 630 }],
+         },
+         twitter: {
+            card: "summary_large_image",
+            images: ["/og?page=dashboard"],
+         },
+      };
+   }
 };
 
 const DashboardStats = async () => {

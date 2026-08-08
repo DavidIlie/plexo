@@ -14,7 +14,7 @@ export const generateMetadata = async ({
    params,
 }: ArtistPageProps): Promise<Metadata> => {
    const { ratingKey } = await params;
-   const artist = await getMetadata(ratingKey);
+   const artist = await getMetadata(ratingKey).catch(() => null);
    if (!artist) return { title: "Artist Not Found" };
    const desc = artist.summary
       ? artist.summary.slice(0, 160)
@@ -24,8 +24,11 @@ export const generateMetadata = async ({
       title: artist.title,
       description: desc,
       openGraph: {
+         siteName: "Plexo",
          title: artist.title,
          description: desc,
+         type: "profile",
+         url: `/music/${ratingKey}`,
          images: [{ url: ogUrl, width: 1200, height: 630 }],
       },
       twitter: { card: "summary_large_image", images: [ogUrl] },

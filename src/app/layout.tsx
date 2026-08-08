@@ -28,7 +28,7 @@ const geistMono = Geist_Mono({
 
 export const viewport: Viewport = {
    colorScheme: "dark light",
-   themeColor: "#171717",
+   themeColor: "#0a0a0a",
    width: "device-width",
    initialScale: 1,
 };
@@ -39,8 +39,24 @@ export const metadata: Metadata = {
       default: "Plexo - Personal Media Dashboard",
    },
    description: "Personal media dashboard for Plex",
-   icons: [{ rel: "icon", url: "/icon.svg", type: "image/svg+xml" }],
+   icons: [
+      { rel: "icon", url: "/icon.svg", type: "image/svg+xml" },
+      { rel: "icon", url: "/icon.png", type: "image/png", sizes: "512x512" },
+      { rel: "apple-touch-icon", url: "/apple-icon.png", sizes: "180x180" },
+   ],
    metadataBase: new URL(env.APP_URL ?? "http://localhost:3000"),
+   openGraph: {
+      siteName: "Plexo",
+      type: "website",
+      title: "Plexo - Personal Media Dashboard",
+      description: "Personal media dashboard for Plex",
+      url: "/",
+      images: [{ url: "/og?page=dashboard", width: 1200, height: 630 }],
+   },
+   twitter: {
+      card: "summary_large_image",
+      images: ["/og?page=dashboard"],
+   },
 };
 
 const RootLayout = ({
