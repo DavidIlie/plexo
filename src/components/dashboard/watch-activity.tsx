@@ -9,7 +9,6 @@ import {
    useMotionValue,
    useReducedMotion,
    useTransform,
-   type Variants,
 } from "framer-motion";
 
 import type { WatchActivityData, WatchDay } from "~/types/watch-activity";
@@ -24,29 +23,11 @@ const levelClass: Record<0 | 1 | 2 | 3 | 4, string> = {
    4: "bg-primary",
 };
 
-const weekVariants: Variants = {
-   hidden: {},
-   show: {
-      transition: { staggerChildren: 0.008 },
-   },
-};
-
-const dayVariants: Variants = {
-   hidden: { opacity: 0, scale: 0.8, y: -2 },
-   show: {
-      opacity: 1,
-      scale: 1,
-      y: 0,
-      transition: { duration: 0.3, ease },
-   },
-};
-
-const containerVariants: Variants = {
-   hidden: {},
-   show: {
-      transition: { staggerChildren: 0.006 },
-   },
-};
+// One-time populate sweep: total spread of per-column start delays (ms) plus a
+// tiny per-row offset for organic diagonal feel. Kept under ~900ms end-to-end
+// (SWEEP + last-row offset + the 300ms cell animation defined in globals.css).
+const POPULATE_SWEEP_MS = 480;
+const POPULATE_ROW_STEP_MS = 14;
 
 function CountUp({
    value,
@@ -271,72 +252,88 @@ export function WatchActivityGraph({ data }: { data: WatchActivityData }) {
                   <span className="h-[calc((100%-6*0.2rem)/7)]" />
                </div>
 
-               {/* Cells — each week = flex-1 column of 7 aspect-square cells */}
-               <motion.div
-                  variants={containerVariants}
-                  initial={reduce ? "show" : "hidden"}
-                  animate={reduce || inView ? "show" : "hidden"}
+               {/* Cells — each week = flex-1 column of 7 aspect-square cells.
+                   The staggered populate is a one-time CSS sweep (see
+                   .watch-cell-animate in globals.css): cells stay paused until
+                   the grid scrolls into view and gains `watch-grid-visible`,
+                   then fade/scale in on a per-column delay. It never re-runs on
+                   data refetch since the cells keep their stable `d.date` keys
+                   and are not remounted. */}
+               <div
                   onKeyDown={onGridKeyDown}
-                  className="flex flex-1 gap-[3px] sm:gap-1"
+                  className={`flex flex-1 gap-[3px] sm:gap-1 ${
+                     !reduce && inView ? "watch-grid-visible" : ""
+                  }`}
                >
-                  {data.weeks.map((w, wi) => (
-                     <motion.div
-                        key={wi}
-                        variants={weekVariants}
-                        className={`min-w-0 flex-1 flex-col gap-[3px] sm:flex sm:gap-1 ${
-                           wi < mobileStart ? "hidden" : "flex"
-                        }`}
-                     >
-                        {Array.from({ length: 7 }).map((_, di) => {
-                           const d = w.days.find((x) => x.weekday === di);
-                           if (!d) {
+                  {data.weeks.map((w, wi) => {
+                     const desktopDelay =
+                        totalWeeks > 1
+                           ? (wi / (totalWeeks - 1)) * POPULATE_SWEEP_MS
+                           : 0;
+                     const mobileDelay =
+                        wi < mobileStart
+                           ? 0
+                           : mobileVisibleCount > 1
+                             ? ((wi - mobileStart) / (mobileVisibleCount - 1)) *
+                               POPULATE_SWEEP_MS
+                             : 0;
+                     return (
+                        <div
+                           key={wi}
+                           className={`min-w-0 flex-1 flex-col gap-[3px] sm:flex sm:gap-1 ${
+                              wi < mobileStart ? "hidden" : "flex"
+                           }`}
+                        >
+                           {Array.from({ length: 7 }).map((_, di) => {
+                              const d = w.days.find((x) => x.weekday === di);
+                              if (!d) {
+                                 return (
+                                    <div
+                                       key={di}
+                                       className="aspect-square w-full"
+                                    />
+                                 );
+                              }
+                              const isHot = hover?.date === d.date;
+                              const rowOffset = di * POPULATE_ROW_STEP_MS;
+                              const cellStyle = {
+                                 "--wd": `${desktopDelay + rowOffset}ms`,
+                                 "--wm": `${mobileDelay + rowOffset}ms`,
+                              } as React.CSSProperties;
                               return (
-                                 <div
-                                    key={di}
-                                    className="aspect-square w-full"
+                                 <button
+                                    key={d.date}
+                                    type="button"
+                                    style={reduce ? undefined : cellStyle}
+                                    tabIndex={d.date === entryDate ? 0 : -1}
+                                    ref={(el: HTMLButtonElement | null) => {
+                                       if (el) cellRefs.current.set(d.date, el);
+                                       else cellRefs.current.delete(d.date);
+                                    }}
+                                    aria-label={`${d.count} ${
+                                       d.count === 1 ? "play" : "plays"
+                                    } on ${formatDate(d.date)}`}
+                                    onMouseEnter={() => setHover(d)}
+                                    onMouseLeave={() => setHover(null)}
+                                    onFocus={() => {
+                                       setHover(d);
+                                       setFocusedDate(d.date);
+                                    }}
+                                    onBlur={() => setHover(null)}
+                                    className={`relative aspect-square w-full rounded-[3px] ring-offset-card transition-transform duration-150 ease-out outline-none hover:z-10 hover:scale-125 focus-visible:z-10 focus-visible:scale-125 focus-visible:ring-2 focus-visible:ring-primary motion-reduce:transition-none motion-reduce:hover:scale-100 ${
+                                       levelClass[d.level]
+                                    } ${reduce ? "" : "watch-cell-animate"} ${
+                                       isHot
+                                          ? "ring-2 ring-primary ring-offset-2"
+                                          : ""
+                                    }`}
                                  />
                               );
-                           }
-                           const isHot = hover?.date === d.date;
-                           return (
-                              <motion.button
-                                 key={d.date}
-                                 variants={dayVariants}
-                                 type="button"
-                                 tabIndex={d.date === entryDate ? 0 : -1}
-                                 ref={(el: HTMLButtonElement | null) => {
-                                    if (el) cellRefs.current.set(d.date, el);
-                                    else cellRefs.current.delete(d.date);
-                                 }}
-                                 aria-label={`${d.count} ${
-                                    d.count === 1 ? "play" : "plays"
-                                 } on ${formatDate(d.date)}`}
-                                 onMouseEnter={() => setHover(d)}
-                                 onMouseLeave={() => setHover(null)}
-                                 onFocus={() => {
-                                    setHover(d);
-                                    setFocusedDate(d.date);
-                                 }}
-                                 onBlur={() => setHover(null)}
-                                 whileHover={
-                                    reduce ? undefined : { scale: 1.4, zIndex: 5 }
-                                 }
-                                 transition={{
-                                    type: "spring",
-                                    stiffness: 400,
-                                    damping: 18,
-                                 }}
-                                 className={`aspect-square w-full rounded-[3px] ring-offset-card transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary ${levelClass[d.level]} ${
-                                    isHot
-                                       ? "ring-2 ring-primary ring-offset-2"
-                                       : ""
-                                 }`}
-                              />
-                           );
-                        })}
-                     </motion.div>
-                  ))}
-               </motion.div>
+                           })}
+                        </div>
+                     );
+                  })}
+               </div>
             </div>
          </div>
 

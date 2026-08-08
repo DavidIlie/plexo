@@ -138,6 +138,46 @@
    animation: plex-shimmer 1.6s linear infinite;
 }
 
+/* Watch-activity heatmap: one-time staggered cell populate. Cells fade and
+   scale in, swept left-to-right by a per-cell delay (set inline via --wm on
+   mobile / --wd on desktop). `backwards` fill holds the from-state during the
+   delay so unstarted cells stay hidden, then releases the transform once the
+   run ends so the hover pop can take over. Paused until the grid parent gains
+   `.watch-grid-visible` (i.e. scrolls into view). */
+@keyframes plex-cell-in {
+   from {
+      opacity: 0;
+      transform: scale(0.6);
+   }
+   to {
+      opacity: 1;
+      transform: scale(1);
+   }
+}
+
+.watch-cell-animate {
+   transform-origin: center;
+   animation: plex-cell-in 300ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+   animation-delay: var(--wm, 0ms);
+   animation-play-state: paused;
+}
+
+@media (min-width: 640px) {
+   .watch-cell-animate {
+      animation-delay: var(--wd, 0ms);
+   }
+}
+
+.watch-grid-visible .watch-cell-animate {
+   animation-play-state: running;
+}
+
+@media (prefers-reduced-motion: reduce) {
+   .watch-cell-animate {
+      animation: none;
+   }
+}
+
 @media (prefers-reduced-motion: reduce) {
    *,
    *::before,

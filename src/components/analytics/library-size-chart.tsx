@@ -1,10 +1,22 @@
 "use client";
 
 import { useMemo } from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
+import { BarChart, Bar, Cell, XAxis, YAxis, Tooltip } from "recharts";
 
 import type { getLibrarySizeStatsCached } from "~/server/cache/analytics";
-import { ChartWrapper, CHART_TOOLTIP_STYLE } from "~/components/analytics/chart-wrapper";
+import { ChartWrapper } from "~/components/analytics/chart-wrapper";
+import {
+   BAR_CURSOR,
+   HOVER_SERIES_OPACITY,
+   MOUNT_ANIMATION,
+   useChartHover,
+} from "~/components/analytics/chart-motion";
+import {
+   ChartTooltipCard,
+   ChartTooltipRow,
+} from "~/components/analytics/chart-tooltip";
+
+const CHART_COLOR = "var(--chart-2)";
 
 const formatBytes = (bytes: number) => {
    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(0)} MB`;
@@ -22,6 +34,9 @@ interface Props {
 }
 
 export const LibrarySizeChart = ({ data, lastUpdatedAt }: Props) => {
+   const { hoverIdx, hovering, baseAnimate, onMouseMove, onMouseLeave } =
+      useChartHover();
+
    const useTB = useMemo(() => data.some((d) => d.bytes >= TB), [data]);
 
    if (data.length === 0) return null;
@@ -45,32 +60,58 @@ export const LibrarySizeChart = ({ data, lastUpdatedAt }: Props) => {
          isFetching={false}
          lastUpdatedAt={lastUpdatedAt}
       >
-         <BarChart data={chartData}>
-            <XAxis dataKey="name" stroke="var(--muted-foreground)" />
+         <BarChart data={chartData} onMouseMove={onMouseMove} onMouseLeave={onMouseLeave}>
+            <XAxis
+               dataKey="name"
+               tickLine={false}
+               axisLine={false}
+               tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
+            />
             <YAxis
-               stroke="var(--muted-foreground)"
+               tickLine={false}
+               axisLine={false}
+               tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
                tickFormatter={(v: number) => `${v} ${unit}`}
             />
             <Tooltip
-               contentStyle={CHART_TOOLTIP_STYLE}
-               content={(props) => {
-                  if (!props.active || !props.payload?.[0]) return null;
-                  const item = props.payload[0].payload as { name: string; displaySize: string; items: number };
+               cursor={BAR_CURSOR}
+               content={({ active, payload }) => {
+                  if (!active || !payload?.length) return null;
+                  const item = payload[0].payload as {
+                     name: string;
+                     displaySize: string;
+                     items: number;
+                  };
                   return (
-                     <div style={CHART_TOOLTIP_STYLE} className="px-3 py-2">
-                        <p className="text-xs font-medium">{item.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                           {item.displaySize} &middot; {item.items.toLocaleString()} items
-                        </p>
-                     </div>
+                     <ChartTooltipCard header={item.name}>
+                        <ChartTooltipRow
+                           color={CHART_COLOR}
+                           label="Size"
+                           value={item.displaySize}
+                        />
+                        <ChartTooltipRow
+                           label="Items"
+                           value={item.items.toLocaleString()}
+                           muted
+                        />
+                     </ChartTooltipCard>
                   );
                }}
             />
             <Bar
                dataKey="size"
-               fill="var(--chart-2)"
+               fill={CHART_COLOR}
                radius={[4, 4, 0, 0]}
-            />
+               isAnimationActive={baseAnimate}
+               {...MOUNT_ANIMATION}
+            >
+               {chartData.map((_, i) => (
+                  <Cell
+                     key={i}
+                     fillOpacity={hovering && hoverIdx !== i ? HOVER_SERIES_OPACITY : 1}
+                  />
+               ))}
+            </Bar>
          </BarChart>
       </ChartWrapper>
    );

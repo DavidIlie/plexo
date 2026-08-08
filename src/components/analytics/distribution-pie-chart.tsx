@@ -1,8 +1,13 @@
 "use client";
 
-import { PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
+import { useState } from "react";
+import { useReducedMotion } from "framer-motion";
+import { PieChart, Pie, Cell, Sector, Tooltip, Legend } from "recharts";
+import type { PieSectorDataItem } from "recharts";
 
-import { ChartWrapper, CHART_TOOLTIP_STYLE } from "~/components/analytics/chart-wrapper";
+import { ChartWrapper } from "~/components/analytics/chart-wrapper";
+import { HOVER_SERIES_OPACITY, MOUNT_ANIMATION } from "~/components/analytics/chart-motion";
+import { ChartTooltipCard, ChartTooltipRow } from "~/components/analytics/chart-tooltip";
 
 export const CHART_COLORS = [
    "var(--chart-1)",
@@ -14,6 +19,53 @@ export const CHART_COLORS = [
    "oklch(0.6 0.12 200)",
    "oklch(0.65 0.08 280)",
 ];
+
+// Sweep-in draws once on mount, then never re-animates: the first slice hover
+// flips `interacted`, so subsequent re-renders (dimming, active slice) skip it.
+const usePieMountAnimation = () => {
+   const prefersReducedMotion = useReducedMotion();
+   const [interacted, setInteracted] = useState(false);
+   return {
+      isAnimationActive: !prefersReducedMotion && !interacted,
+      markInteracted: () => setInteracted(true),
+   };
+};
+
+// Active slice grows by 4px. recharts drives this off the tooltip-active index,
+// which tracks the hovered slice — same slice our own activeIndex dims around.
+const renderActiveSlice = (props: PieSectorDataItem) => (
+   <Sector
+      cx={props.cx}
+      cy={props.cy}
+      innerRadius={props.innerRadius}
+      outerRadius={props.outerRadius + 4}
+      startAngle={props.startAngle}
+      endAngle={props.endAngle}
+      cornerRadius={props.cornerRadius}
+      fill={props.fill}
+   />
+);
+
+interface PieTooltipProps {
+   active?: boolean;
+   payload?: Array<{ name?: string; value?: number }>;
+   total: number;
+   colorFor: (name: string) => string;
+}
+
+const DistributionTooltip = ({ active, payload, total, colorFor }: PieTooltipProps) => {
+   if (!active || !payload?.length) return null;
+   const slice = payload[0];
+   const name = slice.name ?? "";
+   const value = slice.value ?? 0;
+   const pct = total > 0 ? Math.round((value / total) * 100) : 0;
+   return (
+      <ChartTooltipCard header={name}>
+         <ChartTooltipRow color={colorFor(name)} label="Count" value={value.toLocaleString()} />
+         <ChartTooltipRow color={colorFor(name)} label="Share" value={`${pct}%`} muted />
+      </ChartTooltipCard>
+   );
+};
 
 interface DistributionPieChartProps {
    data: Array<{ name: string; count: number }>;
@@ -31,7 +83,16 @@ export const DistributionPieChart = ({
    hideWhenEmpty = false,
 }: DistributionPieChartProps) => {
    const chartData = data.slice(0, 8);
+   const { isAnimationActive, markInteracted } = usePieMountAnimation();
+   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+
    if (hideWhenEmpty && chartData.length === 0) return null;
+
+   const total = chartData.reduce((sum, d) => sum + d.count, 0);
+   const colorFor = (name: string) => {
+      const idx = chartData.findIndex((d) => d.name === name);
+      return CHART_COLORS[(idx < 0 ? 0 : idx) % CHART_COLORS.length];
+   };
 
    return (
       <ChartWrapper
@@ -52,15 +113,31 @@ export const DistributionPieChart = ({
                nameKey="name"
                paddingAngle={2}
                strokeWidth={0}
+               isAnimationActive={isAnimationActive}
+               {...MOUNT_ANIMATION}
+               activeShape={renderActiveSlice}
+               onMouseEnter={(_, index) => {
+                  markInteracted();
+                  setActiveIndex(index);
+               }}
+               onMouseLeave={() => setActiveIndex(null)}
             >
                {chartData.map((_, index) => (
                   <Cell
                      key={`cell-${index}`}
                      fill={CHART_COLORS[index % CHART_COLORS.length]}
+                     fillOpacity={
+                        activeIndex === null || activeIndex === index ? 1 : HOVER_SERIES_OPACITY
+                     }
+                     className="transition-[fill-opacity] duration-200 ease-out"
+                     style={{ transition: "fill-opacity 200ms ease-out" }}
                   />
                ))}
             </Pie>
-            <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
+            <Tooltip
+               content={<DistributionTooltip total={total} colorFor={colorFor} />}
+               wrapperStyle={{ outline: "none" }}
+            />
             <Legend
                layout="vertical"
                align="right"
