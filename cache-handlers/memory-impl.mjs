@@ -1,6 +1,10 @@
 // @ts-check
 /** @typedef {import("./remote-handler.js").CacheEntry} CacheEntry */
 
+// Byte budget mirroring Next's default cacheMaxMemorySize (50 MB) — that
+// setting does not apply to custom cacheHandlers, so we enforce it here.
+const MAX_BYTES = 50 * 1024 * 1024;
+// Secondary cap on entry count.
 const MAX_ENTRIES = 1000;
 
 const globalForCache = /** @type {{ __plexoMemHandler?: ReturnType<typeof build> }} */ (
@@ -9,22 +13,42 @@ const globalForCache = /** @type {{ __plexoMemHandler?: ReturnType<typeof build>
 
 /** @typedef {{ tags: string[], stale: number, timestamp: number, expire: number, revalidate: number }} EntryMeta */
 
+/**
+ * Per-tag invalidation marker, mirroring Next's built-in tags-manifest
+ * semantics: `stale` forces background revalidation (entry still served with
+ * `revalidate: -1`); `expired` is a hard miss once the moment passes.
+ * `revalidateTag(tag, "max")` → stale now, expired in the far future
+ * (stale-while-revalidate); `revalidateTag(tag, { expire: 0 })` → both now.
+ * @typedef {{ stale: number, expired: number }} TagMarker
+ */
+
 function build() {
-   /** @type {Map<string, { meta: EntryMeta, buf: Buffer }>} */
+   // Map iteration order doubles as the LRU order: get() re-inserts the
+   // touched key so eviction (oldest-first) removes the least recently used.
+   /** @type {Map<string, { meta: EntryMeta, buf: Buffer, size: number }>} */
    const cache = new Map();
-   /** @type {Map<string, number>} */
-   const tagTimestamps = new Map();
+   /** @type {Map<string, TagMarker>} */
+   const tagMarkers = new Map();
    /** @type {Map<string, Promise<void>>} */
    const pendingSets = new Map();
+   let totalBytes = 0;
+
+   /** @param {string} key */
+   const evict = (key) => {
+      const stored = cache.get(key);
+      if (!stored) return;
+      totalBytes -= stored.size;
+      cache.delete(key);
+   };
 
    const evictIfNeeded = () => {
-      if (cache.size <= MAX_ENTRIES) return;
-      const excess = Math.ceil(MAX_ENTRIES * 0.1);
-      const keys = cache.keys();
-      for (let i = 0; i < excess; i++) {
-         const k = keys.next();
-         if (k.done) break;
-         cache.delete(k.value);
+      while (
+         (totalBytes > MAX_BYTES || cache.size > MAX_ENTRIES) &&
+         cache.size > 0
+      ) {
+         const oldest = cache.keys().next();
+         if (oldest.done) break;
+         evict(oldest.value);
       }
    };
 
@@ -37,10 +61,35 @@ function build() {
          const stored = cache.get(cacheKey);
          if (!stored) return undefined;
 
-         if (Date.now() > stored.meta.timestamp + stored.meta.expire * 1000) {
-            cache.delete(cacheKey);
+         const now = Date.now();
+
+         if (now > stored.meta.timestamp + stored.meta.expire * 1000) {
+            evict(cacheKey);
             return undefined;
          }
+
+         let revalidate = stored.meta.revalidate;
+         for (const tag of stored.meta.tags) {
+            const marker = tagMarkers.get(tag);
+            if (!marker) continue;
+            // Hard-expired: invalidated after the entry was created and the
+            // expiration moment has passed → miss.
+            if (
+               marker.expired > stored.meta.timestamp &&
+               marker.expired <= now
+            ) {
+               evict(cacheKey);
+               return undefined;
+            }
+            // Stale: serve, but force a background revalidation.
+            if (marker.stale > stored.meta.timestamp) {
+               revalidate = -1;
+            }
+         }
+
+         // Refresh LRU recency.
+         cache.delete(cacheKey);
+         cache.set(cacheKey, stored);
 
          const buf = stored.buf;
          return {
@@ -54,7 +103,7 @@ function build() {
             stale: stored.meta.stale,
             timestamp: stored.meta.timestamp,
             expire: stored.meta.expire,
-            revalidate: stored.meta.revalidate,
+            revalidate,
          };
       },
 
@@ -79,6 +128,9 @@ function build() {
             } finally {
                reader.releaseLock();
             }
+            const buf = Buffer.concat(chunks.map((c) => Buffer.from(c)));
+            const size = buf.byteLength + cacheKey.length;
+            evict(cacheKey);
             cache.set(cacheKey, {
                meta: {
                   tags: entry.tags,
@@ -87,8 +139,10 @@ function build() {
                   expire: entry.expire,
                   revalidate: entry.revalidate,
                },
-               buf: Buffer.concat(chunks.map((c) => Buffer.from(c))),
+               buf,
+               size,
             });
+            totalBytes += size;
             evictIfNeeded();
          } finally {
             resolvePending();
@@ -102,19 +156,25 @@ function build() {
       async getExpiration(tags) {
          let max = 0;
          for (const t of tags) {
-            const ts = tagTimestamps.get(t);
-            if (ts && ts > max) max = ts;
+            const marker = tagMarkers.get(t);
+            if (marker && marker.expired > max) max = marker.expired;
          }
          return max;
       },
 
-      /** @param {string[]} tags */
-      async updateTags(tags) {
+      /** @param {string[]} tags @param {{ expire?: number } | undefined} durations */
+      async updateTags(tags, durations) {
          const now = Date.now();
-         for (const t of tags) tagTimestamps.set(t, now);
-         for (const [key, { meta }] of cache.entries()) {
-            if (meta.tags.some((tag) => tags.includes(tag))) cache.delete(key);
-         }
+         // No durations (or expire: 0) → hard invalidation now. A positive
+         // expire → stale-while-revalidate: entries are served (and refreshed
+         // in the background) until now + expire.
+         const expired =
+            durations === undefined ||
+            durations.expire === undefined ||
+            durations.expire === 0
+               ? now
+               : now + durations.expire * 1000;
+         for (const t of tags) tagMarkers.set(t, { stale: now, expired });
       },
    };
 }
