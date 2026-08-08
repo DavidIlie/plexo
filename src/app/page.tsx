@@ -32,8 +32,6 @@ import { WatchTimeByHourChart } from "~/components/analytics/watch-time-by-hour-
 import { Skeleton } from "~/components/ui/skeleton";
 import { RefreshButton } from "~/components/refresh-button";
 
-export const instant = false;
-
 export const generateMetadata = async (): Promise<Metadata> => {
    await connection();
    const data = await getDashboardStatsCached();
@@ -62,6 +60,7 @@ export const generateMetadata = async (): Promise<Metadata> => {
 };
 
 const DashboardStats = async () => {
+   await connection();
    const data = await getDashboardStatsCached();
 
    return (
@@ -128,6 +127,7 @@ const SectionFallback = () => (
 );
 
 const WatchActivity = async () => {
+   await connection();
    const data = await getWatchActivityCached();
    return <WatchActivityGraph data={data} />;
 };
@@ -157,49 +157,56 @@ const WatchActivityFallback = () => (
 );
 
 const Highlights = async () => {
+   await connection();
    const highlights = await getHighlightsCached();
    return <HighlightsGrid highlights={highlights} />;
 };
 
 const OnDeck = async () => {
+   await connection();
    const items = await getOnDeck();
    return <OnDeckGrid items={items} />;
 };
 
 const Wishlist = async () => {
+   await connection();
    const items = await getWishlistCached();
    return <WishlistGrid items={items} />;
 };
 
 const RecentlyWatched = async () => {
+   await connection();
    const hist = await getHistoryWindow(10, 0, undefined);
    return <RecentlyWatchedList items={hist.data} />;
 };
 
 const GenreDistribution = async () => {
+   await connection();
    const data = await getGenreDistributionCached();
    return <GenreDistributionChart data={data} />;
 };
 
 const WatchTimeByHour = async () => {
+   await connection();
    const data = await getPlaysByHourOfDay(30);
    return <WatchTimeByHourChart data={data} timeRange={30} />;
 };
 
 const MusicGenre = async () => {
+   await connection();
    const data = await getMusicGenreDistributionCached();
    return <MusicGenreChart data={data} />;
 };
 
 const TopArtists = async () => {
+   await connection();
    const data = await getTopArtistsCached();
    return <TopArtistsChart data={data} />;
 };
 
 const ChartFallback = () => <Skeleton className="h-[320px] w-full rounded-lg" />;
 
-const DashboardPage = async () => {
-   await connection();
+const DashboardPage = () => {
    return (
       <div className="space-y-8">
          <Suspense fallback={<StatsFallback />}>

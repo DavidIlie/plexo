@@ -39,8 +39,6 @@ import {
 } from "~/lib/tautulli";
 import { analyticsSearchParamsCache, periodToDays } from "./search-params";
 
-export const instant = false;
-
 interface Props {
    searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
@@ -52,6 +50,7 @@ async function CachedChart<T>({
    fetch: () => Promise<T>;
    Chart: ComponentType<{ data: T }>;
 }) {
+   await connection();
    const data = await fetch();
    return <Chart data={data} />;
 }
@@ -83,8 +82,7 @@ const PeriodChartsFallback = () => (
    </>
 );
 
-const AnalyticsPage = async ({ searchParams }: Props) => {
-   await connection();
+const AnalyticsPage = ({ searchParams }: Props) => {
    return (
       <div className="space-y-6">
          <div className="flex items-center justify-between">
