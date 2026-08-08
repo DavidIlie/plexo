@@ -2,6 +2,7 @@
    "name": "plexo",
    "version": "0.1.0",
    "private": true,
+   "packageManager": "pnpm@10.34.4",
    "scripts": {
       "dev": "next dev",
       "build": "next build",
@@ -11,6 +12,7 @@
    },
    "dependencies": {
       "@marsidev/react-turnstile": "^1.4.2",
+      "@redis/client": "^6.0.0",
       "@radix-ui/react-accordion": "^1.2.12",
       "@radix-ui/react-dialog": "^1.1.15",
       "@radix-ui/react-hover-card": "^1.1.15",
@@ -38,10 +40,9 @@
       "react": "^19.2.3",
       "react-dom": "^19.2.3",
       "recharts": "^3.4.1",
-      "redis": "^6.0.0",
       "resend": "^6.9.3",
       "server-only": "^0.0.1",
-      "sharp": "^0.34.5",
+      "sharp": "^0.35.3",
       "superjson": "^2.2.1",
       "tailwind-merge": "^3.4.0",
       "zod": "^3.24.0"

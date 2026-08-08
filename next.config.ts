@@ -24,6 +24,10 @@ const nextConfig: NextConfig = {
       remote: require.resolve("./cache-handlers/remote-handler.mjs"),
    },
    experimental: {
+      // NOTE: recharts is NOT tree-shakeable in v3 (shared immer/redux store
+      // couples every chart type into one chunk); listing it here is harmless
+      // but ineffective. Route-level lazy loading (see lazy-charts.tsx) is the
+      // real lever. lucide-react and date-fns do shake correctly.
       optimizePackageImports: ["lucide-react", "date-fns", "recharts"],
       turbopackRustReactCompiler: true,
       useOffline: true,
@@ -42,7 +46,7 @@ const nextConfig: NextConfig = {
          },
       ],
    },
-   serverExternalPackages: ["@takumi-rs/image-response", "redis"],
+   serverExternalPackages: ["@takumi-rs/image-response", "@redis/client"],
 };
 
 export default nextConfig;
