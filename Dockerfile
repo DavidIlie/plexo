@@ -24,9 +24,21 @@ RUN --mount=type=cache,target=/pnpm/store,id=pnpm-store \
 # Version is injected by CI (git sha); falls back to "dev" for local builds.
 ARG NEXT_PUBLIC_VERSION=dev
 
+# Feature flags are read during the static prerender and frozen into the App
+# Shells (navbar links, dashboard/analytics music + location sections). They
+# must match the runtime env of the deployment or the baked shells will
+# disagree with the server — a build without SHOW_MUSIC once baked a 404
+# shell for /music that every soft navigation rendered despite runtime
+# SHOW_MUSIC=true. Route-level gates are additionally connection()-deferred
+# (src/app/music/page.tsx) so a mismatch can no longer bake an error shell.
+ARG SHOW_MUSIC=true
+ARG SHOW_LOCATIONS=true
+
 # Persist Next.js compiler cache between CI builds using BuildKit cache mounts
 RUN --mount=type=cache,target=/home/node/app/.next/cache,id=next-cache \
     NEXT_PUBLIC_VERSION="$NEXT_PUBLIC_VERSION" \
+    SHOW_MUSIC="$SHOW_MUSIC" \
+    SHOW_LOCATIONS="$SHOW_LOCATIONS" \
     SKIP_ENV_VALIDATION=true \
     pnpm build
 
