@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -15,15 +16,18 @@ import {
    ChevronUp,
    HardDrive,
    AlertTriangle,
+   Maximize2,
 } from "lucide-react";
 
 import { useTRPC } from "~/trpc/react";
 import {
    Dialog,
    DialogContent,
+   DialogDescription,
    DialogHeader,
    DialogTitle,
 } from "~/components/ui/dialog";
+import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
 import {
    Accordion,
@@ -579,6 +583,9 @@ export const MediaDetailDialog: React.FC<MediaDetailDialogProps> = ({
             <DialogContent className="max-h-[85vh] overflow-y-scroll overscroll-contain p-0 sm:max-w-lg">
                <DialogHeader className="sr-only">
                   <DialogTitle>{detail?.title ?? "Loading"}</DialogTitle>
+                  <DialogDescription>
+                     Loading media details and viewing history.
+                  </DialogDescription>
                </DialogHeader>
                <Skeleton className="h-32 w-full rounded-none" />
                <div className="space-y-4 px-6 pb-6">
@@ -659,7 +666,30 @@ export const MediaDetailDialog: React.FC<MediaDetailDialogProps> = ({
 
             <div className="min-w-0 space-y-4 overflow-hidden px-6 pb-6">
                <DialogHeader>
-                  <DialogTitle className="text-lg">{detail.title}</DialogTitle>
+                  <div className="flex items-start justify-between gap-4 pr-7">
+                     <DialogTitle className="min-w-0 truncate text-lg">
+                        {detail.title}
+                     </DialogTitle>
+                     {(detail.type === "movie" || detail.type === "show") && (
+                        <Button
+                           asChild
+                           variant="outline"
+                           size="sm"
+                           className="h-8 shrink-0 px-2.5 text-xs"
+                        >
+                           <Link
+                              href={`/media/${detail.ratingKey}`}
+                              onClick={() => onOpenChange(false)}
+                           >
+                              <Maximize2 />
+                              Full view
+                           </Link>
+                        </Button>
+                     )}
+                  </div>
+                  <DialogDescription className="sr-only">
+                     Details, watch history, and library information for {detail.title}.
+                  </DialogDescription>
                   <div className="flex flex-wrap items-center gap-1.5 pt-1">
                      {detail.year && (
                         <Badge variant="secondary" className="text-xs">

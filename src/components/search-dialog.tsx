@@ -10,6 +10,7 @@ import { useAppConfig } from "~/components/app-config-provider";
 import {
    Dialog,
    DialogContent,
+   DialogDescription,
    DialogHeader,
    DialogTitle,
 } from "~/components/ui/dialog";
@@ -170,6 +171,7 @@ export const SearchDialog = () => {
       } else {
          setSelectedItem(item);
          setOpen(false);
+         resetFilters();
       }
    };
 
@@ -204,6 +206,9 @@ export const SearchDialog = () => {
             <DialogContent className="max-h-[80vh] overflow-hidden p-0 outline-none sm:max-w-xl">
                <DialogHeader className="sr-only">
                   <DialogTitle>Search</DialogTitle>
+                  <DialogDescription>
+                     Search the Plex library and open a title to view its details.
+                  </DialogDescription>
                </DialogHeader>
 
                <div className="flex items-center border-b border-border px-4">

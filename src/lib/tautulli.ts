@@ -104,6 +104,58 @@ export const getHistoryRange = async (
    return items;
 };
 
+const ITEM_HISTORY_PAGE_SIZE = 500;
+
+const fetchHistoryPages = async (
+   filter: Record<string, string | number>,
+): Promise<TautulliHistoryItem[]> => {
+   const items: TautulliHistoryItem[] = [];
+   let start = 0;
+
+   while (true) {
+      const result = await tautulliFetch<TautulliHistoryData>("get_history", {
+         ...filter,
+         // Match Tautulli's user-facing history: one logical play may contain
+         // several raw session rows after a resume or transcode change.
+         grouping: 1,
+         include_activity: 0,
+         order_column: "date",
+         order_dir: "desc",
+         length: ITEM_HISTORY_PAGE_SIZE,
+         start,
+      });
+
+      items.push(...result.data.filter(isPopulatedHistoryItem));
+
+      if (result.data.length < ITEM_HISTORY_PAGE_SIZE) break;
+      start += ITEM_HISTORY_PAGE_SIZE;
+      if (start >= result.recordsFiltered) break;
+   }
+
+   return items;
+};
+
+/**
+ * Fetch every history row associated with one Plex item. Movies live in the
+ * row's rating key, seasons in the parent key, and TV shows in the
+ * grandparent key. Querying all three keeps this generic and avoids the old
+ * fixed-window scan, which could miss older or frequently watched titles.
+ */
+export const getItemHistoryEntries = async (
+   ratingKey: string,
+): Promise<TautulliHistoryItem[]> => {
+   const pages = await Promise.all([
+      fetchHistoryPages({ rating_key: ratingKey }),
+      fetchHistoryPages({ parent_rating_key: ratingKey }),
+      fetchHistoryPages({ grandparent_rating_key: ratingKey }),
+   ]);
+
+   const byRow = new Map<number, TautulliHistoryItem>();
+   for (const item of pages.flat()) byRow.set(item.row_id, item);
+
+   return [...byRow.values()].sort((a, b) => b.date - a.date);
+};
+
 export const getUsers = async (): Promise<TautulliUser[]> => {
    "use cache";
    cacheLife("activity");

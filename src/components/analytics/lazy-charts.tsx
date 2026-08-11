@@ -15,6 +15,7 @@ import type { VideoQualityChart } from "~/components/analytics/video-quality-cha
 import type { AudioFormatChart } from "~/components/analytics/audio-format-chart";
 import type { LibrarySizeChart } from "~/components/analytics/library-size-chart";
 import type { MusicAudioFormatChart } from "~/components/analytics/music-audio-format-chart";
+import type { DossierTimelineChart } from "~/components/media/dossier-timeline-chart";
 
 // recharts 3 is not tree-shakeable (its immer/redux store couples every chart
 // type into one ~565 kB chunk), so the only real lever is keeping that chunk
@@ -103,6 +104,14 @@ const MusicAudioFormatChartImpl = dynamic(
    { ssr: false, loading: () => <ChartFallback /> },
 );
 
+const DossierTimelineChartImpl = dynamic(
+   () =>
+      import("~/components/media/dossier-timeline-chart").then((mod) => ({
+         default: mod.DossierTimelineChart,
+      })),
+   { ssr: false, loading: () => <ChartFallback /> },
+);
+
 // Mount-when-near-viewport gate: renders the height-matched fallback until
 // the card scrolls within 200px of the viewport, then mounts the dynamic
 // chart (which triggers the recharts chunk download).
@@ -187,5 +196,13 @@ export const MusicAudioFormatChartLazy = (
 ) => (
    <DeferUntilVisible>
       <MusicAudioFormatChartImpl {...props} />
+   </DeferUntilVisible>
+);
+
+export const DossierTimelineChartLazy = (
+   props: ComponentProps<typeof DossierTimelineChart>,
+) => (
+   <DeferUntilVisible>
+      <DossierTimelineChartImpl {...props} />
    </DeferUntilVisible>
 );
