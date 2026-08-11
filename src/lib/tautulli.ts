@@ -69,6 +69,34 @@ export const getHistory = async (
    };
 };
 
+const HISTORY_PAGE_SIZE = 1000;
+
+export const getHistoryRange = async (
+   after: string,
+   before: string,
+): Promise<TautulliHistoryItem[]> => {
+   const items: TautulliHistoryItem[] = [];
+   let start = 0;
+   let total = 0;
+
+   do {
+      const result = await tautulliFetch<TautulliHistoryData>("get_history", {
+         after,
+         before,
+         grouping: 1,
+         length: HISTORY_PAGE_SIZE,
+         start,
+      });
+      items.push(...result.data.filter(isPopulatedHistoryItem));
+      total = result.recordsFiltered;
+      start += HISTORY_PAGE_SIZE;
+
+      if (result.data.length === 0) break;
+   } while (start < total);
+
+   return items;
+};
+
 export const getUsers = async (): Promise<TautulliUser[]> => {
    "use cache";
    cacheLife("activity");

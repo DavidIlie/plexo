@@ -1,5 +1,6 @@
 import { Suspense, type ComponentType } from "react";
 import { connection } from "next/server";
+import { format } from "date-fns";
 
 import { env } from "~/env";
 import { PeriodSelector } from "~/components/analytics/period-selector";
@@ -13,6 +14,7 @@ import { LocationChart } from "~/components/analytics/location-chart";
 import { MonthlyTrendsChart } from "~/components/analytics/monthly-trends-chart";
 import { WatchTimeByDayChart } from "~/components/analytics/watch-time-by-day-chart";
 import { WatchTimeByHourChart } from "~/components/analytics/watch-time-by-hour-chart";
+import { ViewerActivityCard } from "~/components/analytics/viewer-activity-card";
 import {
    AudioFormatChartLazy,
    DeviceChartLazy,
@@ -37,6 +39,7 @@ import {
    getMusicAudioFormatStatsCached,
    getMusicGenreDistributionCached,
    getTopArtistsCached,
+   getViewerActivityCached,
 } from "~/server/cache/analytics";
 import {
    getPlaysByDate,
@@ -44,7 +47,10 @@ import {
    getPlaysByHourOfDay,
 } from "~/lib/tautulli";
 import { getActivityViewers } from "~/server/cache/history";
-import { analyticsSearchParamsCache, periodToDays } from "./search-params";
+import {
+   analyticsSearchParamsCache,
+   periodToDateRange,
+} from "./search-params";
 
 interface Props {
    searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -65,12 +71,20 @@ async function CachedChart<T>({
 const PeriodCharts = async ({ searchParams }: Props) => {
    await connection();
    const { period } = await analyticsSearchParamsCache.parse(searchParams);
-   const days = periodToDays(period);
+   const { start, end, days } = periodToDateRange(period);
+   const viewerAnalyticsEnabled =
+      env.VIEWER_DISPLAY !== "hidden" && !env.TAUTULLI_USER_ID;
 
-   const [byDate, byDay, byHour] = await Promise.all([
+   const [byDate, byDay, byHour, viewerActivity] = await Promise.all([
       getPlaysByDate(days),
       getPlaysByDayOfWeek(days),
       getPlaysByHourOfDay(days),
+      viewerAnalyticsEnabled
+         ? getViewerActivityCached(
+              format(start, "yyyy-MM-dd"),
+              format(end, "yyyy-MM-dd"),
+           )
+         : Promise.resolve({ viewerCount: 0, items: [] }),
    ]);
 
    return (
@@ -78,6 +92,9 @@ const PeriodCharts = async ({ searchParams }: Props) => {
          <MonthlyTrendsChart data={byDate} timeRange={days} />
          <WatchTimeByDayChart data={byDay} timeRange={days} />
          <WatchTimeByHourChart data={byHour} timeRange={days} />
+         {viewerActivity.viewerCount > 1 ? (
+            <ViewerActivityCard data={viewerActivity.items} />
+         ) : null}
       </>
    );
 };
@@ -87,6 +104,9 @@ const PeriodChartsFallback = () => (
       <ChartFallback />
       <ChartFallback />
       <ChartFallback />
+      {env.VIEWER_DISPLAY !== "hidden" && !env.TAUTULLI_USER_ID ? (
+         <ChartFallback />
+      ) : null}
    </>
 );
 

@@ -13,12 +13,67 @@ import {
 } from "~/lib/plex";
 import {
    getHistory,
+   getHistoryRange,
    getGeoipLookup,
    getLibraryMediaInfo,
 } from "~/lib/tautulli";
 import { aggregateByKey } from "~/lib/utils";
 import { findSection } from "~/lib/plex-sections";
 import { env } from "~/env";
+import { getActivityViewers } from "~/server/cache/history";
+
+export const getViewerActivityCached = async (
+   after: string,
+   before: string,
+) => {
+   "use cache";
+   cacheLife("analytics");
+   cacheTag(
+      CACHE_TAGS.analytics,
+      CACHE_TAGS.analyticsScope("viewerActivity"),
+      CACHE_TAGS.tautulli,
+   );
+
+   if (env.VIEWER_DISPLAY === "hidden" || env.TAUTULLI_USER_ID) {
+      return { viewerCount: 0, items: [] };
+   }
+
+   const [history, viewers] = await Promise.all([
+      getHistoryRange(after, before),
+      getActivityViewers(),
+   ]);
+   const viewerById = new Map(viewers.map((viewer) => [viewer.id, viewer]));
+   const activity = new Map<
+      string,
+      { plays: number; duration: number }
+   >();
+
+   for (const item of history) {
+      const viewerId = String(item.user_id);
+      if (!viewerById.has(viewerId)) continue;
+
+      const current = activity.get(viewerId);
+      if (current) {
+         current.plays += 1;
+         current.duration += item.play_duration;
+      } else {
+         activity.set(viewerId, {
+            plays: 1,
+            duration: item.play_duration,
+         });
+      }
+   }
+
+   return {
+      viewerCount: viewers.length,
+      items: viewers
+         .flatMap((viewer) => {
+            const stats = activity.get(viewer.id);
+            return stats ? [{ viewer, ...stats }] : [];
+         })
+         .sort((a, b) => b.plays - a.plays || b.duration - a.duration),
+   };
+};
 
 export const getGenreDistributionCached = async () => {
    "use cache";
