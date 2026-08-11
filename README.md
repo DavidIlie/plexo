@@ -21,7 +21,7 @@ Built with Next.js 16, tRPC, Tailwind CSS v4, Recharts, and Framer Motion.
 - **Wishlist** — dashboard section showing pending items from Overseerr requests and Plex Watchlist, merged and deduplicated
 - **Admin Panel** — <kbd>Cmd+L</kbd> to view cache status, purge caches, test Discord/email notifications (protected by secret + optional Turnstile)
 - **Privacy Controls** — `SHOW_DEVICES` and `SHOW_LOCATIONS` env vars to control what data is exposed
-- **Multi-user Activity** — optional, privacy-aware viewer avatars/names and filtering backed by Tautulli; identities are stripped from browser data by default
+- **Multi-user Activity** — optional, privacy-aware viewer avatars/names, activity filtering, and period-aware Top Viewers analytics backed by Tautulli; identities are stripped from browser data by default
 - **Docker** — multi-stage build, pushes to GHCR via GitHub Actions
 - **Analytics** — optional Plausible integration with self-hosted instance support
 
@@ -158,7 +158,7 @@ When `TAUTULLI_USER_ID` is empty, activity and watch analytics include all users
 | `name` | Friendly name | Friendly names | Avatar URLs are not exposed |
 | `avatar-name` | Profile image and friendly name | Profile images and friendly names | Both are exposed |
 
-The dashboard labels a visible multi-user feed as **Household Activity**. The full Activity page adds a viewer filter, and media watch-history rows carry the same identity treatment. Avatars are fetched through Plexo’s same-origin proxy; Plex/Tautulli credentials and source avatar URLs never reach the browser.
+The dashboard labels a visible multi-user feed as **Household Activity**. The full Activity page adds a viewer filter, Analytics ranks active viewers for the selected period, and media watch-history rows carry the same identity treatment. Avatars are fetched through Plexo’s same-origin proxy; Plex/Tautulli credentials and source avatar URLs never reach the browser.
 
 Set `TAUTULLI_USER_ID` to keep the entire deployment scoped to one Tautulli user. This server-side scope always overrides viewer filters.
 

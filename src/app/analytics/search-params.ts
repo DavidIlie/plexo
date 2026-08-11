@@ -44,9 +44,9 @@ export const periodToDateRange = (
 
    switch (period) {
       case "last7d":
-         return { start: subDays(today, 7), end: today, days: 7 };
+         return { start: subDays(today, 6), end: today, days: 7 };
       case "last30d":
-         return { start: subDays(today, 30), end: today, days: 30 };
+         return { start: subDays(today, 29), end: today, days: 30 };
       case "mtd":
          return {
             start: startOfMonth(today),
@@ -54,11 +54,11 @@ export const periodToDateRange = (
             days: today.getDate(),
          };
       case "last90d":
-         return { start: subDays(today, 90), end: today, days: 90 };
+         return { start: subDays(today, 89), end: today, days: 90 };
       case "last365d":
-         return { start: subDays(today, 365), end: today, days: 365 };
+         return { start: subDays(today, 364), end: today, days: 365 };
       default:
-         return { start: subDays(today, 30), end: today, days: 30 };
+         return { start: subDays(today, 29), end: today, days: 30 };
    }
 };
 
