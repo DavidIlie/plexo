@@ -4,15 +4,23 @@ import { cacheLife, cacheTag } from "next/cache";
 
 import { CACHE_TAGS } from "~/lib/cache-tags";
 import { buildDossier } from "~/lib/dossier";
-import { getHistory, getItemHistoryEntries, getUsers } from "~/lib/tautulli";
+import {
+   getActivity,
+   getHistory,
+   getItemHistoryEntries,
+   getUsers,
+} from "~/lib/tautulli";
 import { env } from "~/env";
 import type { MediaDossier } from "~/types/dossier";
 import type {
    ActivityHistoryData,
    ActivityHistoryItem,
    ActivityViewer,
+   CurrentActivityData,
+   CurrentActivitySession,
    TautulliHistoryData,
    TautulliHistoryItem,
+   TautulliActivitySession,
    TautulliUser,
 } from "~/types/tautulli";
 
@@ -37,12 +45,9 @@ const identityUsers = (users: TautulliUser[]) => {
 
 const toPublicViewer = (
    user: TautulliUser,
-   index: number,
 ): ActivityViewer => ({
    id: String(user.user_id),
-   label: displayIncludesName
-      ? user.friendly_name || user.username
-      : `Viewer ${index + 1}`,
+   label: user.friendly_name || user.username,
    ...(displayIncludesName
       ? { name: user.friendly_name || user.username }
       : {}),
@@ -121,6 +126,119 @@ const publicRows = async (
          ...(viewer ? { viewer } : {}),
       };
    });
+};
+
+const numericValue = (value: number | string): number => {
+   const parsed = Number(value);
+   return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const publicActivitySession = (
+   item: TautulliActivitySession,
+   viewer: ActivityViewer | undefined,
+): CurrentActivitySession => ({
+   sessionKey: String(item.session_key || item.session_id),
+   state: item.state,
+   mediaType: item.media_type,
+   title: item.title,
+   parentTitle: item.parent_title,
+   grandparentTitle: item.grandparent_title,
+   fullTitle: item.full_title,
+   year: numericValue(item.year),
+   ratingKey: String(item.rating_key),
+   parentRatingKey: String(item.parent_rating_key),
+   grandparentRatingKey: String(item.grandparent_rating_key),
+   mediaIndex: numericValue(item.media_index),
+   parentMediaIndex: numericValue(item.parent_media_index),
+   durationMs: numericValue(item.duration),
+   viewOffsetMs: numericValue(item.view_offset),
+   progressPercent: numericValue(item.progress_percent),
+   thumb: item.thumb,
+   parentThumb: item.parent_thumb,
+   grandparentThumb: item.grandparent_thumb,
+   art: item.art,
+   qualityProfile: item.quality_profile,
+   bandwidthKbps: numericValue(item.bandwidth),
+   sourceBitrateKbps: numericValue(item.bitrate),
+   streamBitrateKbps: numericValue(item.stream_bitrate),
+   sourceContainer: item.container,
+   streamContainer: item.stream_container,
+   transcodeDecision: item.transcode_decision,
+   videoDecision: item.video_decision,
+   audioDecision: item.audio_decision,
+   subtitleDecision: item.subtitle_decision,
+   sourceVideoResolution:
+      item.video_full_resolution || item.video_resolution,
+   sourceVideoCodec: item.video_codec,
+   sourceVideoDynamicRange: item.video_dynamic_range,
+   streamVideoResolution:
+      item.stream_video_full_resolution || item.stream_video_resolution,
+   streamVideoCodec: item.stream_video_codec,
+   streamVideoDynamicRange: item.stream_video_dynamic_range,
+   streamVideoDecision: item.stream_video_decision,
+   sourceAudioCodec: item.audio_codec,
+   sourceAudioChannels:
+      item.audio_channel_layout || String(item.audio_channels || ""),
+   streamAudioCodec: item.stream_audio_codec,
+   streamAudioChannels:
+      item.stream_audio_channel_layout ||
+      String(item.stream_audio_channels || ""),
+   streamAudioDecision: item.stream_audio_decision,
+   subtitleCodec: item.stream_subtitle_codec || item.subtitle_codec,
+   subtitleLanguage:
+      item.stream_subtitle_language || item.subtitle_language,
+   streamSubtitleDecision:
+      item.stream_subtitle_decision || item.subtitle_decision,
+   hardwareTranscode:
+      numericValue(item.transcode_hw_decoding) > 0 ||
+      numericValue(item.transcode_hw_encoding) > 0,
+   transcodeThrottled: numericValue(item.transcode_throttled) > 0,
+   ...(env.SHOW_DEVICES
+      ? {
+           platform: item.platform,
+           product: item.product,
+           player: item.player,
+           device: item.device,
+        }
+      : {}),
+   ...(viewer ? { viewer } : {}),
+});
+
+/**
+ * Return an allowlisted, deployment-scoped snapshot of current Plex streams.
+ * This intentionally stays uncached; the dashboard polls it while visible.
+ */
+export const getCurrentActivity = async (): Promise<CurrentActivityData> => {
+   const activity = await getActivity();
+   const sessions = env.TAUTULLI_USER_ID
+      ? activity.sessions.filter(
+           (session) => String(session.user_id) === env.TAUTULLI_USER_ID,
+        )
+      : activity.sessions;
+
+   const viewerById = new Map<string, ActivityViewer>();
+   if (env.VIEWER_DISPLAY !== "hidden") {
+      const users = identityUsers(await getUsers());
+      for (const user of users) {
+         viewerById.set(String(user.user_id), toPublicViewer(user));
+      }
+   }
+
+   const publicSessions = sessions.map((session) =>
+      publicActivitySession(
+         session,
+         viewerById.get(String(session.user_id)),
+      ),
+   );
+
+   return {
+      sessions: publicSessions,
+      streamCount: publicSessions.length,
+      totalBandwidthKbps: publicSessions.reduce(
+         (total, session) => total + session.bandwidthKbps,
+         0,
+      ),
+   };
 };
 
 const publicHistory = async (

@@ -5,6 +5,12 @@ import Image from "next/image";
 import { UserRound } from "lucide-react";
 
 import { cn } from "~/lib/utils";
+import {
+   Tooltip,
+   TooltipContent,
+   TooltipProvider,
+   TooltipTrigger,
+} from "~/components/ui/tooltip";
 import type { ActivityViewer } from "~/types/tautulli";
 
 const avatarSize = {
@@ -66,10 +72,16 @@ export const ViewerIdentity = ({
 }) => {
    if (!viewer) return null;
 
-   return (
+   const identity = (
       <span
-         className={cn("inline-flex min-w-0 items-center gap-1.5", className)}
+         className={cn(
+            "inline-flex min-w-0 items-center gap-1.5",
+            !viewer.name &&
+               "rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+            className,
+         )}
          aria-label={`Viewer: ${viewer.name ?? viewer.label}`}
+         tabIndex={viewer.name ? undefined : 0}
       >
          {viewer.showAvatar || !viewer.name ? (
             <ViewerAvatar viewer={viewer} size="xs" />
@@ -78,6 +90,19 @@ export const ViewerIdentity = ({
          )}
          {viewer.name ? <span className="truncate">{viewer.name}</span> : null}
       </span>
+   );
+
+   if (viewer.name) return identity;
+
+   return (
+      <TooltipProvider delayDuration={250}>
+         <Tooltip>
+            <TooltipTrigger asChild>{identity}</TooltipTrigger>
+            <TooltipContent side="top" className="px-2 py-1 text-xs">
+               {viewer.label}
+            </TooltipContent>
+         </Tooltip>
+      </TooltipProvider>
    );
 };
 

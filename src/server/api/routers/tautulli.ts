@@ -11,12 +11,18 @@ import {
 } from "~/lib/tautulli";
 import {
    getActivityViewers,
+   getCurrentActivity,
    getHistoryWindow,
    getItemHistoryCached,
 } from "~/server/cache/history";
 import { env } from "~/env";
 
 export const tautulliRouter = createTRPCRouter({
+   getActivity: publicProcedure.query(async () => {
+      const data = await getCurrentActivity();
+      return { data, lastUpdatedAt: new Date().toISOString() };
+   }),
+
    getHistory: publicProcedure
       .input(
          z

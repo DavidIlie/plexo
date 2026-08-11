@@ -8,6 +8,7 @@ import type {
    TautulliResponse,
    TautulliHistoryData,
    TautulliHistoryItem,
+   TautulliActivityData,
    TautulliHomeStatItem,
    TautulliPlaysByDate,
    TautulliPlaysByDayOfWeek,
@@ -50,6 +51,10 @@ const isPopulatedHistoryItem = (item: TautulliHistoryItem): boolean => {
    if (item.guid?.startsWith("tv.plex.xmltv://") && !item.thumb) return false;
    return true;
 };
+
+/** Current Plex sessions are intentionally uncached so dashboard polling is live. */
+export const getActivity = async (): Promise<TautulliActivityData> =>
+   tautulliFetch<TautulliActivityData>("get_activity");
 
 export const getHistory = async (
    length = 10,
