@@ -24,6 +24,7 @@ import { getOnDeck } from "~/lib/plex";
 import { getPlaysByHourOfDay } from "~/lib/tautulli";
 import { StatCard } from "~/components/dashboard/stat-card";
 import { OnDeckGrid } from "~/components/dashboard/on-deck";
+import { NowWatching } from "~/components/dashboard/now-watching";
 import { RecentlyWatchedList } from "~/components/dashboard/recently-watched";
 import { HighlightsGrid } from "~/components/dashboard/highlights";
 import { WatchActivityGraph } from "~/components/dashboard/watch-activity";
@@ -239,6 +240,8 @@ const DashboardPage = () => {
          <Suspense fallback={<StatsFallback />}>
             <DashboardStats />
          </Suspense>
+
+         <NowWatching />
 
          <Suspense fallback={<SectionFallback />}>
             <Highlights />

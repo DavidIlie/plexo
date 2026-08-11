@@ -10,7 +10,7 @@ Built with Next.js 16, tRPC, Tailwind CSS v4, Recharts, and Framer Motion.
 
 ## Features
 
-- **Dashboard** — library stats, highlights (most watched, most rewatched, longest movie, top device, location), genre breakdown and viewing time charts, up next, recently watched with platform/duration per play
+- **Dashboard** — live Now Watching sessions with playback progress and stream quality, library stats, highlights, genre and viewing-time charts, up next, and recent activity
 - **Movies** — full library grid with genre/watched/unwatched filters and search, click any movie for details (summary, cast, ratings, watch history)
 - **TV Shows** — library grid with episode progress bars and completion filters, per-season episode breakdown with missing episode detection
 - **Music** — artist grid with genre filter and search, click any artist to browse albums and tracks (gated behind `SHOW_MUSIC=true`)
@@ -154,7 +154,7 @@ When `TAUTULLI_USER_ID` is empty, activity and watch analytics include all users
 | Value | Activity rows | Viewer filter | Browser data |
 |-------|---------------|---------------|--------------|
 | `hidden` | No identity | Hidden | Usernames and friendly names are removed |
-| `avatar` | Profile image only | Generic labels such as “Viewer 1” | Names are removed |
+| `avatar` | Profile image with name on hover/focus | Friendly names | Names are exposed only through the identity tooltip |
 | `name` | Friendly name | Friendly names | Avatar URLs are not exposed |
 | `avatar-name` | Profile image and friendly name | Profile images and friendly names | Both are exposed |
 
