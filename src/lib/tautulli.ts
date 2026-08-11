@@ -138,6 +138,41 @@ export const getPlaysByDate = async (
    return tautulliFetch<TautulliPlaysByDate>("get_plays_by_date", params);
 };
 
+export const getPlaysPerMonth = async (
+   timeRange = 12,
+   yAxis = "plays",
+   userId?: string,
+): Promise<TautulliPlaysByDate> => {
+   "use cache";
+   cacheLife("analytics");
+   cacheTag(CACHE_TAGS.tautulli, CACHE_TAGS.tautulliPlaysPerMonth);
+
+   const params: Record<string, string | number> = {
+      time_range: timeRange,
+      y_axis: yAxis,
+   };
+   if (userId) params.user_id = userId;
+
+   const data = await tautulliFetch<TautulliPlaysByDate>(
+      "get_plays_per_month",
+      params,
+   );
+   const firstActiveMonth = data.categories.findIndex((_, index) =>
+      data.series.some((series) => (series.data[index] ?? 0) > 0),
+   );
+   const start = firstActiveMonth === -1
+      ? Math.max(data.categories.length - 1, 0)
+      : firstActiveMonth;
+
+   return {
+      categories: data.categories.slice(start),
+      series: data.series.map((series) => ({
+         ...series,
+         data: series.data.slice(start),
+      })),
+   };
+};
+
 export const getPlaysByDayOfWeek = async (
    timeRange = 30,
    userId?: string,

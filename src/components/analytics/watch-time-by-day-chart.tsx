@@ -22,12 +22,14 @@ const CHART_COLOR = "var(--chart-2)";
 interface Props {
    data: TautulliPlaysByDayOfWeek;
    timeRange?: number;
+   isAllTime?: boolean;
    lastUpdatedAt?: string;
 }
 
 export const WatchTimeByDayChart: React.FC<Props> = ({
    data,
    timeRange = 30,
+   isAllTime = false,
    lastUpdatedAt,
 }) => {
    const gradId = useId();
@@ -54,7 +56,17 @@ export const WatchTimeByDayChart: React.FC<Props> = ({
    );
 
    return (
-      <ChartWrapper title="Watch Time by Day" description={`Plays by day of week, last ${timeRange} days`} isLoading={false} isFetching={false} lastUpdatedAt={lastUpdatedAt}>
+      <ChartWrapper
+         title="Watch Time by Day"
+         description={
+            isAllTime
+               ? "Plays by day of week across all history"
+               : `Plays by day of week, last ${timeRange} days`
+         }
+         isLoading={false}
+         isFetching={false}
+         lastUpdatedAt={lastUpdatedAt}
+      >
          <BarChart data={chartData} onMouseMove={onMouseMove} onMouseLeave={onMouseLeave}>
             <defs>
                <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">

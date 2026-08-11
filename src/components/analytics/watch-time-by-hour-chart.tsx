@@ -29,12 +29,14 @@ const formatHour = (h: string) => {
 interface Props {
    data: TautulliPlaysByHourOfDay;
    timeRange?: number;
+   isAllTime?: boolean;
    lastUpdatedAt?: string;
 }
 
 export const WatchTimeByHourChart: React.FC<Props> = ({
    data,
    timeRange = 30,
+   isAllTime = false,
    lastUpdatedAt,
 }) => {
    const gradId = useId();
@@ -61,7 +63,17 @@ export const WatchTimeByHourChart: React.FC<Props> = ({
    );
 
    return (
-      <ChartWrapper title="Favorite Viewing Times" description={`Plays by hour of day, last ${timeRange} days`} isLoading={false} isFetching={false} lastUpdatedAt={lastUpdatedAt}>
+      <ChartWrapper
+         title="Favorite Viewing Times"
+         description={
+            isAllTime
+               ? "Plays by hour of day across all history"
+               : `Plays by hour of day, last ${timeRange} days`
+         }
+         isLoading={false}
+         isFetching={false}
+         lastUpdatedAt={lastUpdatedAt}
+      >
          <BarChart data={chartData} onMouseMove={onMouseMove} onMouseLeave={onMouseLeave}>
             <defs>
                <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">

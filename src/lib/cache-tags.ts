@@ -27,6 +27,7 @@ export const CACHE_TAGS = {
    tautulliUsers: "tautulli:users",
    tautulliHomeStats: "tautulli:homeStats",
    tautulliPlaysByDate: "tautulli:playsByDate",
+   tautulliPlaysPerMonth: "tautulli:playsPerMonth",
    tautulliPlaysByDayOfWeek: "tautulli:playsByDayOfWeek",
    tautulliPlaysByHourOfDay: "tautulli:playsByHourOfDay",
    tautulliMostWatched: "tautulli:mostWatched",

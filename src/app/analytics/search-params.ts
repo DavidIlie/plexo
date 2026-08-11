@@ -13,12 +13,15 @@ import {
 
 export type Period = "last7d" | "last30d" | "mtd" | "last90d" | "last365d" | string;
 
+export const ALL_TIME_PERIOD = "all";
+
 export const PERIODS: Array<{ value: string; label: string }> = [
    { value: "last7d", label: "Last 7 days" },
    { value: "last30d", label: "Last 30 days" },
    { value: "mtd", label: "Month to date" },
    { value: "last90d", label: "Last 90 days" },
    { value: "last365d", label: "Last year" },
+   { value: ALL_TIME_PERIOD, label: "All time" },
 ];
 
 export const analyticsSearchParams = {
@@ -58,6 +61,14 @@ export const periodToDateRange = (
          return { start: subDays(today, 89), end: today, days: 90 };
       case "last365d":
          return { start: subDays(today, 364), end: today, days: 365 };
+      case ALL_TIME_PERIOD: {
+         const start = new Date(1970, 0, 1);
+         return {
+            start,
+            end: today,
+            days: differenceInDays(today, start) + 1,
+         };
+      }
       default:
          return { start: subDays(today, 29), end: today, days: 30 };
    }
@@ -71,6 +82,8 @@ export const navigatePeriod = (
    currentPeriod: string,
    direction: -1 | 1,
 ): string => {
+   if (currentPeriod === ALL_TIME_PERIOD) return currentPeriod;
+
    const now = new Date();
    const today = startOfDay(now);
 
@@ -143,6 +156,8 @@ export const formatPeriodLabel = (period: string): string => {
 };
 
 export const canGoForward = (period: string): boolean => {
+   if (period === ALL_TIME_PERIOD) return false;
+
    const { end } = periodToDateRange(period);
    const today = startOfDay(new Date());
    return !isAfter(end, subDays(today, 1));
