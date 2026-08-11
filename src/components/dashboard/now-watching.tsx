@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { CirclePause, CirclePlay, Radio } from "lucide-react";
@@ -14,6 +15,9 @@ import { ViewerIdentity } from "~/components/viewer-identity";
 import { formatPlexDuration } from "~/lib/duration";
 import { cn } from "~/lib/utils";
 import type { CurrentActivitySession } from "~/types/tautulli";
+
+const ACTIVITY_REFRESH_MS = 10_000;
+const PROGRESS_TICK_MS = 1_000;
 
 const titleCase = (value: string) =>
    value.replace(/\b\w/g, (character) => character.toUpperCase());
@@ -150,23 +154,86 @@ const decisionClass = (decision: string) => {
    return "border-border/60 bg-muted/50 text-muted-foreground";
 };
 
-const StreamRow = ({
-   session,
-   priority = false,
+const StreamProgress = ({
+   durationMs,
+   viewOffsetMs,
+   reportedPercent,
+   state,
+   sampledAtMs,
 }: {
-   session: CurrentActivitySession;
-   priority?: boolean;
+   durationMs: number;
+   viewOffsetMs: number;
+   reportedPercent: number;
+   state: string;
+   sampledAtMs: number;
 }) => {
+   const playing = state.toLowerCase() === "playing";
+   const [clockMs, setClockMs] = useState(sampledAtMs);
+
+   useEffect(() => {
+      if (!playing) return;
+
+      const tick = () => setClockMs(Date.now());
+      const kickoff = window.setTimeout(tick, 0);
+      const timer = window.setInterval(tick, PROGRESS_TICK_MS);
+      return () => {
+         window.clearTimeout(kickoff);
+         window.clearInterval(timer);
+      };
+   }, [playing, sampledAtMs]);
+
+   const predictedMs = playing ? Math.max(0, clockMs - sampledAtMs) : 0;
+   const currentOffsetMs =
+      durationMs > 0
+         ? Math.min(durationMs, Math.max(0, viewOffsetMs + predictedMs))
+         : Math.max(0, viewOffsetMs);
    const progress = Math.min(
       100,
       Math.max(
          0,
-         session.progressPercent ||
-            (session.durationMs > 0
-               ? (session.viewOffsetMs / session.durationMs) * 100
-               : 0),
+         durationMs > 0
+            ? (currentOffsetMs / durationMs) * 100
+            : reportedPercent,
       ),
    );
+
+   return (
+      <div>
+         <div
+            role="progressbar"
+            aria-label={`${Math.round(progress)}% watched`}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(progress)}
+            className="h-1 overflow-hidden rounded-full bg-secondary"
+         >
+            <div
+               className="h-full origin-left rounded-full bg-primary transition-transform duration-1000 ease-linear motion-reduce:transition-none"
+               style={{ transform: `scaleX(${progress / 100})` }}
+            />
+         </div>
+         <div className="mt-1.5 flex items-center justify-between gap-3 text-[10px] tabular-nums text-muted-foreground">
+            <span>{formatPlexDuration(currentOffsetMs)}</span>
+            <span>
+               {Math.round(progress)}%
+               {durationMs > currentOffsetMs
+                  ? ` · ${formatPlexDuration(durationMs - currentOffsetMs)} left`
+                  : ""}
+            </span>
+         </div>
+      </div>
+   );
+};
+
+const StreamRow = ({
+   session,
+   sampledAtMs,
+   priority = false,
+}: {
+   session: CurrentActivitySession;
+   sampledAtMs: number;
+   priority?: boolean;
+}) => {
    const paused = session.state.toLowerCase() === "paused";
    const href = sessionHref(session);
    const details = mediaDetail(session);
@@ -228,32 +295,13 @@ const StreamRow = ({
                </div>
             </div>
 
-            <div>
-               <div
-                  role="progressbar"
-                  aria-label={`${Math.round(progress)}% watched`}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-valuenow={Math.round(progress)}
-                  className="h-1 overflow-hidden rounded-full bg-secondary"
-               >
-                  <div
-                     className="h-full origin-left rounded-full bg-primary transition-transform duration-700 motion-reduce:transition-none"
-                     style={{ transform: `scaleX(${progress / 100})` }}
-                  />
-               </div>
-               <div className="mt-1.5 flex items-center justify-between gap-3 text-[10px] tabular-nums text-muted-foreground">
-                  <span>{formatPlexDuration(session.viewOffsetMs)}</span>
-                  <span>
-                     {Math.round(progress)}%
-                     {session.durationMs > session.viewOffsetMs
-                        ? ` · ${formatPlexDuration(
-                             session.durationMs - session.viewOffsetMs,
-                          )} left`
-                        : ""}
-                  </span>
-               </div>
-            </div>
+            <StreamProgress
+               durationMs={session.durationMs}
+               viewOffsetMs={session.viewOffsetMs}
+               reportedPercent={session.progressPercent}
+               state={session.state}
+               sampledAtMs={sampledAtMs}
+            />
 
             {(session.viewer || session.platform || session.player) && (
                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
@@ -307,12 +355,13 @@ export const NowWatching = () => {
    const { data } = useQuery({
       ...trpc.tautulli.getActivity.queryOptions(),
       staleTime: 0,
-      refetchInterval: 10_000,
+      refetchInterval: ACTIVITY_REFRESH_MS,
       refetchIntervalInBackground: false,
       refetchOnWindowFocus: true,
       retry: 1,
    });
    const activity = data?.data;
+   const sampledAtMs = data ? Date.parse(data.lastUpdatedAt) : 0;
 
    if (!activity || activity.sessions.length === 0) return null;
 
@@ -349,6 +398,7 @@ export const NowWatching = () => {
                <StreamRow
                   key={session.sessionKey}
                   session={session}
+                  sampledAtMs={sampledAtMs}
                   priority={index === 0}
                />
             ))}
