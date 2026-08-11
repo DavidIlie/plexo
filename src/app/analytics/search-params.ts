@@ -23,6 +23,7 @@ export const PERIODS: Array<{ value: string; label: string }> = [
 
 export const analyticsSearchParams = {
    period: parseAsString.withDefault("last30d"),
+   viewer: parseAsString,
 };
 
 export const analyticsSearchParamsCache = createSearchParamsCache(

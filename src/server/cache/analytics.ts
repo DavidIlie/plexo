@@ -22,6 +22,19 @@ import { findSection } from "~/lib/plex-sections";
 import { env } from "~/env";
 import { getActivityViewers } from "~/server/cache/history";
 
+const getAnalyticsHistory = async (
+   length: number,
+   viewerId?: string,
+   after?: string,
+   before?: string,
+) => {
+   if (after && before) {
+      return getHistoryRange(after, before, viewerId);
+   }
+
+   return (await getHistory(length, 0, undefined, viewerId)).data;
+};
+
 export const getViewerActivityCached = async (
    after: string,
    before: string,
@@ -98,12 +111,16 @@ export const getGenreDistributionCached = async () => {
    return aggregateByKey(allGenres, (g) => g.tag, () => 1, 15);
 };
 
-export const getTopWatchedGenresCached = async () => {
+export const getTopWatchedGenresCached = async (
+   viewerId?: string,
+   after?: string,
+   before?: string,
+) => {
    "use cache";
    cacheLife("analytics");
    cacheTag(CACHE_TAGS.analytics, CACHE_TAGS.analyticsScope("topWatchedGenres"), CACHE_TAGS.plex, CACHE_TAGS.tautulli);
 
-   const history = await getHistory(500);
+   const history = await getAnalyticsHistory(500, viewerId, after, before);
    const sections = await getLibrarySections();
    const movieSection = findSection(sections, "movie");
    const showSection = findSection(sections, "show");
@@ -129,7 +146,7 @@ export const getTopWatchedGenresCached = async () => {
    }
 
    const genrePlayCounts = new Map<string, number>();
-   for (const histItem of history.data) {
+   for (const histItem of history) {
       const key = String(histItem.grandparent_rating_key || histItem.rating_key);
       const genres = allItems.get(key);
       if (genres) {
@@ -145,18 +162,22 @@ export const getTopWatchedGenresCached = async () => {
       .slice(0, 10);
 };
 
-export const getMediaTypeRatioCached = async () => {
+export const getMediaTypeRatioCached = async (
+   viewerId?: string,
+   after?: string,
+   before?: string,
+) => {
    "use cache";
    cacheLife("analytics");
    cacheTag(CACHE_TAGS.analytics, CACHE_TAGS.analyticsScope("mediaTypeRatio"), CACHE_TAGS.tautulli);
 
-   const history = await getHistory(1000);
+   const history = await getAnalyticsHistory(1000, viewerId, after, before);
 
    let moviePlays = 0;
    let tvPlays = 0;
    let musicPlays = 0;
 
-   for (const item of history.data) {
+   for (const item of history) {
       if (item.media_type === "movie") {
          moviePlays++;
       } else if (item.media_type === "episode" || item.media_type === "show") {
@@ -317,15 +338,19 @@ export const getHighlightsCached = async () => {
    };
 };
 
-export const getDeviceStatsCached = async () => {
+export const getDeviceStatsCached = async (
+   viewerId?: string,
+   after?: string,
+   before?: string,
+) => {
    "use cache";
    cacheLife("analytics");
    cacheTag(CACHE_TAGS.analytics, CACHE_TAGS.analyticsScope("deviceStats"), CACHE_TAGS.tautulli);
 
-   const history = await getHistory(2000);
+   const history = await getAnalyticsHistory(2000, viewerId, after, before);
    const platforms = new Map<string, { plays: number; lastUsed: number }>();
 
-   for (const item of history.data) {
+   for (const item of history) {
       const key = item.platform || item.product || "Unknown";
       const existing = platforms.get(key);
       if (existing) {
@@ -447,13 +472,17 @@ export const getMusicGenreDistributionCached = async () => {
    return aggregateByKey(allGenres, (g) => g.tag, () => 1, 15);
 };
 
-export const getTopArtistsCached = async () => {
+export const getTopArtistsCached = async (
+   viewerId?: string,
+   after?: string,
+   before?: string,
+) => {
    "use cache";
    cacheLife("analytics");
    cacheTag(CACHE_TAGS.analytics, CACHE_TAGS.analyticsScope("topArtists"), CACHE_TAGS.tautulli);
 
-   const history = await getHistory(5000);
-   const items = history.data
+   const history = await getAnalyticsHistory(5000, viewerId, after, before);
+   const items = history
       .filter((i) => i.media_type === "track")
       .map((item) => ({ name: item.grandparent_title || item.title }));
 
@@ -493,15 +522,19 @@ export const getLibrarySizeStatsCached = async () => {
    return sizes;
 };
 
-export const getLocationStatsCached = async () => {
+export const getLocationStatsCached = async (
+   viewerId?: string,
+   after?: string,
+   before?: string,
+) => {
    "use cache";
    cacheLife("analytics");
    cacheTag(CACHE_TAGS.analytics, CACHE_TAGS.analyticsScope("locationStats"), CACHE_TAGS.tautulli, CACHE_TAGS.geo);
 
-   const history = await getHistory(500);
+   const history = await getAnalyticsHistory(500, viewerId, after, before);
    const ipCounts = new Map<string, number>();
 
-   for (const item of history.data) {
+   for (const item of history) {
       if (item.ip_address && item.ip_address !== "127.0.0.1") {
          ipCounts.set(item.ip_address, (ipCounts.get(item.ip_address) ?? 0) + 1);
       }

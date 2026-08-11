@@ -54,6 +54,17 @@ export const getActivityViewers = async (): Promise<ActivityViewer[]> => {
    return users.map(toPublicViewer);
 };
 
+export const getActivityViewer = async (
+   viewerId: string | undefined,
+): Promise<ActivityViewer | undefined> => {
+   if (!viewerId || env.VIEWER_DISPLAY === "hidden" || env.TAUTULLI_USER_ID) {
+      return undefined;
+   }
+
+   const viewers = await getActivityViewers();
+   return viewers.find((viewer) => viewer.id === viewerId);
+};
+
 const publicHistory = async (
    history: TautulliHistoryData,
 ): Promise<ActivityHistoryData> => {

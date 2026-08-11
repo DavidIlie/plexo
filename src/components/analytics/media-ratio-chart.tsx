@@ -59,7 +59,7 @@ const RatioTooltip = ({ active, payload, total }: RatioTooltipProps) => {
    const pct = total > 0 ? Math.round((value / total) * 100) : 0;
    return (
       <ChartTooltipCard header={name}>
-         <ChartTooltipRow color={colorFor(name)} label="Titles" value={value.toLocaleString()} />
+         <ChartTooltipRow color={colorFor(name)} label="Plays" value={value.toLocaleString()} />
          <ChartTooltipRow color={colorFor(name)} label="Share" value={`${pct}%`} muted />
       </ChartTooltipCard>
    );
@@ -122,8 +122,8 @@ export const MediaRatioChart = ({ data, lastUpdatedAt }: Props) => {
                      <m.span
                         key={
                            activeIndex !== null
-                              ? (chartData[activeIndex]?.name ?? "Titles")
-                              : "Titles"
+                              ? (chartData[activeIndex]?.name ?? "Plays")
+                              : "Plays"
                         }
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -132,8 +132,8 @@ export const MediaRatioChart = ({ data, lastUpdatedAt }: Props) => {
                         className="block leading-4"
                      >
                         {activeIndex !== null
-                           ? (chartData[activeIndex]?.name ?? "Titles")
-                           : "Titles"}
+                           ? (chartData[activeIndex]?.name ?? "Plays")
+                           : "Plays"}
                      </m.span>
                   </AnimatePresence>
                </span>

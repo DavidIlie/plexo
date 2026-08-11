@@ -158,7 +158,7 @@ When `TAUTULLI_USER_ID` is empty, activity and watch analytics include all users
 | `name` | Friendly name | Friendly names | Avatar URLs are not exposed |
 | `avatar-name` | Profile image and friendly name | Profile images and friendly names | Both are exposed |
 
-The dashboard labels a visible multi-user feed as **Household Activity**. The full Activity page adds a viewer filter, Analytics ranks active viewers for the selected period, and media watch-history rows carry the same identity treatment. Avatars are fetched through Plexo’s same-origin proxy; Plex/Tautulli credentials and source avatar URLs never reach the browser.
+The dashboard labels a visible multi-user feed as **Household Activity**. The full Activity page adds a viewer filter, while Analytics lets you fan out and select the viewer avatars to scope viewing charts to one person. Analytics also ranks active viewers for the selected period, and media watch-history rows carry the same identity treatment. Avatars are fetched through Plexo’s same-origin proxy; Plex/Tautulli credentials and source avatar URLs never reach the browser.
 
 Set `TAUTULLI_USER_ID` to keep the entire deployment scoped to one Tautulli user. This server-side scope always overrides viewer filters.
 

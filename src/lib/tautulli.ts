@@ -74,19 +74,26 @@ const HISTORY_PAGE_SIZE = 1000;
 export const getHistoryRange = async (
    after: string,
    before: string,
+   userId?: string,
 ): Promise<TautulliHistoryItem[]> => {
    const items: TautulliHistoryItem[] = [];
    let start = 0;
    let total = 0;
 
    do {
-      const result = await tautulliFetch<TautulliHistoryData>("get_history", {
+      const params: Record<string, string | number> = {
          after,
          before,
          grouping: 1,
          length: HISTORY_PAGE_SIZE,
          start,
-      });
+      };
+      if (userId) params.user_id = userId;
+
+      const result = await tautulliFetch<TautulliHistoryData>(
+         "get_history",
+         params,
+      );
       items.push(...result.data.filter(isPopulatedHistoryItem));
       total = result.recordsFiltered;
       start += HISTORY_PAGE_SIZE;
@@ -116,39 +123,57 @@ export const getHomeStats = async (): Promise<TautulliHomeStatItem[]> => {
 export const getPlaysByDate = async (
    timeRange = 30,
    yAxis = "plays",
+   userId?: string,
 ): Promise<TautulliPlaysByDate> => {
    "use cache";
    cacheLife("analytics");
    cacheTag(CACHE_TAGS.tautulli, CACHE_TAGS.tautulliPlaysByDate);
 
-   return tautulliFetch<TautulliPlaysByDate>("get_plays_by_date", {
+   const params: Record<string, string | number> = {
       time_range: timeRange,
       y_axis: yAxis,
-   });
+   };
+   if (userId) params.user_id = userId;
+
+   return tautulliFetch<TautulliPlaysByDate>("get_plays_by_date", params);
 };
 
 export const getPlaysByDayOfWeek = async (
    timeRange = 30,
+   userId?: string,
 ): Promise<TautulliPlaysByDayOfWeek> => {
    "use cache";
    cacheLife("analytics");
    cacheTag(CACHE_TAGS.tautulli, CACHE_TAGS.tautulliPlaysByDayOfWeek);
 
-   return tautulliFetch<TautulliPlaysByDayOfWeek>("get_plays_by_dayofweek", {
+   const params: Record<string, string | number> = {
       time_range: timeRange,
-   });
+   };
+   if (userId) params.user_id = userId;
+
+   return tautulliFetch<TautulliPlaysByDayOfWeek>(
+      "get_plays_by_dayofweek",
+      params,
+   );
 };
 
 export const getPlaysByHourOfDay = async (
    timeRange = 30,
+   userId?: string,
 ): Promise<TautulliPlaysByHourOfDay> => {
    "use cache";
    cacheLife("analytics");
    cacheTag(CACHE_TAGS.tautulli, CACHE_TAGS.tautulliPlaysByHourOfDay);
 
-   return tautulliFetch<TautulliPlaysByHourOfDay>("get_plays_by_hourofday", {
+   const params: Record<string, string | number> = {
       time_range: timeRange,
-   });
+   };
+   if (userId) params.user_id = userId;
+
+   return tautulliFetch<TautulliPlaysByHourOfDay>(
+      "get_plays_by_hourofday",
+      params,
+   );
 };
 
 export const getMostWatched = async (
