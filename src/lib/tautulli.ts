@@ -12,6 +12,7 @@ import type {
    TautulliPlaysByDate,
    TautulliPlaysByDayOfWeek,
    TautulliPlaysByHourOfDay,
+   TautulliUser,
 } from "~/types/tautulli";
 
 const tautulliFetch = async <T>(
@@ -22,12 +23,14 @@ const tautulliFetch = async <T>(
    url.searchParams.set("apikey", env.TAUTULLI_API_KEY);
    url.searchParams.set("cmd", cmd);
 
-   if (env.TAUTULLI_USER_ID) {
-      url.searchParams.set("user_id", env.TAUTULLI_USER_ID);
-   }
-
    for (const [key, value] of Object.entries(params)) {
       url.searchParams.set(key, String(value));
+   }
+
+   // The deployment-level scope always wins. Callers may narrow an
+   // all-viewers deployment, but must never be able to escape this boundary.
+   if (env.TAUTULLI_USER_ID) {
+      url.searchParams.set("user_id", env.TAUTULLI_USER_ID);
    }
 
    const response = await fetch(url.toString());
@@ -52,9 +55,11 @@ export const getHistory = async (
    length = 10,
    start = 0,
    mediaType?: string,
+   userId?: string,
 ): Promise<TautulliHistoryData> => {
    const params: Record<string, string | number> = { length, start };
    if (mediaType) params.media_type = mediaType;
+   if (userId) params.user_id = userId;
    const result = await tautulliFetch<TautulliHistoryData>("get_history", params);
    const filtered = result.data.filter(isPopulatedHistoryItem);
    return {
@@ -62,6 +67,14 @@ export const getHistory = async (
       data: filtered,
       recordsFiltered: result.recordsFiltered - (result.data.length - filtered.length),
    };
+};
+
+export const getUsers = async (): Promise<TautulliUser[]> => {
+   "use cache";
+   cacheLife("activity");
+   cacheTag(CACHE_TAGS.tautulli, CACHE_TAGS.tautulliUsers);
+
+   return tautulliFetch<TautulliUser[]>("get_users");
 };
 
 export const getHomeStats = async (): Promise<TautulliHomeStatItem[]> => {

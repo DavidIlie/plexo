@@ -31,6 +31,9 @@ export const env = createEnv({
          .enum(["true", "false"])
          .default("false")
          .transform((v) => v === "true"),
+      VIEWER_DISPLAY: z
+         .enum(["hidden", "avatar", "name", "avatar-name"])
+         .default("hidden"),
       SHOW_MUSIC: z
          .enum(["true", "false"])
          .default("false")

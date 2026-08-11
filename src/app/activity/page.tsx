@@ -1,7 +1,10 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
 
-import { getHistoryWindow } from "~/server/cache/history";
+import {
+   getActivityViewers,
+   getHistoryWindow,
+} from "~/server/cache/history";
 import { Skeleton } from "~/components/ui/skeleton";
 import { ActivityBrowser } from "./activity-browser";
 
@@ -21,12 +24,16 @@ const ActivityFallback = () => (
 
 const ActivityContent = async () => {
    await connection();
-   const window = await getHistoryWindow(FIRST_PAGE_LEN, 0, undefined);
+   const [window, viewers] = await Promise.all([
+      getHistoryWindow(FIRST_PAGE_LEN, 0, undefined),
+      getActivityViewers(),
+   ]);
 
    return (
       <ActivityBrowser
          initialItems={window.data}
          initialTotal={window.recordsFiltered}
+         viewers={viewers}
       />
    );
 };

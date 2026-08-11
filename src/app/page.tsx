@@ -15,7 +15,10 @@ import {
    getMusicGenreDistributionCached,
    getTopArtistsCached,
 } from "~/server/cache/analytics";
-import { getHistoryWindow } from "~/server/cache/history";
+import {
+   getActivityViewers,
+   getHistoryWindow,
+} from "~/server/cache/history";
 import { getWishlistCached } from "~/server/cache/recommend";
 import { getOnDeck } from "~/lib/plex";
 import { getPlaysByHourOfDay } from "~/lib/tautulli";
@@ -199,8 +202,11 @@ const Wishlist = async () => {
 
 const RecentlyWatched = async () => {
    await connection();
-   const hist = await getHistoryWindow(10, 0, undefined);
-   return <RecentlyWatchedList items={hist.data} />;
+   const [hist, viewers] = await Promise.all([
+      getHistoryWindow(10, 0, undefined),
+      getActivityViewers(),
+   ]);
+   return <RecentlyWatchedList items={hist.data} viewers={viewers} />;
 };
 
 const GenreDistribution = async () => {

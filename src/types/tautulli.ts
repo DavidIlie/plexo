@@ -17,6 +17,8 @@ export interface TautulliHistoryItem {
    play_duration: number;
    paused_counter: number;
    user: string;
+   user_id: number;
+   user_thumb: string;
    friendly_name: string;
    platform: string;
    product: string;
@@ -41,6 +43,42 @@ export interface TautulliHistoryItem {
    parent_media_index: number;
    transcode_decision: string;
    guid: string;
+}
+
+export interface TautulliUser {
+   row_id: number;
+   user_id: number;
+   username: string;
+   friendly_name: string;
+   thumb: string | null;
+   is_active: number;
+   keep_history: number;
+}
+
+export type ViewerDisplayMode =
+   | "hidden"
+   | "avatar"
+   | "name"
+   | "avatar-name";
+
+export interface ActivityViewer {
+   id: string;
+   label: string;
+   name?: string;
+   showAvatar: boolean;
+   hasAvatar: boolean;
+}
+
+export type ActivityHistoryItem = Omit<
+   TautulliHistoryItem,
+   "user" | "user_id" | "user_thumb" | "friendly_name"
+> & {
+   viewer?: ActivityViewer;
+};
+
+export interface ActivityHistoryData
+   extends Omit<TautulliHistoryData, "data"> {
+   data: ActivityHistoryItem[];
 }
 
 export interface TautulliHistoryData {

@@ -11,6 +11,10 @@ import { useTRPC } from "~/trpc/react";
 import { useAppConfig } from "~/components/app-config-provider";
 import { PlexImage } from "~/components/plex-image";
 import { MediaDetailDialog } from "~/components/media/media-detail-dialog";
+import {
+   ViewerIdentity,
+   ViewerStack,
+} from "~/components/viewer-identity";
 import { PlatformBadge, getPlatformMeta } from "~/components/media/platform-icon";
 import { formatPlayDuration } from "~/lib/duration";
 import {
@@ -20,13 +24,18 @@ import {
 } from "~/lib/history-ui";
 import { formatHistoryTitle } from "~/lib/utils";
 
-import type { TautulliHistoryItem } from "~/types/tautulli";
+import type {
+   ActivityHistoryItem,
+   ActivityViewer,
+} from "~/types/tautulli";
 import type { PlexMediaItem } from "~/types/plex";
 
 export const RecentlyWatchedList = ({
    items,
+   viewers,
 }: {
-   items: TautulliHistoryItem[];
+   items: ActivityHistoryItem[];
+   viewers: ActivityViewer[];
 }) => {
    const trpc = useTRPC();
    const router = useRouter();
@@ -50,17 +59,24 @@ export const RecentlyWatchedList = ({
 
    return (
       <section>
-         <div className="mb-3 flex items-center justify-between">
+         <div className="mb-3 flex items-center justify-between gap-3">
             <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-               {musicEnabled ? "Recent Activity" : "Recently Watched"}
+               {viewers.length > 1
+                  ? "Household Activity"
+                  : musicEnabled
+                    ? "Recent Activity"
+                    : "Recently Watched"}
             </h2>
-            <Link
-               href="/activity"
-               className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-            >
-               View all
-               <ArrowRight className="h-3 w-3" />
-            </Link>
+            <div className="flex items-center gap-3">
+               <ViewerStack viewers={viewers} />
+               <Link
+                  href="/activity"
+                  className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+               >
+                  View all
+                  <ArrowRight className="h-3 w-3" />
+               </Link>
+            </div>
          </div>
          <div className="space-y-0.5">
             {items.map((item) => {
@@ -91,6 +107,12 @@ export const RecentlyWatchedList = ({
                      <div className="min-w-0 flex-1">
                         <p className="truncate text-sm">{formatHistoryTitle(item)}</p>
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                           {item.viewer ? (
+                              <>
+                                 <ViewerIdentity viewer={item.viewer} />
+                                 <span className="text-border">·</span>
+                              </>
+                           ) : null}
                            <span
                               suppressHydrationWarning
                               className="flex items-center gap-1"

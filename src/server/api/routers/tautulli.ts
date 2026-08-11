@@ -9,7 +9,11 @@ import {
    getMostWatched,
    getGeoipLookup,
 } from "~/lib/tautulli";
-import { getHistoryWindow, getItemHistoryCached } from "~/server/cache/history";
+import {
+   getActivityViewers,
+   getHistoryWindow,
+   getItemHistoryCached,
+} from "~/server/cache/history";
 import { env } from "~/env";
 
 export const tautulliRouter = createTRPCRouter({
@@ -20,6 +24,7 @@ export const tautulliRouter = createTRPCRouter({
                length: z.number().default(10),
                start: z.number().default(0),
                mediaType: z.string().optional(),
+               viewerId: z.string().regex(/^\d{1,20}$/).optional(),
             })
             .default({}),
       )
@@ -28,6 +33,7 @@ export const tautulliRouter = createTRPCRouter({
             input.length,
             input.start,
             input.mediaType,
+            input.viewerId,
          );
          return { data, lastUpdatedAt: new Date().toISOString() };
       }),
@@ -38,16 +44,26 @@ export const tautulliRouter = createTRPCRouter({
             cursor: z.number().nullish(),
             limit: z.number().default(30),
             mediaType: z.string().optional(),
+            viewerId: z.string().regex(/^\d{1,20}$/).optional(),
          }),
       )
       .query(async ({ input }) => {
          const start = input.cursor ?? 0;
-         const data = await getHistoryWindow(input.limit, start, input.mediaType);
+         const data = await getHistoryWindow(
+            input.limit,
+            start,
+            input.mediaType,
+            input.viewerId,
+         );
          const total = data.recordsFiltered;
          const nextCursor =
             start + input.limit < total ? start + input.limit : undefined;
          return { items: data.data, total, nextCursor };
       }),
+
+   getViewers: publicProcedure.query(async () => {
+      return getActivityViewers();
+   }),
 
    getHomeStats: publicProcedure.query(async () => {
       const data = await getHomeStats();

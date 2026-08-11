@@ -24,6 +24,7 @@ export const CACHE_TAGS = {
    plexOnDeck: "plex:onDeck",
    plexRecentlyAdded: "plex:recentlyAdded",
    tautulliHistory: "tautulli:history",
+   tautulliUsers: "tautulli:users",
    tautulliHomeStats: "tautulli:homeStats",
    tautulliPlaysByDate: "tautulli:playsByDate",
    tautulliPlaysByDayOfWeek: "tautulli:playsByDayOfWeek",

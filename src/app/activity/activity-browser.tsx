@@ -13,6 +13,11 @@ import { useIntersectionObserver } from "~/hooks/use-intersection-observer";
 import { PlexImage } from "~/components/plex-image";
 import { MediaDetailDialog } from "~/components/media/media-detail-dialog";
 import { PlatformBadge } from "~/components/media/platform-icon";
+import {
+   ViewerAvatar,
+   ViewerIdentity,
+   ViewerStack,
+} from "~/components/viewer-identity";
 import { Skeleton } from "~/components/ui/skeleton";
 import { Input } from "~/components/ui/input";
 import { formatHistoryTitle } from "~/lib/utils";
@@ -30,7 +35,10 @@ import {
    SelectValue,
 } from "~/components/ui/select";
 import type { PlexMediaItem } from "~/types/plex";
-import type { TautulliHistoryItem } from "~/types/tautulli";
+import type {
+   ActivityHistoryItem,
+   ActivityViewer,
+} from "~/types/tautulli";
 
 const PAGE_LIMIT = 30;
 
@@ -42,18 +50,21 @@ const mediaTypeLabel = (type: string) => {
 };
 
 interface ActivityBrowserProps {
-   initialItems: TautulliHistoryItem[];
+   initialItems: ActivityHistoryItem[];
    initialTotal: number;
+   viewers: ActivityViewer[];
 }
 
 export const ActivityBrowser = ({
    initialItems,
    initialTotal,
+   viewers,
 }: ActivityBrowserProps) => {
    const trpc = useTRPC();
    const queryClient = useQueryClient();
    const router = useRouter();
    const [mediaType, setMediaType] = useState("all");
+   const [viewerId, setViewerId] = useState("all");
    const [search, setSearch] = useState("");
    const debouncedSearch = useDebounce(search, 200);
    const [selectedItem, setSelectedItem] = useState<PlexMediaItem | null>(null);
@@ -61,7 +72,7 @@ export const ActivityBrowser = ({
    const firstNextCursor =
       initialItems.length < initialTotal ? initialItems.length : undefined;
 
-   const [items, setItems] = useState<TautulliHistoryItem[]>(initialItems);
+   const [items, setItems] = useState<ActivityHistoryItem[]>(initialItems);
    const [cursor, setCursor] = useState<number | undefined>(firstNextCursor);
    const [switching, setSwitching] = useState(false);
    const [loadingMore, setLoadingMore] = useState(false);
@@ -76,7 +87,7 @@ export const ActivityBrowser = ({
       const run = async () => {
          setSwitching(true);
          try {
-            if (mediaType === "all") {
+            if (mediaType === "all" && viewerId === "all") {
                if (!cancelled) {
                   setItems(initialItems);
                   setCursor(firstNextCursor);
@@ -85,7 +96,8 @@ export const ActivityBrowser = ({
             }
             const page = await queryClient.fetchQuery(
                trpc.tautulli.browseHistory.queryOptions({
-                  mediaType,
+                  ...(mediaType !== "all" ? { mediaType } : {}),
+                  ...(viewerId !== "all" ? { viewerId } : {}),
                   limit: PAGE_LIMIT,
                   cursor: 0,
                }),
@@ -102,7 +114,14 @@ export const ActivityBrowser = ({
       return () => {
          cancelled = true;
       };
-   }, [mediaType, initialItems, firstNextCursor, queryClient, trpc]);
+   }, [
+      mediaType,
+      viewerId,
+      initialItems,
+      firstNextCursor,
+      queryClient,
+      trpc,
+   ]);
 
    const loadMore = useCallback(async () => {
       if (cursor === undefined || loadingMore || switching) return;
@@ -111,6 +130,7 @@ export const ActivityBrowser = ({
          const page = await queryClient.fetchQuery(
             trpc.tautulli.browseHistory.queryOptions({
                ...(mediaType !== "all" ? { mediaType } : {}),
+               ...(viewerId !== "all" ? { viewerId } : {}),
                limit: PAGE_LIMIT,
                cursor,
             }),
@@ -120,7 +140,15 @@ export const ActivityBrowser = ({
       } finally {
          setLoadingMore(false);
       }
-   }, [cursor, loadingMore, switching, queryClient, trpc, mediaType]);
+   }, [
+      cursor,
+      loadingMore,
+      switching,
+      queryClient,
+      trpc,
+      mediaType,
+      viewerId,
+   ]);
 
    const sentinelRef = useIntersectionObserver(
       () => void loadMore(),
@@ -135,13 +163,14 @@ export const ActivityBrowser = ({
             item.full_title.toLowerCase().includes(q) ||
             (item.grandparent_title &&
                item.grandparent_title.toLowerCase().includes(q)) ||
-            item.title.toLowerCase().includes(q),
+            item.title.toLowerCase().includes(q) ||
+            Boolean(item.viewer?.name?.toLowerCase().includes(q)),
       );
    }, [items, debouncedSearch]);
 
    return (
       <div className="space-y-6">
-         <div className="flex items-center justify-between">
+         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
                <Link
                   href="/"
@@ -149,19 +178,51 @@ export const ActivityBrowser = ({
                >
                   <ArrowLeft className="h-4 w-4" />
                </Link>
-               <h1 className="text-lg font-semibold">Activity</h1>
+               <div>
+                  <div className="flex items-center gap-2.5">
+                     <h1 className="text-lg font-semibold">Activity</h1>
+                     <ViewerStack viewers={viewers} />
+                  </div>
+                  {viewers.length > 1 ? (
+                     <p className="text-xs text-muted-foreground">
+                        Across {viewers.length} viewers
+                     </p>
+                  ) : null}
+               </div>
             </div>
-            <Select value={mediaType} onValueChange={setMediaType}>
-               <SelectTrigger className="w-[150px]">
-                  <SelectValue />
-               </SelectTrigger>
-               <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="movie">Movies</SelectItem>
-                  <SelectItem value="episode">TV Episodes</SelectItem>
-                  <SelectItem value="track">Music</SelectItem>
-               </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2">
+               {viewers.length > 1 ? (
+                  <Select value={viewerId} onValueChange={setViewerId}>
+                     <SelectTrigger className="min-w-0 flex-1 sm:w-[170px] sm:flex-none">
+                        <SelectValue />
+                     </SelectTrigger>
+                     <SelectContent>
+                        <SelectItem value="all">All viewers</SelectItem>
+                        {viewers.map((viewer) => (
+                           <SelectItem key={viewer.id} value={viewer.id}>
+                              <span className="flex items-center gap-2">
+                                 {viewer.showAvatar ? (
+                                    <ViewerAvatar viewer={viewer} size="xs" />
+                                 ) : null}
+                                 <span>{viewer.label}</span>
+                              </span>
+                           </SelectItem>
+                        ))}
+                     </SelectContent>
+                  </Select>
+               ) : null}
+               <Select value={mediaType} onValueChange={setMediaType}>
+                  <SelectTrigger className="min-w-0 flex-1 sm:w-[150px] sm:flex-none">
+                     <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                     <SelectItem value="all">All Types</SelectItem>
+                     <SelectItem value="movie">Movies</SelectItem>
+                     <SelectItem value="episode">TV Episodes</SelectItem>
+                     <SelectItem value="track">Music</SelectItem>
+                  </SelectContent>
+               </Select>
+            </div>
          </div>
 
          <div className="relative">
@@ -228,6 +289,12 @@ export const ActivityBrowser = ({
                                  </p>
                               </div>
                               <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                                 {item.viewer ? (
+                                    <>
+                                       <ViewerIdentity viewer={item.viewer} />
+                                       <span className="text-border">·</span>
+                                    </>
+                                 ) : null}
                                  <span className="rounded bg-muted px-1.5 py-0.5 text-[10px]">
                                     {mediaTypeLabel(item.media_type)}
                                  </span>
