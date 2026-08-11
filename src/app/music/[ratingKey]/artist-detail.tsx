@@ -17,6 +17,7 @@ import {
 import { useTRPC } from "~/trpc/react";
 import { useIntersectionObserver } from "~/hooks/use-intersection-observer";
 import { PlexImage } from "~/components/plex-image";
+import { ViewerIdentity } from "~/components/viewer-identity";
 import { Skeleton } from "~/components/ui/skeleton";
 import {
    Dialog,
@@ -175,6 +176,9 @@ const TrackPlayPopover = ({ ratingKey, viewCount }: { ratingKey: string; viewCou
                            )}
                         </p>
                         <div className="flex items-center gap-2 text-muted-foreground/70">
+                           {play.viewer ? (
+                              <ViewerIdentity viewer={play.viewer} />
+                           ) : null}
                            {play.play_duration > 0 && (
                               <span>{fmtPlayDuration(play.play_duration)}</span>
                            )}

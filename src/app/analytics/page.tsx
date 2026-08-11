@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { env } from "~/env";
 import { PeriodSelector } from "~/components/analytics/period-selector";
 import { RefreshButton } from "~/components/refresh-button";
+import { ViewerStack } from "~/components/viewer-identity";
 // First visible row stays statically imported (SSR'd markup, no pop-in);
 // everything below the fold goes through the lazy variants so its hydration
 // JS is deferred until scrolled near.
@@ -42,6 +43,7 @@ import {
    getPlaysByDayOfWeek,
    getPlaysByHourOfDay,
 } from "~/lib/tautulli";
+import { getActivityViewers } from "~/server/cache/history";
 import { analyticsSearchParamsCache, periodToDays } from "./search-params";
 
 interface Props {
@@ -88,16 +90,41 @@ const PeriodChartsFallback = () => (
    </>
 );
 
+const AnalyticsHeading = async () => {
+   await connection();
+   const viewers = await getActivityViewers();
+
+   return (
+      <div>
+         <div className="flex items-center gap-2.5">
+            <h1 className="text-lg font-semibold">Analytics</h1>
+            <ViewerStack viewers={viewers} />
+         </div>
+         <p className="text-sm text-muted-foreground">
+            {viewers.length > 1
+               ? `Watch patterns across ${viewers.length} viewers and library insights`
+               : "Watch patterns and library insights"}
+         </p>
+      </div>
+   );
+};
+
+const AnalyticsHeadingFallback = () => (
+   <div>
+      <h1 className="text-lg font-semibold">Analytics</h1>
+      <p className="text-sm text-muted-foreground">
+         Watch patterns and library insights
+      </p>
+   </div>
+);
+
 const AnalyticsPage = ({ searchParams }: Props) => {
    return (
       <div className="space-y-6">
          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-y-2">
-            <div>
-               <h1 className="text-lg font-semibold">Analytics</h1>
-               <p className="text-sm text-muted-foreground">
-                  Watch patterns and library insights
-               </p>
-            </div>
+            <Suspense fallback={<AnalyticsHeadingFallback />}>
+               <AnalyticsHeading />
+            </Suspense>
             <div className="flex items-center gap-2">
                <Suspense
                   fallback={

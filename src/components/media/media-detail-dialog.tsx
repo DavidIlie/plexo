@@ -32,6 +32,7 @@ import {
    AccordionTrigger,
 } from "~/components/ui/accordion";
 import { PlexImage } from "~/components/plex-image";
+import { ViewerIdentity } from "~/components/viewer-identity";
 import { Separator } from "~/components/ui/separator";
 import { Skeleton } from "~/components/ui/skeleton";
 import { cn } from "~/lib/utils";
@@ -358,6 +359,12 @@ const WatchHistorySection: React.FC<{ ratingKey: string }> = ({
                               : play.full_title}
                         </p>
                         <div className="flex items-center gap-2 text-muted-foreground">
+                           {play.viewer ? (
+                              <>
+                                 <ViewerIdentity viewer={play.viewer} />
+                                 <span className="text-border">·</span>
+                              </>
+                           ) : null}
                            <span>
                               {formatDistanceToNow(
                                  new Date(play.stopped * 1000),

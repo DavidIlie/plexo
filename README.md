@@ -21,6 +21,7 @@ Built with Next.js 16, tRPC, Tailwind CSS v4, Recharts, and Framer Motion.
 - **Wishlist** — dashboard section showing pending items from Overseerr requests and Plex Watchlist, merged and deduplicated
 - **Admin Panel** — <kbd>Cmd+L</kbd> to view cache status, purge caches, test Discord/email notifications (protected by secret + optional Turnstile)
 - **Privacy Controls** — `SHOW_DEVICES` and `SHOW_LOCATIONS` env vars to control what data is exposed
+- **Multi-user Activity** — optional, privacy-aware viewer avatars/names and filtering backed by Tautulli; identities are stripped from browser data by default
 - **Docker** — multi-stage build, pushes to GHCR via GitHub Actions
 - **Analytics** — optional Plausible integration with self-hosted instance support
 
@@ -120,6 +121,7 @@ docker pull ghcr.io/davidilie/plexo:latest
 | `NEXT_PUBLIC_VERSION` | No | Footer version label (default: `dev`; Docker builds set this to the Git commit hash) |
 | `SHOW_DEVICES` | No | Show device analytics (default: true) |
 | `SHOW_LOCATIONS` | No | Show location analytics via geoip (default: false) |
+| `VIEWER_DISPLAY` | No | Viewer identity in activity: `hidden`, `avatar`, `name`, or `avatar-name` (default: `hidden`) |
 | `SHOW_MUSIC` | No | Show music library (artists, albums, tracks) (default: false) |
 | `PLAUSIBLE_ENABLED` | No | Enable Plausible analytics (default: false) |
 | `PLAUSIBLE_DOMAIN` | No | Domain for Plausible tracking |
@@ -144,6 +146,21 @@ docker pull ghcr.io/davidilie/plexo:latest
 | `IMAGE_OPTIMIZE` | No | Re-encode Plex images to WebP via sharp (default: true). Set `false` to serve the upstream Plex bytes unchanged. |
 | `IMAGE_OPTIMIZE_QUALITY` | No | WebP quality 1-100 when `IMAGE_OPTIMIZE=true` (default: 85). Higher = sharper + larger. |
 | `IMAGE_UPSTREAM_SCALE` | No | Multiplier for the resolution pulled from Plex before sharp downsamples (default: 2). 2× super-sampling yields sharper posters; set to 1 to save CPU/bandwidth. |
+
+### Multiple Plex users
+
+When `TAUTULLI_USER_ID` is empty, activity and watch analytics include all users known to Tautulli. `VIEWER_DISPLAY` controls how active viewers appear:
+
+| Value | Activity rows | Viewer filter | Browser data |
+|-------|---------------|---------------|--------------|
+| `hidden` | No identity | Hidden | Usernames and friendly names are removed |
+| `avatar` | Profile image only | Generic labels such as “Viewer 1” | Names are removed |
+| `name` | Friendly name | Friendly names | Avatar URLs are not exposed |
+| `avatar-name` | Profile image and friendly name | Profile images and friendly names | Both are exposed |
+
+The dashboard labels a visible multi-user feed as **Household Activity**. The full Activity page adds a viewer filter, and media watch-history rows carry the same identity treatment. Avatars are fetched through Plexo’s same-origin proxy; Plex/Tautulli credentials and source avatar URLs never reach the browser.
+
+Set `TAUTULLI_USER_ID` to keep the entire deployment scoped to one Tautulli user. This server-side scope always overrides viewer filters.
 
 ## Recommendations Setup
 

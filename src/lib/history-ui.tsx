@@ -1,7 +1,7 @@
 import { Film, Tv, Music } from "lucide-react";
 
 import type { PlexMediaItem } from "~/types/plex";
-import type { TautulliHistoryItem } from "~/types/tautulli";
+import type { ActivityHistoryItem } from "~/types/tautulli";
 
 export const mediaTypeIcon = (
    type: string,
@@ -13,7 +13,7 @@ export const mediaTypeIcon = (
 };
 
 export const historyItemToMediaItem = (
-   item: TautulliHistoryItem,
+   item: ActivityHistoryItem,
 ): PlexMediaItem => ({
    ratingKey: String(item.grandparent_rating_key || item.rating_key),
    key: "",
@@ -22,5 +22,5 @@ export const historyItemToMediaItem = (
    addedAt: 0,
 });
 
-export const historyArtistKey = (item: TautulliHistoryItem) =>
+export const historyArtistKey = (item: ActivityHistoryItem) =>
    String(item.grandparent_rating_key || item.rating_key);
