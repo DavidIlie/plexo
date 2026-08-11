@@ -2,7 +2,7 @@
 
 import { useDeferredValue, useId, useMemo } from "react";
 import { AreaChart, Area, CartesianGrid, Line, XAxis, YAxis, Tooltip, Legend } from "recharts";
-import { format } from "date-fns";
+import { format, isValid, parse } from "date-fns";
 
 import type { TautulliPlaysByDate } from "~/types/tautulli";
 import { ChartWrapper } from "~/components/analytics/chart-wrapper";
@@ -22,6 +22,8 @@ import {
 interface Props {
    data: TautulliPlaysByDate;
    timeRange?: number;
+   timeBucket?: "day" | "month";
+   isAllTime?: boolean;
    lastUpdatedAt?: string;
 }
 
@@ -39,9 +41,22 @@ interface TrendsTooltipProps {
    label?: string | number;
 }
 
+const formatCategory = (
+   value: string,
+   timeBucket: "day" | "month",
+   outputFormat: string,
+) => {
+   const date = timeBucket === "month"
+      ? parse(value, "MMM yyyy", new Date(0))
+      : new Date(value);
+   return isValid(date) ? format(date, outputFormat) : value;
+};
+
 export const MonthlyTrendsChart: React.FC<Props> = ({
    data,
    timeRange = 365,
+   timeBucket = "day",
+   isAllTime = false,
    lastUpdatedAt,
 }) => {
    const uid = useId();
@@ -112,7 +127,11 @@ export const MonthlyTrendsChart: React.FC<Props> = ({
    return (
       <ChartWrapper
          title="Watch Trends"
-         description={`Daily plays over last ${timeRange} days`}
+         description={
+            isAllTime
+               ? "Monthly plays across all history"
+               : `Daily plays over last ${timeRange} days`
+         }
          isLoading={false}
          isFetching={false}
          lastUpdatedAt={lastUpdatedAt}
@@ -154,7 +173,13 @@ export const MonthlyTrendsChart: React.FC<Props> = ({
                axisLine={false}
                minTickGap={32}
                tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-               tickFormatter={(value: string) => format(new Date(value), "M/d")}
+               tickFormatter={(value: string) =>
+                  formatCategory(
+                     value,
+                     timeBucket,
+                     timeBucket === "month" ? "MMM yy" : "M/d",
+                  )
+               }
             />
             <YAxis
                width={30}
@@ -175,7 +200,13 @@ export const MonthlyTrendsChart: React.FC<Props> = ({
                   if (!entry) return null;
                   return (
                      <ChartTooltipCard
-                        header={format(new Date(String(label)), "EEE, MMM d, yyyy")}
+                        header={formatCategory(
+                           String(label),
+                           timeBucket,
+                           timeBucket === "month"
+                              ? "MMMM yyyy"
+                              : "EEE, MMM d, yyyy",
+                        )}
                      >
                         {entry.series.map((s) => (
                            <ChartTooltipRow

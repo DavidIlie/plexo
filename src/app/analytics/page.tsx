@@ -1,6 +1,6 @@
 import { Suspense, type ComponentType } from "react";
 import { connection } from "next/server";
-import { format } from "date-fns";
+import { addDays, differenceInCalendarMonths, format, subDays } from "date-fns";
 
 import { env } from "~/env";
 import { PeriodSelector } from "~/components/analytics/period-selector";
@@ -43,6 +43,7 @@ import {
 } from "~/server/cache/analytics";
 import {
    getPlaysByDate,
+   getPlaysPerMonth,
    getPlaysByDayOfWeek,
    getPlaysByHourOfDay,
 } from "~/lib/tautulli";
@@ -51,6 +52,7 @@ import {
    getActivityViewers,
 } from "~/server/cache/history";
 import {
+   ALL_TIME_PERIOD,
    analyticsSearchParamsCache,
    periodToDateRange,
 } from "./search-params";
@@ -87,11 +89,12 @@ async function ViewerScopedChart<T>({
    const { period, viewer } =
       await analyticsSearchParamsCache.parse(searchParams);
    const { start, end } = periodToDateRange(period);
+   const isAllTime = period === ALL_TIME_PERIOD;
    const selectedViewer = await getActivityViewer(viewer ?? undefined);
    const data = await fetch(
       selectedViewer?.id,
-      format(start, "yyyy-MM-dd"),
-      format(end, "yyyy-MM-dd"),
+      format(isAllTime ? subDays(start, 1) : start, "yyyy-MM-dd"),
+      format(isAllTime ? addDays(end, 1) : end, "yyyy-MM-dd"),
    );
    return <Chart data={data} />;
 }
@@ -101,28 +104,48 @@ const PeriodCharts = async ({ searchParams }: Props) => {
    const { period, viewer } =
       await analyticsSearchParamsCache.parse(searchParams);
    const { start, end, days } = periodToDateRange(period);
+   const isAllTime = period === ALL_TIME_PERIOD;
    const selectedViewer = await getActivityViewer(viewer ?? undefined);
    const selectedViewerId = selectedViewer?.id;
    const viewerAnalyticsEnabled =
       env.VIEWER_DISPLAY !== "hidden" && !env.TAUTULLI_USER_ID;
 
    const [byDate, byDay, byHour, viewerActivity] = await Promise.all([
-      getPlaysByDate(days, "plays", selectedViewerId),
+      isAllTime
+         ? getPlaysPerMonth(
+              differenceInCalendarMonths(end, start) + 1,
+              "plays",
+              selectedViewerId,
+           )
+         : getPlaysByDate(days, "plays", selectedViewerId),
       getPlaysByDayOfWeek(days, selectedViewerId),
       getPlaysByHourOfDay(days, selectedViewerId),
       viewerAnalyticsEnabled
          ? getViewerActivityCached(
-              format(start, "yyyy-MM-dd"),
-              format(end, "yyyy-MM-dd"),
+              format(isAllTime ? subDays(start, 1) : start, "yyyy-MM-dd"),
+              format(isAllTime ? addDays(end, 1) : end, "yyyy-MM-dd"),
            )
          : Promise.resolve({ viewerCount: 0, items: [] }),
    ]);
 
    return (
       <>
-         <MonthlyTrendsChart data={byDate} timeRange={days} />
-         <WatchTimeByDayChart data={byDay} timeRange={days} />
-         <WatchTimeByHourChart data={byHour} timeRange={days} />
+         <MonthlyTrendsChart
+            data={byDate}
+            timeRange={days}
+            timeBucket={isAllTime ? "month" : "day"}
+            isAllTime={isAllTime}
+         />
+         <WatchTimeByDayChart
+            data={byDay}
+            timeRange={days}
+            isAllTime={isAllTime}
+         />
+         <WatchTimeByHourChart
+            data={byHour}
+            timeRange={days}
+            isAllTime={isAllTime}
+         />
          {viewerActivity.viewerCount > 1 ? (
             <ViewerActivityCard
                data={viewerActivity.items}

@@ -13,6 +13,7 @@ import {
 } from "~/components/ui/select";
 import { Button } from "~/components/ui/button";
 import {
+   ALL_TIME_PERIOD,
    PERIODS,
    navigatePeriod,
    formatPeriodLabel,
@@ -55,11 +56,15 @@ export const PeriodSelector = () => {
             className="h-7 w-7 rounded-sm"
             aria-label="Previous analytics period"
             onClick={() => handleNavigate(-1)}
+            disabled={period === ALL_TIME_PERIOD}
          >
             <ChevronLeft className="h-3.5 w-3.5" />
          </Button>
 
-         <Select value={isCustom ? "__custom__" : period} onValueChange={handlePresetChange}>
+         <Select
+            value={isCustom ? "__custom__" : period}
+            onValueChange={handlePresetChange}
+         >
             <SelectTrigger
                className="h-7 w-auto min-w-[120px] gap-1 border-0 bg-transparent px-2 text-xs shadow-none focus:ring-0"
                aria-label="Analytics period"
