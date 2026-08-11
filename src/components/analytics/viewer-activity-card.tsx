@@ -7,6 +7,7 @@ import type { getViewerActivityCached } from "~/server/cache/analytics";
 import { ChartCard } from "~/components/analytics/chart-wrapper";
 import { ViewerAvatar } from "~/components/viewer-identity";
 import { formatPlayDuration } from "~/lib/duration";
+import { cn } from "~/lib/utils";
 
 type ViewerActivity = Awaited<
    ReturnType<typeof getViewerActivityCached>
@@ -19,15 +20,30 @@ const BAR_COLORS = [
    "var(--chart-4)",
 ] as const;
 
-export const ViewerActivityCard = ({ data }: { data: ViewerActivity }) => {
+export const ViewerActivityCard = ({
+   data,
+   selectedViewerId,
+}: {
+   data: ViewerActivity;
+   selectedViewerId?: string;
+}) => {
    const totalPlays = data.reduce((sum, item) => sum + item.plays, 0);
    const totalDuration = data.reduce((sum, item) => sum + item.duration, 0);
    const topViewers = data.slice(0, 5);
+   const selectedViewerHasActivity = data.some(
+      (item) => item.viewer.id === selectedViewerId,
+   );
 
    return (
       <ChartCard
          title="Top Viewers"
-         description="Plays and watch time in this period"
+         description={
+            selectedViewerId
+               ? selectedViewerHasActivity
+                  ? "Household comparison · selected viewer highlighted"
+                  : "Household comparison · no plays for the selected viewer"
+               : "Plays and watch time in this period"
+         }
       >
          {data.length === 0 ? (
             <div className="flex min-h-[220px] items-center justify-center sm:min-h-[280px]">
@@ -46,6 +62,11 @@ export const ViewerActivityCard = ({ data }: { data: ViewerActivity }) => {
                      return (
                         <m.li
                            key={item.viewer.id}
+                           aria-current={
+                              item.viewer.id === selectedViewerId
+                                 ? "true"
+                                 : undefined
+                           }
                            initial={{ opacity: 0, y: 8 }}
                            animate={{ opacity: 1, y: 0 }}
                            transition={{
@@ -54,8 +75,20 @@ export const ViewerActivityCard = ({ data }: { data: ViewerActivity }) => {
                               ease: [0.23, 1, 0.32, 1],
                            }}
                         >
-                           <div className="grid grid-cols-[1rem_minmax(0,1fr)_auto] items-center gap-x-2.5">
-                              <span className="text-[10px] tabular-nums text-muted-foreground/60">
+                           <div
+                              className={cn(
+                                 "grid grid-cols-[1rem_minmax(0,1fr)_auto] items-center gap-x-2.5 transition-colors duration-200",
+                                 item.viewer.id === selectedViewerId &&
+                                    "text-primary",
+                              )}
+                           >
+                              <span
+                                 className={cn(
+                                    "text-[10px] tabular-nums text-muted-foreground/60",
+                                    item.viewer.id === selectedViewerId &&
+                                       "text-primary/70",
+                                 )}
+                              >
                                  {String(index + 1).padStart(2, "0")}
                               </span>
                               <div className="flex min-w-0 items-center gap-2.5">

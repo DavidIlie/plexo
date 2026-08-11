@@ -4,8 +4,8 @@ import { format } from "date-fns";
 
 import { env } from "~/env";
 import { PeriodSelector } from "~/components/analytics/period-selector";
+import { AnalyticsViewerSelector } from "~/components/analytics/viewer-selector";
 import { RefreshButton } from "~/components/refresh-button";
-import { ViewerStack } from "~/components/viewer-identity";
 // First visible row stays statically imported (SSR'd markup, no pop-in);
 // everything below the fold goes through the lazy variants so its hydration
 // JS is deferred until scrolled near.
@@ -46,7 +46,10 @@ import {
    getPlaysByDayOfWeek,
    getPlaysByHourOfDay,
 } from "~/lib/tautulli";
-import { getActivityViewers } from "~/server/cache/history";
+import {
+   getActivityViewer,
+   getActivityViewers,
+} from "~/server/cache/history";
 import {
    analyticsSearchParamsCache,
    periodToDateRange,
@@ -68,17 +71,45 @@ async function CachedChart<T>({
    return <Chart data={data} />;
 }
 
+async function ViewerScopedChart<T>({
+   searchParams,
+   fetch,
+   Chart,
+}: Props & {
+   fetch: (
+      viewerId?: string,
+      after?: string,
+      before?: string,
+   ) => Promise<T>;
+   Chart: ComponentType<{ data: T }>;
+}) {
+   await connection();
+   const { period, viewer } =
+      await analyticsSearchParamsCache.parse(searchParams);
+   const { start, end } = periodToDateRange(period);
+   const selectedViewer = await getActivityViewer(viewer ?? undefined);
+   const data = await fetch(
+      selectedViewer?.id,
+      format(start, "yyyy-MM-dd"),
+      format(end, "yyyy-MM-dd"),
+   );
+   return <Chart data={data} />;
+}
+
 const PeriodCharts = async ({ searchParams }: Props) => {
    await connection();
-   const { period } = await analyticsSearchParamsCache.parse(searchParams);
+   const { period, viewer } =
+      await analyticsSearchParamsCache.parse(searchParams);
    const { start, end, days } = periodToDateRange(period);
+   const selectedViewer = await getActivityViewer(viewer ?? undefined);
+   const selectedViewerId = selectedViewer?.id;
    const viewerAnalyticsEnabled =
       env.VIEWER_DISPLAY !== "hidden" && !env.TAUTULLI_USER_ID;
 
    const [byDate, byDay, byHour, viewerActivity] = await Promise.all([
-      getPlaysByDate(days),
-      getPlaysByDayOfWeek(days),
-      getPlaysByHourOfDay(days),
+      getPlaysByDate(days, "plays", selectedViewerId),
+      getPlaysByDayOfWeek(days, selectedViewerId),
+      getPlaysByHourOfDay(days, selectedViewerId),
       viewerAnalyticsEnabled
          ? getViewerActivityCached(
               format(start, "yyyy-MM-dd"),
@@ -93,7 +124,10 @@ const PeriodCharts = async ({ searchParams }: Props) => {
          <WatchTimeByDayChart data={byDay} timeRange={days} />
          <WatchTimeByHourChart data={byHour} timeRange={days} />
          {viewerActivity.viewerCount > 1 ? (
-            <ViewerActivityCard data={viewerActivity.items} />
+            <ViewerActivityCard
+               data={viewerActivity.items}
+               selectedViewerId={selectedViewerId}
+            />
          ) : null}
       </>
    );
@@ -110,18 +144,26 @@ const PeriodChartsFallback = () => (
    </>
 );
 
-const AnalyticsHeading = async () => {
+const AnalyticsHeading = async ({ searchParams }: Props) => {
    await connection();
-   const viewers = await getActivityViewers();
+   const [{ viewer }, viewers] = await Promise.all([
+      analyticsSearchParamsCache.parse(searchParams),
+      getActivityViewers(),
+   ]);
+   const selectedViewer = env.TAUTULLI_USER_ID
+      ? undefined
+      : viewers.find((candidate) => candidate.id === viewer);
 
    return (
       <div>
          <div className="flex items-center gap-2.5">
             <h1 className="text-lg font-semibold">Analytics</h1>
-            <ViewerStack viewers={viewers} />
+            <AnalyticsViewerSelector viewers={viewers} />
          </div>
-         <p className="text-sm text-muted-foreground">
-            {viewers.length > 1
+         <p className="text-sm text-muted-foreground" aria-live="polite">
+            {selectedViewer
+               ? `Viewing patterns for ${selectedViewer.label} and library insights`
+               : viewers.length > 1
                ? `Watch patterns across ${viewers.length} viewers and library insights`
                : "Watch patterns and library insights"}
          </p>
@@ -143,7 +185,7 @@ const AnalyticsPage = ({ searchParams }: Props) => {
       <div className="space-y-6">
          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-y-2">
             <Suspense fallback={<AnalyticsHeadingFallback />}>
-               <AnalyticsHeading />
+               <AnalyticsHeading searchParams={searchParams} />
             </Suspense>
             <div className="flex items-center gap-2">
                <Suspense
@@ -162,22 +204,38 @@ const AnalyticsPage = ({ searchParams }: Props) => {
                <PeriodCharts searchParams={searchParams} />
             </Suspense>
             <Suspense fallback={<ChartFallback />}>
-               <CachedChart fetch={getMediaTypeRatioCached} Chart={MediaRatioChart} />
+               <ViewerScopedChart
+                  searchParams={searchParams}
+                  fetch={getMediaTypeRatioCached}
+                  Chart={MediaRatioChart}
+               />
             </Suspense>
             <Suspense fallback={<ChartFallback />}>
                <CachedChart fetch={getGenreDistributionCached} Chart={GenreDistributionChartLazy} />
             </Suspense>
             <Suspense fallback={<ChartFallback />}>
-               <CachedChart fetch={getTopWatchedGenresCached} Chart={TopGenresChartLazy} />
+               <ViewerScopedChart
+                  searchParams={searchParams}
+                  fetch={getTopWatchedGenresCached}
+                  Chart={TopGenresChartLazy}
+               />
             </Suspense>
             {env.SHOW_DEVICES && (
                <Suspense fallback={<ChartFallback />}>
-                  <CachedChart fetch={getDeviceStatsCached} Chart={DeviceChartLazy} />
+                  <ViewerScopedChart
+                     searchParams={searchParams}
+                     fetch={getDeviceStatsCached}
+                     Chart={DeviceChartLazy}
+                  />
                </Suspense>
             )}
             {env.SHOW_LOCATIONS && (
                <Suspense fallback={<ChartFallback />}>
-                  <CachedChart fetch={getLocationStatsCached} Chart={LocationChart} />
+                  <ViewerScopedChart
+                     searchParams={searchParams}
+                     fetch={getLocationStatsCached}
+                     Chart={LocationChart}
+                  />
                </Suspense>
             )}
          </div>
@@ -192,7 +250,11 @@ const AnalyticsPage = ({ searchParams }: Props) => {
                      <CachedChart fetch={getMusicGenreDistributionCached} Chart={MusicGenreChartLazy} />
                   </Suspense>
                   <Suspense fallback={<ChartFallback />}>
-                     <CachedChart fetch={getTopArtistsCached} Chart={TopArtistsChartLazy} />
+                     <ViewerScopedChart
+                        searchParams={searchParams}
+                        fetch={getTopArtistsCached}
+                        Chart={TopArtistsChartLazy}
+                     />
                   </Suspense>
                </div>
             </div>
