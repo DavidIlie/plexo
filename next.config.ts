@@ -2,6 +2,10 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
    output: "standalone",
+   // Next clears document.title while streamed metadata is reconciled during
+   // client navigation. Resolve metadata before committing the route so the
+   // browser tab always transitions directly between complete titles.
+   htmlLimitedBots: /.*/,
    cacheComponents: true,
    partialPrefetching: true,
    reactCompiler: true,
