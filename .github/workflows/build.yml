@@ -33,6 +33,8 @@ jobs:
               with:
                   push: true
                   context: .
+                  cache-from: type=gha,scope=plexo
+                  cache-to: type=gha,mode=max,scope=plexo
                   build-args: |
                       NEXT_PUBLIC_VERSION=${{ steps.prep.outputs.SHORT_SHA }}
                   tags: |
