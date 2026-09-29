@@ -102,7 +102,7 @@ export const RecentlyWatchedList = ({
                         alt={item.full_title}
                         width={36}
                         height={54}
-                        className="shrink-0 rounded object-cover"
+                        className="h-[54px] w-9 shrink-0 rounded object-cover"
                      />
                      <div className="min-w-0 flex-1">
                         <p className="truncate text-sm">{formatHistoryTitle(item)}</p>

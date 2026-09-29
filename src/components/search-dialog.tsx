@@ -362,7 +362,7 @@ export const SearchDialog = () => {
                               alt={item.title}
                               width={32}
                               height={48}
-                              className="shrink-0 rounded object-cover"
+                              className="h-12 w-8 shrink-0 rounded object-cover"
                            />
                            <div className="min-w-0 flex-1">
                               <p className="truncate text-sm">{item.title}</p>
