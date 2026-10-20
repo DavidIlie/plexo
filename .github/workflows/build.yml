@@ -1,11 +1,31 @@
 name: plexo:nextjs
 on:
+    pull_request:
     push:
         branches:
             - master
 
 jobs:
+    check:
+        name: Lint and typecheck
+        # Self-hosted runner: don't run code from fork pull requests on it.
+        if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+        runs-on: davidapps-ubuntu
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 24
+            - run: corepack enable
+            - run: pnpm install --frozen-lockfile
+            # next-env.d.ts and the route and cacheLife types are generated, not committed.
+            - run: pnpm exec next typegen
+            - run: pnpm lint
+            - run: pnpm typecheck
+
     execute:
+        needs: check
+        if: github.event_name == 'push'
         env:
             IMAGE: ghcr.io/davidilie/plexo
         runs-on: davidapps-ubuntu
