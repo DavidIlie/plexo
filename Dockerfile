@@ -34,12 +34,14 @@ ARG NEXT_PUBLIC_VERSION=dev
 ARG SHOW_MUSIC=true
 ARG SHOW_LOCATIONS=true
 
-# Persist Next.js compiler cache between CI builds using BuildKit cache mounts
+# Persist the Next.js compiler cache between builds on the same BuildKit builder.
+# CI lints and typechecks before the image build, so the build skips Next's typecheck.
 RUN --mount=type=cache,target=/home/node/app/.next/cache,id=next-cache \
     NEXT_PUBLIC_VERSION="$NEXT_PUBLIC_VERSION" \
     SHOW_MUSIC="$SHOW_MUSIC" \
     SHOW_LOCATIONS="$SHOW_LOCATIONS" \
     SKIP_ENV_VALIDATION=true \
+    NEXT_SKIP_TYPECHECK=1 \
     pnpm build
 
 FROM node:${NODE_VERSION}-alpine AS runner
