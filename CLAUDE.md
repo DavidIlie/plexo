@@ -21,7 +21,7 @@ Personal Plex media dashboard built with Next.js 16.3 (stable, Cache Components 
 - **Recharts 3** — chart colors use CSS vars `--chart-1` through `--chart-5`
 - **lucide-react** for icons
 - **date-fns 4** for date formatting
-- **Zod 3** for validation (not v4)
+- **Zod 4** for validation
 - **pnpm** package manager
 
 ## Project Layout
