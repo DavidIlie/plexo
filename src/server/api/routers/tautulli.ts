@@ -32,7 +32,7 @@ export const tautulliRouter = createTRPCRouter({
                mediaType: z.string().optional(),
                viewerId: z.string().regex(/^\d{1,20}$/).optional(),
             })
-            .default({}),
+            .prefault({}),
       )
       .query(async ({ input }) => {
          const data = await getHistoryWindow(
@@ -83,7 +83,7 @@ export const tautulliRouter = createTRPCRouter({
                timeRange: z.number().default(30),
                yAxis: z.string().default("plays"),
             })
-            .default({}),
+            .prefault({}),
       )
       .query(async ({ input }) => {
          const data = await getPlaysByDate(input.timeRange, input.yAxis);
@@ -91,14 +91,14 @@ export const tautulliRouter = createTRPCRouter({
       }),
 
    getPlaysByDayOfWeek: publicProcedure
-      .input(z.object({ timeRange: z.number().default(30) }).default({}))
+      .input(z.object({ timeRange: z.number().default(30) }).prefault({}))
       .query(async ({ input }) => {
          const data = await getPlaysByDayOfWeek(input.timeRange);
          return { data, lastUpdatedAt: new Date().toISOString() };
       }),
 
    getPlaysByHourOfDay: publicProcedure
-      .input(z.object({ timeRange: z.number().default(30) }).default({}))
+      .input(z.object({ timeRange: z.number().default(30) }).prefault({}))
       .query(async ({ input }) => {
          const data = await getPlaysByHourOfDay(input.timeRange);
          return { data, lastUpdatedAt: new Date().toISOString() };
@@ -112,7 +112,7 @@ export const tautulliRouter = createTRPCRouter({
                timeRange: z.number().default(30),
                limit: z.number().default(10),
             })
-            .default({}),
+            .prefault({}),
       )
       .query(async ({ input }) => {
          const data = await getMostWatched(
@@ -131,7 +131,7 @@ export const tautulliRouter = createTRPCRouter({
       }),
 
    resolveLocations: publicProcedure
-      .input(z.object({ ipAddresses: z.array(z.string()) }))
+      .input(z.object({ ipAddresses: z.array(z.string().max(45)).max(100) }))
       .query(async ({ input }) => {
          if (!env.SHOW_LOCATIONS) return { data: {} as Record<string, string> };
 
